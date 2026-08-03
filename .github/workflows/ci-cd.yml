@@ -1,0 +1,142 @@
+name: Frontend CI / CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  quality:
+    name: Lint, types, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        # Next's build does this too, but running it separately gives a clearer
+        # failure: a type error reports as a type error, not a build failure.
+        run: npx tsc --noEmit
+
+      - name: Build
+        env:
+          # Build-time only. The real API URL is injected per environment at
+          # deploy; this just has to be a valid URL so the build resolves.
+          NEXT_PUBLIC_API_URL: https://api.example.com
+        run: npm run build
+
+      - name: Test
+        # No test tooling installed yet. Once vitest or jest is added, this
+        # step runs it. Until then it passes without pretending tests ran.
+        run: |
+          if npm run | grep -qE '^  test$'; then
+            npm test
+          else
+            echo "::notice::No test script defined yet — skipping."
+            echo "Add vitest before the booking flow ships; that flow spends money."
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Design-system drift. The 33 review screens are the contract with the
+  # design; if a brand token changes in one place and not the other, the
+  # built product quietly stops matching what was signed off.
+  # ---------------------------------------------------------------------------
+  tokens:
+    name: Brand tokens
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Brand colours match the identity guide
+        run: |
+          missing=0
+          # Search source only. Without these exclusions the scan walks
+          # node_modules and .next and takes minutes instead of seconds.
+          SEARCH_DIRS="app src components lib styles"
+          EXISTING=""
+          for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING="$EXISTING $d"; done
+          if [ -z "$EXISTING" ]; then
+            echo "::warning::No source directories found to scan."
+            exit 0
+          fi
+
+          # From the ONA Visual Identity Guide (p.12, screen RGB values).
+          for hex in 00108F 310C6D 64084B 970429 C90007; do
+            if ! grep -rqi "$hex" $EXISTING 2>/dev/null; then
+              echo "::warning::Brand colour #$hex not found in the frontend."
+              missing=$((missing+1))
+            fi
+          done
+          echo "Brand colours present: $((5 - missing)) of 5."
+
+          if [ "$missing" -eq 5 ]; then
+            # Not a failure yet: the design tokens have not been ported. This
+            # becomes an error once they are, so that a later change cannot
+            # silently drop them. Flip the exit 0 below to exit 1 at that point.
+            echo "::warning::Design tokens not yet ported from docs/design/assets/tokens.css."
+            exit 0
+          fi
+
+          if [ "$missing" -gt 0 ]; then
+            # Some present, some not — that is drift, and worth failing on.
+            echo "::error::$missing of 5 brand colours are missing while others are present."
+            echo "That is token drift: the palette was ported, then partly lost."
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Deploys. develop → staging, main → production.
+  # ---------------------------------------------------------------------------
+  deploy-staging:
+    name: Deploy → staging
+    needs: [quality]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install -g @railway/cli
+      - name: Deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+        run: railway up --service ona-frontend --environment staging --detach
+
+  deploy-production:
+    name: Deploy → production
+    needs: [quality]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Require manual approval in GitHub settings for this environment.
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install -g @railway/cli
+      - name: Deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
+        run: railway up --service ona-frontend --environment production --detach
+
+      - name: Summary
+        run: |
+          echo "### Frontend deployed" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "By: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
