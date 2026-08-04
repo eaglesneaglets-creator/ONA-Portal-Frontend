@@ -13,6 +13,9 @@ concurrency:
 env:
   NODE_VERSION: '20'
 
+permissions:
+  contents: read
+
 jobs:
   quality:
     name: Lint, types, build
@@ -29,13 +32,24 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
       - name: Lint
         run: npm run lint
 
       - name: Type check
         # Next's build does this too, but running it separately gives a clearer
         # failure: a type error reports as a type error, not a build failure.
-        run: npx tsc --noEmit
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
 
       - name: Build
         env:
@@ -43,17 +57,6 @@ jobs:
           # deploy; this just has to be a valid URL so the build resolves.
           NEXT_PUBLIC_API_URL: https://api.example.com
         run: npm run build
-
-      - name: Test
-        # No test tooling installed yet. Once vitest or jest is added, this
-        # step runs it. Until then it passes without pretending tests ran.
-        run: |
-          if npm run | grep -qE '^  test$'; then
-            npm test
-          else
-            echo "::notice::No test script defined yet — skipping."
-            echo "Add vitest before the booking flow ships; that flow spends money."
-          fi
 
   # ---------------------------------------------------------------------------
   # Design-system drift. The 33 review screens are the contract with the
@@ -108,7 +111,7 @@ jobs:
   # ---------------------------------------------------------------------------
   deploy-staging:
     name: Deploy → staging
-    needs: [quality]
+    needs: [quality, tokens]
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: staging
@@ -122,7 +125,7 @@ jobs:
 
   deploy-production:
     name: Deploy → production
-    needs: [quality]
+    needs: [quality, tokens]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     # Require manual approval in GitHub settings for this environment.
