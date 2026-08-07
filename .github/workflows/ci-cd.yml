@@ -1,4 +1,4 @@
-name: Frontend CI / CD
+name: Frontend CI
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '20'
@@ -107,39 +107,18 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
-  # Deploys. develop → staging, main → production.
+  # Deploys are NOT run from here.
+  #
+  # Railway's GitHub integration owns deployment: it watches develop → Staging
+  # and main → Production, and deploys the merged commit itself. This workflow
+  # is a merge gate only — it decides whether a PR is allowed to land, and
+  # Railway decides what ships once it has.
+  #
+  # A `railway up` job here would be a second deployer racing the first: both
+  # fire on the same push, both target the same service, and whichever finishes
+  # last wins. That is what was happening before (and the CLI job also carried
+  # the wrong --service name), so the jobs were removed rather than fixed.
+  #
+  # To make CI actually gate the deploy, protect develop and main in
+  # Settings → Branches so these checks must pass before a merge is possible.
   # ---------------------------------------------------------------------------
-  deploy-staging:
-    name: Deploy → staging
-    needs: [quality, tokens]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm install -g @railway/cli
-      - name: Deploy
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
-        run: railway up --service ona-frontend --environment staging --detach
-
-  deploy-production:
-    name: Deploy → production
-    needs: [quality, tokens]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    # Require manual approval in GitHub settings for this environment.
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm install -g @railway/cli
-      - name: Deploy
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
-        run: railway up --service ona-frontend --environment production --detach
-
-      - name: Summary
-        run: |
-          echo "### Frontend deployed" >> $GITHUB_STEP_SUMMARY
-          echo "Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "By: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
