@@ -26,6 +26,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -156,6 +157,41 @@ describe("session handling", () => {
 });
 
 describe("errors", () => {
+  it("does not automatically retry a mutation after a network failure", async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(api.post("/bookings/", { slot: "10:00" })).rejects.toMatchObject({
+      code: "network_error",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not automatically retry a mutation after a transient server error", async () => {
+    const fetchMock = vi.fn(async () => json({ detail: "unavailable" }, 503));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(api.post("/payments/", { amount: 100 })).rejects.toBeInstanceOf(ApiError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("still retries safe reads by default", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = api.get<{ ok: boolean }>("/bookings/");
+    await vi.runAllTimersAsync();
+
+    await expect(result).resolves.toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("unwraps the backend envelope into field errors", async () => {
     vi.stubGlobal(
       "fetch",

@@ -40,7 +40,10 @@ export interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
   /** Skip the Authorization header. For public endpoints. */
   anonymous?: boolean;
-  /** Retries on transient failures. Default 2; 0 disables. */
+  /**
+   * Retries on transient failures. Safe reads default to 2; mutations default
+   * to 0 because replaying them can create duplicate bookings or payments.
+   */
   retries?: number;
 }
 
@@ -145,7 +148,9 @@ async function performRequest(path: string, options: RequestOptions): Promise<Re
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const maxRetries = options.retries ?? 2;
+  const method = (options.method ?? "GET").toUpperCase();
+  const isSafeMethod = method === "GET" || method === "HEAD" || method === "OPTIONS";
+  const maxRetries = options.retries ?? (isSafeMethod ? 2 : 0);
   let attempt = 0;
 
   for (;;) {
@@ -182,7 +187,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       }
 
       // One retry only. If it 401s again the token is not the problem.
-      const retried = await performRequest(path, options);
+      let retried: Response;
+      try {
+        retried = await performRequest(path, options);
+      } catch (cause) {
+        throw networkError(cause);
+      }
       if (!retried.ok) throw await apiErrorFrom(retried);
       return parse<T>(retried);
     }
