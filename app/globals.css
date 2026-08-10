@@ -1,26 +1,132 @@
 @import "tailwindcss";
 
+/* ===========================================================================
+   ONA Records — design tokens
+
+   Ported from docs/design/assets/tokens.css, which is the source of truth
+   reviewed and signed off across 32 screens. Values are copied exactly; if
+   the two ever disagree, that file wins.
+
+   NOTE ON TAILWIND 4
+   The task list says "map tokens into tailwind.config". Tailwind 4 has no
+   config file — tokens are declared here with @theme, and Tailwind generates
+   the utilities from them. Same outcome, different mechanism.
+
+   Everything under @theme becomes a utility: --color-ona-blue gives
+   bg-ona-blue, text-ona-blue, border-ona-blue, and so on.
+   =========================================================================== */
+
+@theme {
+  /* ---- Brand -------------------------------------------------------------
+     The five colours from the ONA Visual Identity Guide (p.12, screen RGB).
+     These are fixed by the brand and are not open to adjustment.            */
+  --color-ona-blue: #00108f;
+  --color-ona-secondary: #310c6d;
+  --color-ona-median: #64084b;
+  --color-ona-tertiary: #970429;
+  --color-ona-red: #c90007;
+
+  /* ---- Surfaces ---------------------------------------------------------- */
+  --color-surface: #ffffff;
+  --color-surface-alt: #f7f7f9;
+  --color-surface-sunk: #f0eff3;
+  --color-border-default: #e5e3ea;
+  --color-border-soft: #eeedf2;
+
+  /* ---- Ink --------------------------------------------------------------
+     Contrast ratios on white are recorded because two of these were fixed
+     after an audit found them failing WCAG AA. Do not lighten them.        */
+  --color-ink: #17151f;      /* 16.1:1 */
+  --color-ink-dim: #55525f;  /*  7.4:1 */
+  --color-ink-mute: #6b6878; /*  5.1:1 — was #8B889A at 3.1:1, which FAILED */
+
+  /* ---- Signals ---------------------------------------------------------
+     ok and warn were also recomputed: #1E8E5A was 3.4:1 and #B9790A was
+     3.2:1. Both failed. The current values pass.                          */
+  --color-ok: #146b43;      /* 5.3:1 */
+  --color-ok-bg: #e6f4ec;
+  --color-warn: #8a5a05;    /* 5.6:1 */
+  --color-warn-bg: #fbf0dd;
+  --color-err: #c90007;     /* 6.4:1 */
+  --color-err-bg: #fce8e7;
+  --color-info: #00108f;    /* 14.2:1 */
+  --color-info-bg: #e8eaf7;
+
+  /* ---- Type -------------------------------------------------------------
+     Lato is brand-mandated ("Use Lato Sans Font for all our communications",
+     Identity Guide p.19). Loaded via next/font in layout.tsx, which
+     self-hosts it at build time — no request to Google at runtime.        */
+  --font-display: var(--font-lato), system-ui, sans-serif;
+  --font-body: var(--font-lato), system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* ---- Radii ------------------------------------------------------------ */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+
+  /* ---- Shadows ---------------------------------------------------------- */
+  --shadow-card: 0 1px 2px rgba(23, 21, 31, 0.05), 0 8px 24px rgba(23, 21, 31, 0.07);
+  --shadow-pop: 0 8px 16px rgba(23, 21, 31, 0.09), 0 24px 48px rgba(23, 21, 31, 0.13);
+}
+
+/* Not a Tailwind token — a raw variable, because gradients cannot be
+   expressed as a colour utility. One angle only: the design system had it
+   forked at 135deg and 160deg until that was consolidated. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ona-gradient: linear-gradient(
+    152deg,
+    var(--color-ona-blue) 0%,
+    var(--color-ona-secondary) 32%,
+    var(--color-ona-median) 62%,
+    var(--color-ona-red) 100%
+  );
+
+  /* Minimum touch target. 44px is the figure the audit held every control
+     to after several were found at 32px and 38px. */
+  --tap-min: 44px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html {
+    height: 100%;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Every interactive element gets a visible focus ring in brand red.
+     Removing this is not an option: keyboard users cannot see where they
+     are without it. */
+  :focus-visible {
+    outline: 2px solid var(--color-ona-red);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  /* The brand gradient, as a utility. */
+  .bg-ona-gradient {
+    background: var(--ona-gradient);
+  }
+
+  /* Visible only to screen readers. Used for labels that would be
+     redundant on screen but are essential without one. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
 }

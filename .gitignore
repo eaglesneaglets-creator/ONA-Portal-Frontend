@@ -30,8 +30,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+# ...but the template must be committed, or a fresh clone has nothing to
+# copy from and the required variables are undiscoverable.
+!.env.local.example
 
 # vercel
 .vercel
