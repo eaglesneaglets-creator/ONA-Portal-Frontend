@@ -91,18 +91,10 @@ jobs:
           done
           echo "Brand colours present: $((5 - missing)) of 5."
 
-          if [ "$missing" -eq 5 ]; then
-            # Not a failure yet: the design tokens have not been ported. This
-            # becomes an error once they are, so that a later change cannot
-            # silently drop them. Flip the exit 0 below to exit 1 at that point.
-            echo "::warning::Design tokens not yet ported from docs/design/assets/tokens.css."
-            exit 0
-          fi
-
           if [ "$missing" -gt 0 ]; then
             # Some present, some not — that is drift, and worth failing on.
             echo "::error::$missing of 5 brand colours are missing while others are present."
-            echo "That is token drift: the palette was ported, then partly lost."
+            echo "The approved palette has been ported; any missing token is design drift."
             exit 1
           fi
 

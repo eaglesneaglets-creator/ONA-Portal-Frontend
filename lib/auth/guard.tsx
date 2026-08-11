@@ -27,6 +27,8 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { Equaliser } from "@/components/ui/equaliser";
+
 import { redirectFor } from "@/lib/auth/roles";
 import { useAuthStore } from "@/lib/auth/store";
 
@@ -126,19 +128,18 @@ export function RequireGuest({ children, fallback }: RequireAuthProps) {
   return status === "anonymous" ? <>{children}</> : <>{fallback ?? <AuthSplash />}</>;
 }
 
-/** Deliberately quiet — this is visible for a fraction of a second. */
+/**
+ * Visible for a fraction of a second, so it stays quiet — but on brand.
+ *
+ * min-h-screen, not 60vh. This renders on its own with no sidebar or topbar
+ * around it, so a 60vh box starting at the top of the page centres its
+ * contents about a third of the way down — which reads as misaligned rather
+ * than centred. Owning the full viewport puts it in the actual middle.
+ */
 function AuthSplash() {
   return (
-    <div
-      className="flex min-h-[60vh] items-center justify-center"
-      role="status"
-      aria-live="polite"
-    >
-      <span className="sr-only">Checking your session</span>
-      <span
-        aria-hidden="true"
-        className="h-8 w-8 animate-spin rounded-pill border-2 border-border-default border-t-ona-red"
-      />
+    <div className="flex min-h-screen flex-1 items-center justify-center">
+      <Equaliser label="Checking your session" size="lg" />
     </div>
   );
 }
