@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Lato } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth/guard";
 
 /**
  * Lato is brand-mandated: "Use Lato Sans Font for all our communications"
@@ -36,7 +37,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${lato.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {/* Restores the session once, on boot. Public pages need this too —
+            the homepage shows "Sign in" or the user's name depending on it. */}
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }
