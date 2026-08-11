@@ -116,17 +116,218 @@
     background: var(--ona-gradient);
   }
 
-  /* Visible only to screen readers. Used for labels that would be
-     redundant on screen but are essential without one. */
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
+  /* ---- Loading equaliser -------------------------------------------------
+     Bars bounce like a level meter. transform: scaleY rather than animating
+     height, so it runs on the compositor and does not force layout on every
+     frame — this can be on screen while the main thread is busy hydrating,
+     which is exactly when a layout-thrashing animation would stutter.       */
+  /* Origin at the centre, not the bottom.
+     A bottom origin makes each bar grow upward from a shared baseline, so
+     the mass sits low in the row and the group reads as bottom-heavy rather
+     than centred. Scaling from the middle keeps the block optically centred
+     at every point in the cycle. */
+  .ona-eq-bar {
+    transform-origin: center;
+    animation-name: ona-eq;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+    animation-direction: alternate;
   }
+
+  @keyframes ona-eq {
+    from {
+      transform: scaleY(0.28);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  /* A bouncing animation is a classic vestibular trigger. Someone who has
+     asked their OS for less motion gets a static, still-legible set of bars
+     rather than nothing at all — the indicator must remain visible, it just
+     stops moving. */
+  @media (prefers-reduced-motion: reduce) {
+    .ona-eq-bar {
+      animation: none;
+      transform: scaleY(0.6);
+      opacity: 0.75;
+    }
+  }
+
+  /* ---- Auth route transition --------------------------------------------
+     Switching between /login and /register slides the form card while the
+     gradient panel holds still.
+
+     Naming the panel is what pins it: the browser matches elements with the
+     same view-transition-name across the DOM change and leaves them alone,
+     so only the card animates. Without the name the whole screen would
+     cross-fade and the panel would flicker.                                */
+  .auth-panel {
+    view-transition-name: auth-panel;
+  }
+
+  .auth-card {
+    view-transition-name: auth-card;
+  }
+}
+
+/* ---- Auth brand mark, below lg ------------------------------------------
+   Scales with viewport HEIGHT. The register form is the tallest thing in the
+   app, and on a 640px phone the difference between a 28px and a 36px logo
+   decides whether the submit button sits above the fold.
+
+   Two reasons this is CSS rather than Tailwind:
+
+   1. Tailwind has no height-based variant. `min-h-[700px]:` looks like one
+      but is a min-height UTILITY — as a prefix it compiles to nothing.
+      Verified: it left the logo at 28px on a 900px-tall viewport.
+
+   2. These rules must live OUTSIDE @layer utilities. Tailwind 4 prunes
+      unreferenced classes from that layer, and the whole block was being
+      dropped — the logo was falling back to the Image width attribute.
+      Verified by inspecting document.styleSheets: neither the base rule nor
+      the media query was present.                                         */
+.auth-brand-mark {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.auth-brand-name {
+  font-size: 13px;
+}
+.auth-brand-arm {
+  font-size: 8px;
+}
+
+@media (min-height: 700px) {
+  .auth-brand-mark {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+  .auth-brand-name {
+    font-size: 15px;
+  }
+  .auth-brand-arm {
+    font-size: 9px;
+  }
+}
+
+/* Root-level, outside @layer: ::view-transition pseudo-elements live on the
+   document root and are not part of any cascade layer. */
+
+/* Default (forward, e.g. sign in -> create account): new card enters from
+   the right, old card leaves to the left. */
+::view-transition-old(auth-card) {
+  animation: ona-card-exit-left 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+::view-transition-new(auth-card) {
+  animation: ona-card-enter-right 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Back (create account -> sign in): mirrored, so the movement corresponds
+   to which tab was clicked rather than always sliding the same way. */
+[data-transition-direction="back"]::view-transition-old(auth-card) {
+  animation-name: ona-card-exit-right;
+}
+[data-transition-direction="back"]::view-transition-new(auth-card) {
+  animation-name: ona-card-enter-left;
+}
+
+@keyframes ona-card-enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes ona-card-enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes ona-card-exit-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+@keyframes ona-card-exit-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+/* Horizontal movement is the part that causes vestibular discomfort. A
+   plain cross-fade still communicates that something changed, without the
+   travel. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(auth-card),
+  ::view-transition-new(auth-card) {
+    animation-duration: 120ms;
+    animation-name: ona-fade;
+  }
+
+  @keyframes ona-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* Extends a control's touch target to 44px without changing how big it
+   looks. For controls that must stay visually small to fit inside
+   something else — the password Show toggle sits inside the input, so
+   growing the button itself would push it past the field's edge.
+
+   Only on coarse pointers: a mouse is precise, and an invisible 44px box
+   around a 38px button would swallow clicks meant for its neighbours. */
+@media (pointer: coarse) {
+  .ona-tap-44 {
+    position: relative;
+  }
+  .ona-tap-44::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 44px;
+    min-height: 44px;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Visible only to screen readers. Used for labels that would be redundant
+   on screen but are essential without one. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

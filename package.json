@@ -9,12 +9,15 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lockcheck": "npx -y npm@10 ci --dry-run",
+    "prepush": "npm run lockcheck && npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
     "next": "^16.2.12",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

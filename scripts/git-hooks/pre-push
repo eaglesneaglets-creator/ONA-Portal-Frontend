@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# Runs the same checks CI runs, before a push leaves the machine.
+#
+# The lockcheck is the reason this exists. package-lock.json drifted out of
+# sync with package.json and every local command still passed, because the
+# packages involved (@emnapi/*, the wasm fallbacks behind Tailwind's native
+# binary) are optionalDependencies gated by os/cpu. Windows skips that branch
+# of the tree entirely, so `npm install` here never resolved it and never saw
+# the conflict. Ubuntu CI resolved it and failed.
+#
+# `npm ci --dry-run --os=linux --cpu=x64` forces npm to resolve the branch
+# this machine ignores. Without those flags the check passes on Windows
+# exactly as the broken lock did, which is worse than no check at all.
+#
+# Install (once per clone):
+#   git config core.hooksPath scripts/git-hooks
+#
+# Bypass, when you know why:
+#   git push --no-verify
+
+set -e
+
+echo "pre-push: running CI checks locally..."
+
+cd "$(git rev-parse --show-toplevel)"
+
+# Skip cleanly in a clone that has no frontend deps installed rather than
+# failing a push for a backend-only change.
+if [ ! -d node_modules ]; then
+  echo "pre-push: node_modules missing, skipping. Run 'npm install' to enable."
+  exit 0
+fi
+
+npm run prepush
+
+echo "pre-push: all checks passed."
