@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lockcheck": "npm ci --dry-run --os=linux --cpu=x64",
+    "lockcheck": "npx -y npm@10 ci --dry-run",
     "prepush": "npm run lockcheck && npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
