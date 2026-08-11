@@ -9,7 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lockcheck": "npm ci --dry-run --os=linux --cpu=x64",
+    "prepush": "npm run lockcheck && npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
     "next": "^16.2.12",
