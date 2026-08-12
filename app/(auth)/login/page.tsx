@@ -63,6 +63,9 @@ function LoginForm() {
           labelAction={
             <Link
               href="/reset-password"
+              // Not built yet, so prefetching it 404s on every visit to the
+              // login page. Remove when the route ships.
+              prefetch={false}
               className="text-[10.5px] font-bold text-ona-red hover:underline"
             >
               Forgot password?

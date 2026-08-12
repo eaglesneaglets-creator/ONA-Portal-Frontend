@@ -26,6 +26,21 @@ export interface NavItem {
   label: string;
   /** Unread or pending count, shown as a pill. */
   count?: number;
+  /**
+   * The destination has not been built yet.
+   *
+   * Next prefetches the RSC payload for every <Link> in the viewport, so a
+   * link to a route that does not exist fires a background 404 on every page
+   * load. Verified on staging: six per portal page. Users never saw them, but
+   * a console full of expected 404s is where a real one goes unnoticed.
+   *
+   * The link stays visible and clickable — the sidebar describes the shape of
+   * the portal, and removing entries would misrepresent it. Only the
+   * speculative fetch is suppressed.
+   *
+   * Delete this flag from an item when its page ships.
+   */
+  pending?: boolean;
 }
 
 export interface NavGroup {
@@ -106,6 +121,9 @@ export function PortalShell({
                       <li key={item.href}>
                         <Link
                           href={item.href}
+                          // See NavItem.pending — suppresses the RSC prefetch
+                          // for routes that do not exist yet.
+                          prefetch={!item.pending}
                           aria-current={active ? "page" : undefined}
                           onClick={() => setMobileNavOpen(false)}
                           className={`flex min-h-[var(--tap-min)] items-center rounded-md px-3 text-[13.5px] ${
@@ -169,6 +187,9 @@ export function PortalShell({
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      // See NavItem.pending — suppresses the RSC prefetch
+                      // for routes that do not exist yet.
+                      prefetch={item.pending ? false : undefined}
                       aria-current={active ? "page" : undefined}
                       className={`flex min-h-[var(--tap-min)] items-center gap-2.5 rounded-md px-3 text-[13.5px] transition-colors ${
                         active
