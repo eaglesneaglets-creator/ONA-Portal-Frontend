@@ -4,17 +4,21 @@ import { PortalShell, type NavGroup } from "@/components/portal/portal-shell";
 import { RequireAuth } from "@/lib/auth/guard";
 
 // Mirrors the sidebar in docs/design/pages/dashboard-customer.html.
+//
+// `pending: true` marks a destination that has not been built yet, which
+// stops Next prefetching a route that 404s. Remove the flag when the page
+// ships — see NavItem.pending in components/portal/portal-shell.tsx.
 const GROUPS: NavGroup[] = [
   {
     label: "Workspace",
     items: [
       { href: "/customer", label: "Overview" },
-      { href: "/customer/bookings", label: "Bookings" },
-      { href: "/customer/requests", label: "Requests" },
-      { href: "/customer/projects", label: "Projects" },
-      { href: "/customer/messages", label: "Messages" },
-      { href: "/customer/payments", label: "Payments" },
-      { href: "/customer/reviews", label: "Reviews" },
+      { href: "/customer/bookings", label: "Bookings", pending: true },
+      { href: "/customer/requests", label: "Requests", pending: true },
+      { href: "/customer/projects", label: "Projects", pending: true },
+      { href: "/customer/messages", label: "Messages", pending: true },
+      { href: "/customer/payments", label: "Payments", pending: true },
+      { href: "/customer/reviews", label: "Reviews", pending: true },
     ],
   },
 ];

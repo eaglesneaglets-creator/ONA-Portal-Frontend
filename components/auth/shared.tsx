@@ -81,12 +81,15 @@ export function ModeSwitch({ active }: { active: "login" | "register" }) {
 export function LegalNote() {
   return (
     <p className="mt-3 text-[10.5px] leading-snug text-ink-mute">
+      {/* prefetch={false} on both: neither page exists yet, so Next would
+          fetch two 404s on every load of login and register — the two pages
+          every visitor sees. Remove when the legal pages ship. */}
       By continuing you agree to our{" "}
-      <Link href="/legal/terms" className="text-ink-dim underline">
+      <Link href="/legal/terms" prefetch={false} className="text-ink-dim underline">
         Terms
       </Link>{" "}
       and{" "}
-      <Link href="/legal/privacy" className="text-ink-dim underline">
+      <Link href="/legal/privacy" prefetch={false} className="text-ink-dim underline">
         Privacy Policy
       </Link>
       .
