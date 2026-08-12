@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "20.x",
-    "npm": "10.x"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "next dev",
@@ -15,16 +14,18 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lockcheck": "npx -y npm@10 ci --dry-run",
-    "prepush": "npm run lockcheck && npm run lint && npm run typecheck && npm test"
+    "prodcheck": "node scripts/check-prod-deps.mjs",
+    "prepush": "npm run lockcheck && npm run prodcheck && npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
     "next": "^16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.14",
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
@@ -34,7 +35,6 @@
     "eslint": "^9",
     "eslint-config-next": "^16.3.0",
     "jsdom": "^29.1.1",
-    "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
   }
