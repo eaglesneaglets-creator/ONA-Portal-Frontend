@@ -1,7 +1,9 @@
 {
   "$schema": "https://railway.app/railway-schema.json",
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "NIXPACKS",
+    "_buildCommand_note": "Turbopack (the Next 16 default) was killed on Railway's builder after ~2s: exit 1, no error output, which is a dead process rather than a compile failure. Node's default heap is a fraction of container memory, so it can be OOM-killed while the container still has room; --max-old-space-size raises that ceiling. NOT switching to --webpack: this project's tsconfig maps @/* with no baseUrl, which Turbopack resolves and webpack does not, so that flag trades a memory failure for 20 unresolved-module errors.",
+    "buildCommand": "NODE_OPTIONS=--max-old-space-size=3072 npm run build"
   },
   "deploy": {
     "startCommand": "npm run start",
