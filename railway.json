@@ -1,0 +1,16 @@
+{
+  "$schema": "https://railway.app/railway-schema.json",
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "npm run start",
+    "_healthcheckPath_note": "Served by app/api/health/route.ts. Next binds PORT itself, so there is no port wiring here. Railway routes to whatever the container listens on.",
+    "healthcheckPath": "/api/health",
+    "_healthcheckTimeout_note": "A Next server boots in seconds, unlike the backend which waits on Postgres and runs migrations first. 60s is generous.",
+    "healthcheckTimeout": 60,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "numReplicas": 1
+  }
+}
