@@ -20,8 +20,30 @@ export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value);
 }
 
+/**
+ * Roles with no portal in this release.
+ *
+ * ADR-015 narrowed the v0.1 MVP to the customer and admin workflows. The
+ * professional portal, and everything it depends on — profiles, listings,
+ * proposals, messaging — ships in v0.2/v0.3. The backend still accepts
+ * `professional` at registration, and app/pro/ was built against the old
+ * scope, so without this a professional signs up today and lands in a portal
+ * whose features do not exist yet.
+ *
+ * This is a scope decision, not a permission one. Nothing here is security:
+ * DRF still authorises every endpoint against the database.
+ */
+export const DEFERRED_ROLES: readonly Role[] = ["professional"] as const;
+
+export function isDeferredRole(role: Role): boolean {
+  return DEFERRED_ROLES.includes(role);
+}
+
+/** Where a role with no portal yet gets sent. */
+export const DEFERRED_HOME = "/coming-soon";
+
 /** Where each role lands after signing in, and where a mismatch sends them. */
-export const HOME_FOR: Record<Role, string> = {
+const HOME_FOR: Record<Role, string> = {
   customer: "/customer",
   professional: "/pro",
   admin: "/admin",
@@ -35,7 +57,7 @@ export const HOME_FOR: Record<Role, string> = {
  */
 const PROTECTED: ReadonlyArray<{ prefix: string; roles: readonly Role[] }> = [
   { prefix: "/customer", roles: ["customer"] },
-  { prefix: "/pro", roles: ["professional"] },
+  { prefix: "/pro", roles: [] },
   { prefix: "/admin", roles: ["admin"] },
 ];
 
@@ -59,7 +81,19 @@ export function canAccess(role: Role, pathname: string): boolean {
   return rule.roles.includes(role);
 }
 
+/**
+ * Where this role lands after signing in.
+ *
+ * Deferred roles (ADR-015) go to the holding page rather than their portal.
+ * The check comes first so HOME_FOR can keep the real destination — in v0.2,
+ * emptying DEFERRED_ROLES restores it with no other change here.
+ *
+ * redirectFor() depends on this never returning a path the role cannot
+ * access, or the two would bounce each other forever. DEFERRED_HOME is
+ * public, so a deferred role is left alone once it lands there.
+ */
 export function homeFor(role: Role): string {
+  if (isDeferredRole(role)) return DEFERRED_HOME;
   return HOME_FOR[role];
 }
 

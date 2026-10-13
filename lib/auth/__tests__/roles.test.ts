@@ -9,6 +9,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DEFERRED_HOME,
   ROLES,
   canAccess,
   homeFor,
@@ -51,8 +52,9 @@ describe("route classification", () => {
 describe("access", () => {
   it("lets each role into its own portal", () => {
     expect(canAccess("customer", "/customer/bookings")).toBe(true);
-    expect(canAccess("professional", "/pro/projects")).toBe(true);
     expect(canAccess("admin", "/admin/payments")).toBe(true);
+    // The professional/"/pro" case moved to the deferred-portal block below:
+    // in v0.1 nobody may enter /pro (ADR-015). Restore it here in v0.2.
   });
 
   it("keeps each role out of the others", () => {
@@ -78,14 +80,47 @@ describe("redirects", () => {
     // land somewhere useful, not on a 403 page.
     expect(redirectFor("customer", "/admin")).toBe("/customer");
     expect(redirectFor("customer", "/pro/projects")).toBe("/customer");
-    expect(redirectFor("professional", "/admin/payments")).toBe("/pro");
     expect(redirectFor("admin", "/customer/bookings")).toBe("/admin");
+
+    // A professional has no portal in v0.1 (ADR-015), so "their own portal"
+    // is the coming-soon page. Updated from "/pro" when the MVP was rescoped.
+    expect(redirectFor("professional", "/admin/payments")).toBe(DEFERRED_HOME);
   });
 
   it("does not redirect a user who is where they belong", () => {
     expect(redirectFor("customer", "/customer/bookings")).toBeNull();
-    expect(redirectFor("professional", "/pro")).toBeNull();
     expect(redirectFor("admin", "/admin/reviews")).toBeNull();
+  });
+
+  // ADR-015 deferred the professional portal to v0.2. These four tests replace
+  // the pre-rescope assertions that /pro was a professional's home. Delete
+  // this block and restore the old expectations when the portal ships.
+  describe("deferred professional portal (v0.1)", () => {
+    it("sends a professional to the coming-soon page, not /pro", () => {
+      expect(homeFor("professional")).toBe(DEFERRED_HOME);
+    });
+
+    it("keeps every role out of /pro, including professionals", () => {
+      // Typing the URL directly must not land anyone in the unbuilt portal.
+      for (const role of ROLES) {
+        expect(canAccess(role, "/pro")).toBe(false);
+        expect(canAccess(role, "/pro/projects")).toBe(false);
+      }
+      expect(redirectFor("professional", "/pro")).toBe(DEFERRED_HOME);
+    });
+
+    it("leaves /pro listed as protected rather than silently public", () => {
+      // Removing the PROTECTED entry instead of emptying its roles would make
+      // canAccess() return true for everyone — the opposite of the intent.
+      expect(isProtectedRoute("/pro")).toBe(true);
+      expect(isProtectedRoute("/pro/projects")).toBe(true);
+    });
+
+    it("does not bounce a professional off the page it just sent them to", () => {
+      // The loop check from homeFor()'s docstring: if the redirect target were
+      // itself inaccessible, the two rules would ping-pong forever.
+      expect(redirectFor("professional", DEFERRED_HOME)).toBeNull();
+    });
   });
 
   it("does not redirect anyone off a public page", () => {
