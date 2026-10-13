@@ -59,10 +59,23 @@ let refreshInFlight: Promise<string> | null = null;
  * Concurrent callers get the same promise, so exactly one network request
  * happens no matter how many requests hit 401 at once.
  */
+function withRefreshLock<T>(fn: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
+  if (!locks) return fn();
+  return locks.request("ona-token-refresh", fn) as Promise<T>;
+}
+
 export function refreshAccessToken(): Promise<string> {
   if (refreshInFlight) return refreshInFlight;
 
-  refreshInFlight = (async () => {
+  // The refresh token is shared between tabs (localStorage) and rotates on
+  // every use, so two tabs refreshing at once used to race: the loser sent
+  // an already-blacklisted token, got a 401, and cleared the winner's fresh
+  // token — signing the user out everywhere. The Web Lock serialises the
+  // refresh across tabs; reading the token INSIDE the lock means the second
+  // tab uses the rotated one. Browsers without Web Locks keep the old
+  // per-tab behaviour.
+  refreshInFlight = withRefreshLock(async () => {
     const refresh = getRefreshToken();
 
     // isOpaque means the browser holds the token in a cookie and will send
@@ -107,7 +120,7 @@ export function refreshAccessToken(): Promise<string> {
     }
 
     return data.access;
-  })().finally(() => {
+  }).finally(() => {
     // Cleared in finally so a failed refresh does not wedge every later
     // request behind a permanently rejected promise.
     refreshInFlight = null;

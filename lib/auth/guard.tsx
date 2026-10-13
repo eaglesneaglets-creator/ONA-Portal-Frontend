@@ -29,7 +29,8 @@ import { useEffect } from "react";
 
 import { Equaliser } from "@/components/ui/equaliser";
 
-import { redirectFor } from "@/lib/auth/roles";
+import { safeNext } from "@/lib/auth/redirect";
+import { canAccess, isGuestOnlyRoute, redirectFor } from "@/lib/auth/roles";
 import { useAuthStore } from "@/lib/auth/store";
 
 /**
@@ -69,6 +70,16 @@ function useRoleRedirect(): void {
 
   useEffect(() => {
     if (status !== "authenticated" || !user) return;
+    // A signed-in user following a link like /register?next=/customer/book
+    // should land on the page the link was for, not their home — but only
+    // somewhere safe (same origin) that their role may actually see.
+    if (isGuestOnlyRoute(pathname)) {
+      const next = safeNext(new URLSearchParams(window.location.search).get("next"));
+      if (next && canAccess(user.role, new URL(next, window.location.origin).pathname)) {
+        router.replace(next);
+        return;
+      }
+    }
     const destination = redirectFor(user.role, pathname);
     if (destination) router.replace(destination);
   }, [status, user, pathname, router]);
@@ -99,7 +110,8 @@ export function RequireAuth({ children, fallback }: RequireAuthProps) {
     // Carry the intended destination so sign-in can return them to it.
     // Someone following a link to a specific booking should land on that
     // booking, not on a generic dashboard.
-    router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    // Include the query: /customer/book?room=… must survive the sign-in.
+    router.replace(`/login?next=${encodeURIComponent(pathname + window.location.search)}`);
   }, [status, pathname, router]);
 
   // Render the fallback whenever the answer is not yet "yes, show them this":

@@ -64,6 +64,9 @@ async function list<T>(path: string): Promise<T[]> {
   // it ever exceeds that, this needs real pagination, not a bigger number.
   const res = await fetch(`${BASE_URL}${path}?page_size=100`, {
     headers: { Accept: "application/json" },
+    // Fail soft must also cover a hung API, not only an erroring one.
+    signal: AbortSignal.timeout(5_000),
+    next: { revalidate: 60 },
   });
   if (!res.ok) throw new Error(`${path} → ${res.status}`);
   const page = (await res.json()) as Page<T>;

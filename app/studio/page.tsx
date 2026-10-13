@@ -12,12 +12,15 @@ import { fetchCatalogue, formatDuration, type Engineer, type Room, type Service 
  * template's hardcoded Studio A / Studio B. The marketplace section of that
  * template is deferred with the rest of the professional workflow (ADR-015).
  *
- * Server component. fetch() here is uncached (Cache Components is off), so
- * every request renders the current catalogue — right for a page staff edit
- * in admin and expect to see change immediately.
+ * Server component, regenerated at most once a minute (ISR). Without
+ * `revalidate` Next prerendered it ONCE at build time — so admin price edits
+ * never appeared, and a build that could not reach the API baked in the
+ * "unavailable" notice until the next deploy.
  *
  * Mobile-first (ADR-013): single column at 390px, grid from md up.
  */
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Studio time and services",

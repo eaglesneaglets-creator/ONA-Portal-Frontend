@@ -25,7 +25,13 @@ import { create } from "zustand";
 
 import { api, refreshAccessToken } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
-import { clearTokens, getRefreshToken, hasResumableSession, setTokens } from "@/lib/api/tokens";
+import {
+  clearTokens,
+  getRefreshToken,
+  hasResumableSession,
+  onTokensCleared,
+  setTokens,
+} from "@/lib/api/tokens";
 import type { Role } from "@/lib/auth/roles";
 
 export interface User {
@@ -167,6 +173,15 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setUser: (user) => set({ user, status: "authenticated" }),
 }));
+
+// When the tokens go — a rejected refresh in the API client, or another tab
+// signing out — the store follows, so guards redirect to /login instead of
+// leaving a portal on screen that can no longer load anything.
+onTokensCleared(() => {
+  if (useAuthStore.getState().status !== "anonymous") {
+    useAuthStore.setState({ user: null, status: "anonymous" });
+  }
+});
 
 /** Test-only: reset the module-level initialise guard. */
 function __resetAuthStore(): void {

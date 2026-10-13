@@ -1,10 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 import { Field, FormError, PasswordField, SubmitButton } from "@/components/auth/fields";
 import { LegalNote, ModeSwitch, useAuthSubmit } from "@/components/auth/shared";
+import { safeNext } from "@/lib/auth/redirect";
 import { homeFor } from "@/lib/auth/roles";
 import { useAuthStore } from "@/lib/auth/store";
 
@@ -34,6 +35,7 @@ const ROLE_OPTIONS: Array<{ value: SelfServiceRole; title: string; body: string 
 
 function RegisterForm() {
   const router = useRouter();
+  const params = useSearchParams();
   const register = useAuthStore((s) => s.register);
   const { pending, formError, fieldErrors, submit } = useAuthSubmit();
   const [role, setRole] = useState<SelfServiceRole>("customer");
@@ -51,13 +53,16 @@ function RegisterForm() {
         last_name: String(data.get("last_name") ?? ""),
         role,
       });
-      router.replace(homeFor(user.role));
+      // Honour ?next= like the login page does. /studio's Book buttons
+      // send visitors here with the room preselected; dropping `next`
+      // lost that choice on every sign-up.
+      router.replace(safeNext(params.get("next")) ?? homeFor(user.role));
     });
   }
 
   return (
     <>
-      <ModeSwitch active="register" />
+      <ModeSwitch active="register" query={params.toString()} />
 
       {/* No visible heading or subtitle.
           The mode switch directly above already reads "Create account", so a
@@ -168,6 +173,11 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   // RequireGuest and AuthShell live in app/(auth)/layout.tsx — see the note
-  // in login/page.tsx.
-  return <RegisterForm />;
+  // in login/page.tsx. Suspense because RegisterForm reads ?next= with
+  // useSearchParams, which Next refuses to prerender without a boundary.
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
+  );
 }

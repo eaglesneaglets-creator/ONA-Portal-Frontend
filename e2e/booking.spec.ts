@@ -97,6 +97,28 @@ async function chooseEverything(page: Page, offset: number) {
   return { day, slot: label };
 }
 
+test("booking a room from /studio keeps the room through sign-up", async ({ page }) => {
+  // Regression: register ignored ?next=, so the room picked on /studio was
+  // lost and the visitor landed on their dashboard instead of the flow.
+  await page.goto("/studio");
+  await page.getByRole("link", { name: /^Book Studio A/ }).click();
+  await expect(page).toHaveURL(/\/register\?next=/);
+
+  const email = `e2e-next-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
+  await page.getByRole("button", { name: /^I.m hiring/i }).click();
+  await page.getByLabel(/first name/i).fill("E2E");
+  await page.getByLabel(/last name/i).fill("Next");
+  await page.getByLabel(/email/i).fill(email);
+  await page.getByLabel(/^password/i).fill(PASSWORD);
+  await page.getByLabel(/confirm password/i).fill(PASSWORD);
+  await page.getByRole("button", { name: /create|sign up|register/i }).click();
+
+  await expect(page).toHaveURL(/\/customer\/book\?room=/);
+  // Room preselected: the flow opens on the engineer step.
+  await expect(page.getByRole("heading", { name: "Pick an engineer" })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Session summary" })).toContainText("Studio A");
+});
+
 test("customer books a session and gets a reference; summary maths is right", async ({ page }) => {
   await registerCustomer(page);
   await chooseEverything(page, slotOffset(0));

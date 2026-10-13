@@ -31,7 +31,7 @@ function LoginForm() {
 
   return (
     <>
-      <ModeSwitch active="login" />
+      <ModeSwitch active="login" query={params.toString()} />
 
       <h1 className="mb-[5px] text-[26px] font-black tracking-tight text-ink">Welcome back</h1>
       <p className="mb-6 text-[13.5px] text-ink-dim">

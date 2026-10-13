@@ -10,7 +10,8 @@
 import { api } from "@/lib/api/client";
 import type { Engineer, Room, Service } from "@/lib/api/studio";
 
-export type SlotState = "available" | "booked" | "maintenance" | "holiday";
+/** "past" = already started; not one of the four SRS states, never bookable. */
+export type SlotState = "available" | "booked" | "maintenance" | "holiday" | "past";
 
 export interface Slot {
   start_at: string;
@@ -119,13 +120,16 @@ export const fmtDay = (iso: string) => dayFmt.format(new Date(iso));
 export const fmtShortDay = (iso: string) => shortDayFmt.format(new Date(iso));
 
 /** YYYY-MM-DD in studio time, for the calendar query and for grouping. */
+const isoDayFmt = new Intl.DateTimeFormat("en-CA", {
+  timeZone: STUDIO_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 export function studioDate(d: Date): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: STUDIO_TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(d);
+  // Formatter is built once: this runs for every slot (~170 per calendar).
+  const parts = isoDayFmt.formatToParts(d);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}`;
 }

@@ -27,12 +27,15 @@ import { navigateWithTransition } from "@/lib/ui/view-transition";
  * tab" all keep working, and the transition is a progressive enhancement on
  * top. Replacing them with buttons would have broken all three.
  */
-export function ModeSwitch({ active }: { active: "login" | "register" }) {
+export function ModeSwitch({ active, query = "" }: { active: "login" | "register"; query?: string }) {
   const router = useRouter();
+  // Carry ?next= across the switch, or a visitor who arrived to book a
+  // specific room loses it by choosing "Sign in" instead.
+  const qs = query ? `?${query}` : "";
 
   const tabs = [
-    { key: "login" as const, href: "/login", label: "Sign in" },
-    { key: "register" as const, href: "/register", label: "Create account" },
+    { key: "login" as const, href: `/login${qs}`, label: "Sign in" },
+    { key: "register" as const, href: `/register${qs}`, label: "Create account" },
   ];
 
   return (

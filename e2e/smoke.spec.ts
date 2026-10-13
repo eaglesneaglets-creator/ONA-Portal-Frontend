@@ -8,9 +8,22 @@ import { expect, test } from "@playwright/test";
  * return path, and the deferred /pro portal (ADR-015) is not reachable.
  */
 
-test("homepage renders", async ({ page }) => {
+test("homepage renders with its two ways in", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/ONA/i);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/book the room/i);
+  await expect(page.getByRole("link", { name: /rooms & prices/i })).toHaveAttribute("href", "/studio");
+  // Marketplace is deferred (ADR-015): no link may promise it.
+  await expect(page.getByRole("link", { name: /find a professional/i })).toHaveCount(0);
+});
+
+test("sends security headers", async ({ request }) => {
+  const res = await request.get("/");
+  const h = res.headers();
+  expect(h["x-frame-options"]).toBe("DENY");
+  expect(h["x-content-type-options"]).toBe("nosniff");
+  expect(h["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(h["content-security-policy"]).toContain("frame-ancestors 'none'");
 });
 
 test("coming-soon holding page renders and offers a way out", async ({ page }) => {
