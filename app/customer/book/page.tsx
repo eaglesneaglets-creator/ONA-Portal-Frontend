@@ -13,6 +13,7 @@ import {
   fmtDay,
   fmtShortDay,
   fmtTime,
+  groupSlotsByDay,
   previewGhs,
   studioDate,
   type Booking,
@@ -189,15 +190,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
   }
 
   /* Derived */
-  const byDay = useMemo(() => {
-    const m = new Map<string, Slot[]>();
-    for (const s of slots ?? []) {
-      if (s.state === "past") continue; // already started — never offered
-      const k = studioDate(new Date(s.start_at));
-      m.set(k, [...(m.get(k) ?? []), s]);
-    }
-    return m;
-  }, [slots]);
+  const byDay = useMemo(() => groupSlotsByDay(slots ?? []), [slots]);
 
   const daySlots = useMemo(() => (day ? (byDay.get(day) ?? []) : []), [day, byDay]);
 

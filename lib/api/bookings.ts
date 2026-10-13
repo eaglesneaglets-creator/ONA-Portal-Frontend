@@ -43,6 +43,8 @@ export interface Booking {
   total_display: string;
   notes: string;
   created_at: string;
+  /** Slot-holding and not yet started: the customer may cancel or move it. */
+  can_change: boolean;
 }
 
 export interface BookingInput {
@@ -135,6 +137,23 @@ export function studioDate(d: Date): string {
 }
 
 /**
+ * Slots grouped by studio-local day, in order, with started ("past") slots
+ * dropped — they are never offered. Shared by the booking flow and the
+ * reschedule picker so both see the same days.
+ */
+export function groupSlotsByDay(slots: Slot[]): Map<string, Slot[]> {
+  const m = new Map<string, Slot[]>();
+  for (const s of slots) {
+    if (s.state === "past") continue;
+    const k = studioDate(new Date(s.start_at));
+    const day = m.get(k);
+    if (day) day.push(s);
+    else m.set(k, [s]);
+  }
+  return m;
+}
+
+/**
  * Preview only. The API returns the authoritative total_display on the
  * created booking; this exists so the summary rail can update as the
  * customer changes hours without a round trip.
@@ -143,4 +162,32 @@ export function previewGhs(pesewas: number): string {
   const whole = Math.floor(pesewas / 100);
   const part = pesewas % 100;
   return `GHS ${whole.toLocaleString("en-GB")}.${String(part).padStart(2, "0")}`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Customer dashboard (Task 12)                                        */
+/* ------------------------------------------------------------------ */
+
+export interface BookingSummary {
+  upcoming_count: number;
+  pending_count: number;
+  upcoming_hours: number;
+  next: Booking | null;
+}
+
+export async function listBookings(when: "upcoming" | "past"): Promise<Booking[]> {
+  const page = await api.get<Page<Booking>>(`/studio/bookings/?when=${when}&page_size=100`);
+  return page.results;
+}
+
+export function fetchBookingSummary(): Promise<BookingSummary> {
+  return api.get<BookingSummary>("/studio/bookings/summary/");
+}
+
+export function cancelBooking(id: string): Promise<Booking> {
+  return api.post<Booking>(`/studio/bookings/${id}/cancel/`, undefined, { retries: 0 });
+}
+
+export function rescheduleBooking(id: string, start_at: string): Promise<Booking> {
+  return api.post<Booking>(`/studio/bookings/${id}/reschedule/`, { start_at }, { retries: 0 });
 }

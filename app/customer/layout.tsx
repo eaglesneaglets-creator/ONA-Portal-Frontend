@@ -14,7 +14,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/customer", label: "Overview" },
       { href: "/customer/book", label: "Book a session" },
-      { href: "/customer/bookings", label: "Bookings", pending: true },
+      { href: "/customer/bookings", label: "Bookings" },
       { href: "/customer/requests", label: "Requests", pending: true },
       { href: "/customer/projects", label: "Projects", pending: true },
       { href: "/customer/messages", label: "Messages", pending: true },
