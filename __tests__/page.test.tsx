@@ -1,67 +1,36 @@
+/**
+ * Homepage (replaced the Task 11 token smoke page on 2026-10-13).
+ *
+ * Token coverage moved to CI's "Brand tokens" job, which checks the five
+ * identity-guide colours are present in source. What matters on the real
+ * homepage is that it sends people somewhere that exists, and never promises
+ * the deferred marketplace (ADR-015).
+ */
+
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import Home from "@/app/page";
 
-/**
- * The token check page (Task 11).
- *
- * These assertions are structural on purpose. jsdom does not run Tailwind,
- * so a test here CANNOT prove that `bg-ona-blue` resolves to #00108F — only
- * a browser can, and that was verified separately with computed styles.
- *
- * What this file does protect: that the page still names every token group,
- * so silently dropping a section is caught. When Task 14 replaces this page
- * with the real homepage, this test goes with it.
- */
-describe("Token check page", () => {
-  it("has a single h1 naming what the page is for", () => {
+describe("Homepage", () => {
+  it("has a single h1 that says what the studio offers", () => {
     render(<Home />);
-
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Design tokens are live" }),
-    ).toBeDefined();
+    const h1s = screen.getAllByRole("heading", { level: 1 });
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0].textContent).toMatch(/book the room/i);
   });
 
-  it("shows every token group", () => {
+  it("links to the live catalogue and into booking", () => {
     render(<Home />);
-
-    for (const section of [
-      "Brand gradient",
-      "Brand colours",
-      "Ink · contrast on white",
-      "Signals",
-      "Radii",
-      "Type — Lato, four weights",
-      "Controls",
-    ]) {
-      expect(
-        screen.getByRole("heading", { level: 2, name: section }),
-      ).toBeDefined();
-    }
+    expect(screen.getByRole("link", { name: /rooms & prices/i }).getAttribute("href")).toBe("/studio");
+    const book = screen.getAllByRole("link", { name: /book studio time/i });
+    expect(book.length).toBeGreaterThan(0);
+    for (const a of book) expect(a.getAttribute("href")).toContain("next=%2Fcustomer%2Fbook");
   });
 
-  it("lists all five brand colours with their hex values", () => {
+  it("does not link to the deferred marketplace", () => {
     render(<Home />);
-
-    // The hex is asserted rather than the swatch, because the swatch is a
-    // background colour jsdom cannot see. If a value drifts from the
-    // Identity Guide, this catches it.
-    for (const hex of [
-      "#00108F",
-      "#310C6D",
-      "#64084B",
-      "#970429",
-      "#C90007",
-    ]) {
-      expect(screen.getByText(hex)).toBeDefined();
-    }
-  });
-
-  it("renders both control variants", () => {
-    render(<Home />);
-
-    expect(screen.getByRole("button", { name: "Primary" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Secondary" })).toBeDefined();
+    expect(screen.queryByRole("link", { name: /find a professional|explore talent|post a/i })).toBeNull();
+    expect(screen.getByText(/coming next/i)).toBeTruthy();
   });
 });

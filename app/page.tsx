@@ -1,180 +1,226 @@
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+
+import { SiteFooter } from "@/components/public/site-footer";
+import { SiteHeader } from "@/components/public/site-header";
+
 /**
- * Token smoke page.
+ * Homepage — ports docs/design/pages/homepage.html, narrowed to v0.1.
  *
- * Task 11's verification is "a page renders in ONA tokens, not Tailwind
- * defaults". A page that merely looks plausible does not prove that — a
- * missing token silently falls back to something reasonable.
+ * What changed from the template, and why (ADR-015: studio first, the
+ * marketplace follows as v0.2+):
+ *   - "Find a professional", the search bar, the "Creative talent" / "Post a
+ *     brief" paths and the sample-professionals strip are omitted. The
+ *     sample people are placeholder data, which PRODUCT.md says must never
+ *     ship as if real, and the features behind those links do not exist.
+ *   - The money explainer describes a studio booking, not a marketplace job.
+ *   - No example GHS figure: real prices live on /studio, from the API.
  *
- * So this page names every token and shows it. If `bg-ona-blue` renders
- * grey, or a radius is square, it is visible immediately rather than
- * discovered three screens later.
+ * Server component, no client JS of its own. Mobile-first (ADR-013):
+ * one column at 390px, the explainer moves beside the headline from lg.
  *
- * This is scaffolding. It is replaced by the real homepage in Task 14.
+ * hero.jpg is a generated placeholder (docs/design/assets/HERO-IMAGE.md);
+ * swap the file, keep the path. The brand gradient multiplies over it.
  */
 
-const BRAND = [
-  { name: "ona-blue", hex: "#00108F", className: "bg-ona-blue" },
-  { name: "ona-secondary", hex: "#310C6D", className: "bg-ona-secondary" },
-  { name: "ona-median", hex: "#64084B", className: "bg-ona-median" },
-  { name: "ona-tertiary", hex: "#970429", className: "bg-ona-tertiary" },
-  { name: "ona-red", hex: "#C90007", className: "bg-ona-red" },
+export const metadata: Metadata = {
+  title: { absolute: "ONA Records — Book studio time in Accra" },
+  description:
+    "Book a recording room and engineer at ONA Records in Accra. Clear hourly prices, Mobile Money, and a slot that is genuinely yours.",
+};
+
+const FLOW = [
+  { title: "Pick your room and time", body: "Live availability. A slot shown as free is free." },
+  { title: "Pay ONA", body: "Mobile Money, card or bank, in GHS." },
+  { title: "ONA holds it", body: "Your money sits with ONA until the session happens." },
+  { title: "Record", body: "Engineer included. If the session can't go ahead, you're refunded." },
 ];
 
-const SIGNALS = [
-  { name: "ok", ratio: "5.3:1", fg: "text-ok", bg: "bg-ok-bg" },
-  { name: "warn", ratio: "5.6:1", fg: "text-warn", bg: "bg-warn-bg" },
-  { name: "err", ratio: "6.4:1", fg: "text-err", bg: "bg-err-bg" },
-  { name: "info", ratio: "14.2:1", fg: "text-info", bg: "bg-info-bg" },
+const GUARDS = [
+  {
+    title: "Your slot is really yours",
+    body: "Two people can never hold the same room or engineer at the same time. The system refuses it, not just the form.",
+  },
+  {
+    title: "Clear prices, before you commit",
+    body: "Hourly rates are on the page. The total is shown before you confirm, and it does not change afterwards.",
+  },
+  {
+    title: "Your money is held, not forwarded",
+    body: "ONA holds payment until your session. Every booking has a reference and a receipt.",
+  },
 ];
 
-const RADII = [
-  { name: "sm", className: "rounded-sm" },
-  { name: "md", className: "rounded-md" },
-  { name: "lg", className: "rounded-lg" },
-  { name: "xl", className: "rounded-xl" },
-  { name: "pill", className: "rounded-pill" },
-];
-
-export default function TokenCheck() {
+export default function Home() {
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-16">
-      <header className="mb-12">
-        <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-ink-mute">
-          Task 11 · token check
-        </p>
-        <h1 className="mb-3 text-5xl font-black tracking-tight text-ink">
-          Design tokens are live
-        </h1>
-        <p className="max-w-prose text-lg leading-relaxed text-ink-dim">
-          Every swatch below is a Tailwind utility generated from{" "}
-          <code className="rounded-sm bg-surface-sunk px-1.5 py-0.5 font-mono text-base">
-            @theme
-          </code>
-          . If any renders as a default grey, that token did not port.
-        </p>
-      </header>
+    <>
+      <SiteHeader />
+      <main>
+        {/* Hero */}
+        <section className="relative isolate overflow-hidden text-white">
+          <Image
+            src="/hero.jpg"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="-z-20 object-cover"
+          />
+          <div aria-hidden="true" className="bg-ona-gradient absolute inset-0 -z-10 mix-blend-multiply" />
+          <div aria-hidden="true" className="absolute inset-0 -z-10 bg-black/25" />
 
-      {/* Gradient — the one token that is not a colour utility. */}
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Brand gradient
-        </h2>
-        <div className="bg-ona-gradient flex min-h-44 flex-col justify-end rounded-xl p-8 shadow-pop">
-          <p className="text-3xl font-black tracking-tight text-white">
-            Book the room. Hire the talent.
-          </p>
-          <p className="mt-1 text-white/80">
-            152° · blue → secondary → median → red
-          </p>
-        </div>
-      </section>
-
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Brand colours
-        </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {BRAND.map((c) => (
-            <div key={c.name}>
-              <div
-                className={`${c.className} mb-2 h-20 rounded-md shadow-card`}
-              />
-              <p className="text-sm font-bold text-ink">{c.name}</p>
-              <p className="font-mono text-xs text-ink-mute">{c.hex}</p>
+          <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:py-24">
+            <div>
+              <h1 className="mb-5 max-w-[16ch] text-[clamp(34px,6vw,58px)] font-black leading-[1.04] tracking-tight">
+                Book the room. Keep your money safe.
+              </h1>
+              <p className="mb-8 max-w-[48ch] text-[17px] leading-relaxed text-white/85 sm:text-[18px]">
+                ONA Records is a recording studio in Accra. Pick a room and an engineer, see the
+                price up front, and pay ONA — who holds it until your session.
+              </p>
+              <div className="mb-8 flex flex-wrap gap-3">
+                <Link
+                  href="/register?next=%2Fcustomer%2Fbook"
+                  className="flex min-h-[var(--tap-min)] items-center rounded-md bg-white px-6 font-bold text-ona-red transition-colors hover:bg-white/90"
+                >
+                  Book studio time
+                </Link>
+                <Link
+                  href="/studio"
+                  className="flex min-h-[var(--tap-min)] items-center rounded-md border border-white/50 px-6 font-bold text-white transition-colors hover:border-white"
+                >
+                  See rooms &amp; prices
+                </Link>
+              </div>
+              <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] font-bold text-white/85">
+                {["Engineer included", "Pay with Mobile Money", "Held by ONA until your session"].map((p) => (
+                  <li key={p} className="flex items-center gap-2">
+                    <Check />
+                    {p}
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* Ink and signals carry their measured contrast, because two of these
-          were fixed after failing WCAG AA. Showing the number keeps the
-          reason visible. */}
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Ink · contrast on white
-        </h2>
-        <div className="space-y-1 rounded-lg border border-border-default bg-surface p-6 shadow-card">
-          <p className="text-lg text-ink">ink — 16.1:1 — body copy</p>
-          <p className="text-lg text-ink-dim">ink-dim — 7.4:1 — secondary</p>
-          <p className="text-lg text-ink-mute">
-            ink-mute — 5.1:1 — meta (was 3.1:1, which failed AA)
-          </p>
-        </div>
-      </section>
+            <div className="rounded-xl bg-white/95 p-6 text-ink shadow-card sm:p-7">
+              <h2 className="mb-5 text-[19px] font-black tracking-tight">How booking works</h2>
+              <ol className="space-y-4">
+                {FLOW.map((step, i) => (
+                  <li key={step.title} className="flex gap-3.5">
+                    <span className="flex h-7 w-7 flex-none items-center justify-center rounded-pill bg-ona-red text-[13px] font-black text-white">
+                      {i + 1}
+                    </span>
+                    <span>
+                      <b className="block text-[15px]">{step.title}</b>
+                      <span className="text-[13.5px] leading-snug text-ink-dim">{step.body}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        </section>
 
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Signals
-        </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {SIGNALS.map((s) => (
-            <div key={s.name} className={`${s.bg} rounded-md p-4`}>
-              <p className={`${s.fg} font-bold`}>{s.name}</p>
-              <p className={`${s.fg} font-mono text-xs opacity-80`}>
-                {s.ratio}
+        {/* Paths */}
+        <section className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-6 sm:py-20">
+          <div className="mb-8 max-w-[56ch]">
+            <h2 className="mb-2 text-[clamp(24px,3.4vw,34px)] font-black tracking-tight text-ink">
+              Start with what you need
+            </h2>
+            <p className="text-[16px] leading-relaxed text-ink-dim">
+              Studio time is open now. Hiring independent professionals arrives in the next
+              release.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Link
+              href="/studio"
+              className="group rounded-xl border border-border-default bg-surface p-6 transition-shadow hover:shadow-card"
+            >
+              <h3 className="mb-2 text-[20px] font-black tracking-tight text-ink">Studio time</h3>
+              <p className="mb-4 text-[15px] leading-relaxed text-ink-dim">
+                Rooms in Accra, an engineer included, priced by the hour.
+              </p>
+              <span className="text-[14px] font-bold text-ona-red group-hover:underline">
+                Check availability →
+              </span>
+            </Link>
+            <div className="rounded-xl border border-dashed border-border-default bg-surface-alt p-6">
+              <h3 className="mb-2 text-[20px] font-black tracking-tight text-ink">Creative talent</h3>
+              <p className="mb-4 text-[15px] leading-relaxed text-ink-dim">
+                Producers, vocalists, videographers and designers — each approved by ONA before
+                they appear.
+              </p>
+              <span className="text-[13px] font-bold uppercase tracking-[0.12em] text-ink-mute">
+                Coming next
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* Trust */}
+        <section className="bg-surface-alt">
+          <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1fr_1.4fr]">
+            <div>
+              <h2 className="mb-3 max-w-[18ch] text-[clamp(24px,3.4vw,34px)] font-black tracking-tight text-ink">
+                Why people trust ONA with the booking
+              </h2>
+              <p className="max-w-[40ch] text-[16px] leading-relaxed text-ink-dim">
+                The booking never lies. What you see as free is free, and what you confirm is held
+                for you.
               </p>
             </div>
-          ))}
-        </div>
-      </section>
+            <ul className="space-y-5">
+              {GUARDS.map((g) => (
+                <li key={g.title} className="flex gap-3.5">
+                  <span className="mt-1 text-ona-red">
+                    <Check />
+                  </span>
+                  <span>
+                    <b className="mb-1 block text-[16px] text-ink">{g.title}</b>
+                    <span className="text-[14.5px] leading-relaxed text-ink-dim">{g.body}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
 
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Radii
-        </h2>
-        {/* Bordered, not filled: at 64px a 6px and a 10px corner are almost
-            indistinguishable as solid blocks. An outline makes the curve
-            readable, which is the entire point of showing them. */}
-        <div className="flex flex-wrap items-end gap-4">
-          {RADII.map((r) => (
-            <div key={r.name} className="text-center">
-              <div
-                className={`${r.className} mb-2 h-20 w-20 border-2 border-ona-blue bg-surface-alt`}
-              />
-              <p className="text-xs text-ink-mute">{r.name}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Type — Lato, four weights
-        </h2>
-        <div className="space-y-2 rounded-lg border border-border-default p-6">
-          <p className="text-4xl font-black tracking-tight text-ink">
-            900 · display headings
+        {/* Closing */}
+        <section className="mx-auto w-full max-w-6xl px-5 py-16 text-center sm:px-6 sm:py-20">
+          <h2 className="mb-3 text-[clamp(26px,4vw,40px)] font-black tracking-tight text-ink">
+            Ready to make something real?
+          </h2>
+          <p className="mx-auto mb-8 max-w-[46ch] text-[16px] leading-relaxed text-ink-dim">
+            Pick a room for this weekend. It takes about two minutes.
           </p>
-          <p className="text-2xl font-bold text-ink">700 · emphasis</p>
-          <p className="text-lg font-normal text-ink-dim">400 · body copy</p>
-          <p className="text-lg font-light text-ink-mute">300 · quiet meta</p>
-        </div>
-      </section>
+          <Link
+            href="/register?next=%2Fcustomer%2Fbook"
+            className="inline-flex min-h-[var(--tap-min)] items-center rounded-md bg-ona-red px-7 font-bold text-white transition-colors hover:bg-ona-tertiary"
+          >
+            Book studio time
+          </Link>
+        </section>
+      </main>
+      <SiteFooter />
+    </>
+  );
+}
 
-      {/* Tap target and focus ring, both of which the audit had to correct. */}
-      <section>
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Controls
-        </h2>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            className="min-h-[var(--tap-min)] rounded-md bg-ona-red px-6 font-bold text-white transition-colors hover:bg-ona-tertiary"
-          >
-            Primary
-          </button>
-          <button
-            type="button"
-            className="min-h-[var(--tap-min)] rounded-md border border-border-default bg-surface px-6 font-bold text-ink transition-colors hover:border-ink-mute"
-          >
-            Secondary
-          </button>
-        </div>
-        <p className="mt-3 text-sm text-ink-mute">
-          Both are 44px tall — the minimum the audit held every control to. Tab
-          to them to see the focus ring.
-        </p>
-      </section>
-    </main>
+function Check() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.25}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4 flex-none"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
   );
 }
