@@ -45,6 +45,8 @@ export interface Booking {
   created_at: string;
   /** Slot-holding and not yet started: the customer may cancel or move it. */
   can_change: boolean;
+  /** A payment is confirmed, so a receipt can be downloaded. */
+  has_receipt: boolean;
 }
 
 export interface BookingInput {
@@ -190,4 +192,29 @@ export function cancelBooking(id: string): Promise<Booking> {
 
 export function rescheduleBooking(id: string, start_at: string): Promise<Booking> {
   return api.post<Booking>(`/studio/bookings/${id}/reschedule/`, { start_at }, { retries: 0 });
+}
+
+/**
+ * Download the booking's invoice or receipt as a PDF.
+ *
+ * Goes through the authenticated client (the access token lives in memory,
+ * so a plain link would arrive without it), then hands the browser a
+ * temporary object URL to save.
+ */
+export async function downloadDocument(
+  booking: Pick<Booking, "id" | "reference">,
+  kind: "invoice" | "receipt",
+): Promise<void> {
+  const blob = await api.get<Blob>(`/studio/bookings/${booking.id}/${kind}/`, {
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `ONA-${kind}-${booking.reference}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoke after the click has been handled, or some browsers cancel it.
+  setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }

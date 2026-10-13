@@ -84,6 +84,17 @@ test("dashboard shows the booking; it can be rescheduled and cancelled", async (
   await expect(row).toContainText("Awaiting confirmation");
   await expect(row).toContainText("10:00");
 
+  // Invoice downloads as a PDF; no receipt until a payment is confirmed.
+  const download = page.waitForEvent("download");
+  await row.getByRole("button", { name: "Invoice (PDF)" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe(`ONA-invoice-${ref}.pdf`);
+  const fs = await import("node:fs/promises");
+  const bytes = await fs.readFile(await file.path());
+  expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
+  expect(bytes.toString("latin1")).toContain(ref);
+  await expect(row.getByRole("button", { name: "Receipt (PDF)" })).toHaveCount(0);
+
   // Reschedule. The picker opens three days before the booking, so the
   // first offered day differs per project (offset 40 vs 41) — the two
   // projects never compete for the same hour.
@@ -107,5 +118,7 @@ test("dashboard shows the booking; it can be rescheduled and cancelled", async (
   await page.getByRole("tab", { name: "past" }).click();
   const past = page.getByTestId("booking-row").filter({ hasText: ref });
   await expect(past).toContainText("Cancelled");
-  await expect(past.getByRole("button")).toHaveCount(0);
+  // Nothing left to change — but the invoice stays: it is a record.
+  await expect(past.getByRole("button", { name: /reschedule|cancel booking/i })).toHaveCount(0);
+  await expect(past.getByRole("button", { name: "Invoice (PDF)" })).toBeVisible();
 });

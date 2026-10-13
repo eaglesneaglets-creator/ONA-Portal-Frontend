@@ -9,6 +9,7 @@ import { StatusPill } from "@/components/booking/status-pill";
 import { ApiError } from "@/lib/api/errors";
 import {
   cancelBooking,
+  downloadDocument,
   fmtDay,
   fmtTime,
   listBookings,
@@ -181,6 +182,13 @@ function BookingRow({ booking: b, onChanged }: { booking: Booking; onChanged: (m
         </div>
       ) : null}
 
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+        <DocLink booking={b} kind="invoice" label="Invoice (PDF)" onError={setError} />
+        {b.has_receipt ? (
+          <DocLink booking={b} kind="receipt" label="Receipt (PDF)" onError={setError} />
+        ) : null}
+      </div>
+
       {b.can_change && mode === "idle" ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <button
@@ -255,5 +263,39 @@ function BookingRow({ booking: b, onChanged }: { booking: Booking; onChanged: (m
         </div>
       ) : null}
     </li>
+  );
+}
+
+function DocLink({
+  booking,
+  kind,
+  label,
+  onError,
+}: {
+  booking: Booking;
+  kind: "invoice" | "receipt";
+  label: string;
+  onError: (m: string | null) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        onError(null);
+        try {
+          await downloadDocument(booking, kind);
+        } catch (err) {
+          onError(errorText(err));
+        } finally {
+          setBusy(false);
+        }
+      }}
+      className="min-h-[var(--tap-min)] text-[13.5px] font-bold text-info underline-offset-2 hover:underline disabled:opacity-60"
+    >
+      {busy ? "Preparing…" : label}
+    </button>
   );
 }

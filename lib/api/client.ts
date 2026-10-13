@@ -45,6 +45,8 @@ export interface RequestOptions extends Omit<RequestInit, "body"> {
    * to 0 because replaying them can create duplicate bookings or payments.
    */
   retries?: number;
+  /** "blob" for files (PDFs). Defaults to JSON. */
+  responseType?: "json" | "blob";
 }
 
 /* ------------------------------------------------------------------ */
@@ -140,6 +142,7 @@ async function performRequest(path: string, options: RequestOptions): Promise<Re
   // and passing it through would end up on the RequestInit.
   const { body, anonymous, headers, ...rest } = options;
   delete (rest as { retries?: number }).retries;
+  delete (rest as { responseType?: string }).responseType;
 
   const finalHeaders = new Headers(headers);
   if (body !== undefined && !(body instanceof FormData)) {
@@ -207,7 +210,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
         throw networkError(cause);
       }
       if (!retried.ok) throw await apiErrorFrom(retried);
-      return parse<T>(retried);
+      return parse<T>(retried, options.responseType);
     }
 
     if (!response.ok) {
@@ -220,11 +223,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       throw err;
     }
 
-    return parse<T>(response);
+    return parse<T>(response, options.responseType);
   }
 }
 
-async function parse<T>(response: Response): Promise<T> {
+async function parse<T>(response: Response, responseType: "json" | "blob" = "json"): Promise<T> {
+  if (responseType === "blob") return (await response.blob()) as T;
   // 204 and 205 carry no body — logout returns 205.
   if (response.status === 204 || response.status === 205) return undefined as T;
   const text = await response.text();
