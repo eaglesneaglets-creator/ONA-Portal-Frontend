@@ -169,7 +169,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 }));
 
 /** Test-only: reset the module-level initialise guard. */
-export function __resetAuthStore(): void {
+function __resetAuthStore(): void {
   initialisePromise = null;
   useAuthStore.setState({ user: null, status: "loading" });
 }

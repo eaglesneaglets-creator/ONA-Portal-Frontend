@@ -38,7 +38,7 @@ export function setAccessToken(token: string | null): void {
 }
 
 /** Notified whenever the access token changes, so the auth store can react. */
-export function onAccessTokenChange(fn: (token: string | null) => void): () => void {
+function onAccessTokenChange(fn: (token: string | null) => void): () => void {
   ACCESS_LISTENERS.add(fn);
   return () => ACCESS_LISTENERS.delete(fn);
 }
@@ -98,7 +98,7 @@ export function getRefreshToken(): string | null {
   return refreshStore.get();
 }
 
-export function setRefreshToken(token: string | null): void {
+function setRefreshToken(token: string | null): void {
   refreshStore.set(token);
 }
 
@@ -121,7 +121,7 @@ export function clearTokens(): void {
  * the change sits in localStorage indefinitely — still valid, still
  * stealable, and no longer used for anything.
  */
-export function clearLegacyLocalStorage(): void {
+function clearLegacyLocalStorage(): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.removeItem(STORAGE_KEY);
