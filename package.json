@@ -15,17 +15,20 @@
     "test:watch": "vitest",
     "lockcheck": "npx -y npm@10 ci --dry-run",
     "prodcheck": "node scripts/check-prod-deps.mjs",
-    "prepush": "npm run lockcheck && npm run prodcheck && npm run lint && npm run typecheck && npm test"
+    "prepush": "npm run lockcheck && npm run prodcheck && npm run lint && npm run typecheck && npm test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4",
     "next": "^16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "zustand": "^5.0.14",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",

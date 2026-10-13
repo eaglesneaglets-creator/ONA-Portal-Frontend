@@ -99,6 +99,43 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
+  # Browser journeys. Runs the smoke suite (routing, guards, rendering) at
+  # phone and desktop width. Specs needing the Django API skip themselves
+  # here — there is no database in this workflow — and run locally instead.
+  # ---------------------------------------------------------------------------
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run
+        env:
+          CI: true
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+        run: npm run test:e2e
+
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
   # Deploys are NOT run from here.
   #
   # Railway's GitHub integration owns deployment: it watches develop → Staging
