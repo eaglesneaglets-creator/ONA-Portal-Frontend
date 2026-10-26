@@ -24,7 +24,7 @@ export const BOOK_HREF = "/register?next=%2Fcustomer%2Fbook";
 const LINKS = [
   { href: "/studio", label: "Rooms & prices" },
   { href: "/#how", label: "How it works" },
-  { href: "/#faq", label: "Questions" },
+  { href: "/faqs", label: "Questions" },
 ];
 
 export function SiteHeader() {

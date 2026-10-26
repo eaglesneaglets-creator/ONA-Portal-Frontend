@@ -17,6 +17,9 @@ import Home from "@/app/page";
 import type { Catalogue } from "@/lib/api/studio";
 
 const catalogue = vi.hoisted(() => ({ current: null as unknown as Catalogue }));
+const faqs = vi.hoisted(() => ({ current: null as null | { id: string; question: string; answer: string }[] }));
+
+vi.mock("@/lib/api/content", () => ({ fetchFaqs: async () => faqs.current }));
 
 vi.mock("@/lib/api/studio", async (orig) => ({
   ...(await orig<typeof import("@/lib/api/studio")>()),
@@ -37,7 +40,8 @@ async function renderHome() {
 }
 
 beforeEach(() => {
-  catalogue.current = { rooms: [ROOM], engineers: [], services: [], unavailable: false };
+  catalogue.current = { rooms: [ROOM], engineers: [], services: [], packages: [], unavailable: false };
+  faqs.current = [{ id: "f1", question: "How do I pay?", answer: "Through ONA." }];
 });
 
 describe("Homepage", () => {
@@ -68,7 +72,7 @@ describe("Homepage", () => {
   });
 
   it("says so plainly when the catalogue cannot be loaded", async () => {
-    catalogue.current = { rooms: [], engineers: [], services: [], unavailable: true };
+    catalogue.current = { rooms: [], engineers: [], services: [], packages: [], unavailable: true };
     await renderHome();
     expect(screen.getByText(/taking a moment to load/i)).toBeTruthy();
   });
@@ -78,6 +82,16 @@ describe("Homepage", () => {
     const card = screen.getByRole("figure", { name: /example of booking/i });
     expect(within(card).getByText("Example")).toBeTruthy();
     expect(within(card).getByText(/GHS 200\.00 per hour/)).toBeTruthy();
+  });
+
+  it("shows the staff-edited FAQ, and leaves the section out until answers load", async () => {
+    const { unmount } = await renderHome();
+    expect(screen.getByRole("region", { name: "Good to know before you book" })).toBeTruthy();
+    expect(screen.getByText("How do I pay?")).toBeTruthy();
+    unmount();
+    faqs.current = null;
+    await renderHome();
+    expect(screen.queryByRole("region", { name: "Good to know before you book" })).toBeNull();
   });
 
   it("does not link to the deferred marketplace", async () => {

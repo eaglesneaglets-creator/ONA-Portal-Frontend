@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SiteHeader } from "@/components/public/site-header";
-import { fetchCatalogue, formatDuration, type Engineer, type Room, type Service } from "@/lib/api/studio";
+import {
+  fetchCatalogue,
+  formatDuration,
+  type Engineer,
+  type Package,
+  type Room,
+  type Service,
+} from "@/lib/api/studio";
 
 /**
  * Public studio catalogue — /studio.
@@ -29,7 +36,7 @@ export const metadata: Metadata = {
 };
 
 export default async function StudioCataloguePage() {
-  const { rooms, engineers, services, unavailable } = await fetchCatalogue();
+  const { rooms, engineers, services, packages, unavailable } = await fetchCatalogue();
 
   return (
     <>
@@ -57,6 +64,16 @@ export default async function StudioCataloguePage() {
           items={rooms}
           render={(room) => <RoomCard key={room.id} room={room} />}
         />
+
+        {packages.length ? (
+          <Section
+            title="Packages"
+            lede="Bundles ONA offers at a set price. Ask for one in your booking notes, or call us, and ONA books it for you."
+            empty=""
+            items={packages}
+            render={(p) => <PackageCard key={p.id} pkg={p} />}
+          />
+        ) : null}
 
         <Section
           title="Services"
@@ -197,4 +214,28 @@ function Unavailable() {
 
 function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+function PackageCard({ pkg }: { pkg: Package }) {
+  return (
+    <li className="flex flex-col rounded-xl border border-border-default bg-surface p-6">
+      <h3 className="mb-1 text-[18px] font-black tracking-tight text-ink">{pkg.name}</h3>
+      <p className="mb-3 text-[13.5px] text-ink-mute">
+        {pkg.hours} {pkg.hours === 1 ? "hour" : "hours"}
+        {pkg.room_name ? ` · ${pkg.room_name}` : ""}
+      </p>
+      {pkg.description ? <p className="mb-4 text-[14.5px] leading-relaxed text-ink-dim">{pkg.description}</p> : null}
+      {pkg.includes.length ? (
+        <ul className="mb-5 space-y-1 text-[14px] text-ink">
+          {pkg.includes.map((line) => (
+            <li key={line} className="flex gap-2">
+              <span aria-hidden="true" className="text-ona-red">✓</span>
+              {line}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <p className="mt-auto border-t border-border-soft pt-4 text-[22px] font-black text-ink">{pkg.price_display}</p>
+    </li>
+  );
 }

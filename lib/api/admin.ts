@@ -40,6 +40,9 @@ export interface StaffBooking extends Booking {
   assigned_professional: { id: string; name: string; stage_name: string } | null;
   created_by_email: string | null;
   room_total_display: string;
+  /** Still owed after payments and refunds (server-computed). */
+  outstanding_pesewas: number;
+  outstanding_display: string;
 }
 
 export interface Commission {
@@ -60,6 +63,8 @@ export interface LedgerEntry {
   created_by_email: string | null;
   note: string;
   commission: Commission | null;
+  /** A person recorded it (manual payment or refund); a provider never sets this. */
+  recorded_by_staff: boolean;
 }
 
 export interface StaffTransaction {
@@ -69,6 +74,9 @@ export interface StaffTransaction {
   provider: "hubtel" | "manual";
   provider_display: string;
   provider_ref: string | null;
+  is_manual: boolean;
+  method: PaymentMethod | "";
+  method_display: string;
   amount_pesewas: number;
   amount_display: string;
   status: "pending" | "succeeded" | "failed";
@@ -125,6 +133,73 @@ export interface Overview {
   commission_30d_display: string;
   needs_confirmation: StaffBooking[];
   today: StaffBooking[];
+}
+
+export type PaymentMethod = "cash" | "mobile_money" | "bank_transfer" | "card_terminal" | "other";
+
+export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: "mobile_money", label: "Mobile Money" },
+  { value: "cash", label: "Cash" },
+  { value: "bank_transfer", label: "Bank transfer" },
+  { value: "card_terminal", label: "Card machine" },
+  { value: "other", label: "Other" },
+];
+
+/* Catalogue and content (Task 16) */
+
+export interface AdminRoom {
+  id: string;
+  name: string;
+  description: string;
+  hourly_rate_pesewas: number;
+  hourly_rate_display: string;
+  capacity: number;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface AdminService {
+  id: string;
+  name: string;
+  description: string;
+  base_price_pesewas: number;
+  base_price_display: string;
+  duration_minutes: number;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface AdminEngineer {
+  id: string;
+  name: string;
+  bio: string;
+  specialties: string[];
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface AdminPackage {
+  id: string;
+  name: string;
+  description: string;
+  hours: number;
+  price_pesewas: number;
+  price_display: string;
+  room: string | null;
+  includes: string[];
+  is_active: boolean;
+  sort_order: number;
+}
+
+export type CatalogueKind = "rooms" | "services" | "engineers" | "packages";
+
+export interface AdminFaq {
+  id: string;
+  question: string;
+  answer: string;
+  is_published: boolean;
+  sort_order: number;
+  updated_at: string;
 }
 
 export type RateType = "hourly" | "daily" | "per_song" | "per_project" | "per_event" | "negotiable";
@@ -259,6 +334,27 @@ export const adminApi = {
     api.post<Professional>("/admin/professionals/", input, { retries: 0 }),
   updateProfessional: (id: string, input: Partial<ProfessionalInput>) =>
     api.patch<Professional>(`/admin/professionals/${id}/`, input, { retries: 0 }),
+
+  // Task 16 — manual money.
+  recordPayment: (
+    bookingId: string,
+    input: { amount_pesewas: number; method: PaymentMethod; reference?: string; note?: string },
+  ) => api.post<StaffBookingDetail>(`/admin/bookings/${bookingId}/payments/`, input, { retries: 0 }),
+  recordRefund: (txnId: string, amount_pesewas: number, note: string) =>
+    api.post<StaffTransaction>(`/admin/payments/${txnId}/refund/`, { amount_pesewas, note }, { retries: 0 }),
+
+  // Task 16 — catalogue and content.
+  catalogue: <T>(kind: CatalogueKind) => api.get<Page<T>>(`/admin/${kind}/?page_size=100`),
+  createCatalogue: <T>(kind: CatalogueKind, input: Partial<T>) =>
+    api.post<T>(`/admin/${kind}/`, input, { retries: 0 }),
+  updateCatalogue: <T>(kind: CatalogueKind, id: string, input: Partial<T>) =>
+    api.patch<T>(`/admin/${kind}/${id}/`, input, { retries: 0 }),
+  removeCatalogue: (kind: CatalogueKind, id: string) => api.delete<void>(`/admin/${kind}/${id}/`, { retries: 0 }),
+
+  faqs: () => api.get<Page<AdminFaq>>("/admin/faqs/?page_size=100&ordering=sort_order"),
+  createFaq: (input: Partial<AdminFaq>) => api.post<AdminFaq>("/admin/faqs/", input, { retries: 0 }),
+  updateFaq: (id: string, input: Partial<AdminFaq>) => api.patch<AdminFaq>(`/admin/faqs/${id}/`, input, { retries: 0 }),
+  removeFaq: (id: string) => api.delete<void>(`/admin/faqs/${id}/`, { retries: 0 }),
 
   jobs: (q: { status?: string; open?: boolean; search?: string; page?: number }) =>
     api.get<Page<Job>>(`/admin/jobs/${qs({ ...q, open: q.open ? "1" : undefined, page_size: PAGE_SIZE })}`),

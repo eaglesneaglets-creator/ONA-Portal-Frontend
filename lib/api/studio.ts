@@ -39,6 +39,19 @@ export interface Service {
   duration_minutes: number;
 }
 
+/** An advertised bundle (Task 16). Content: booked by the hour, or by staff. */
+export interface Package {
+  id: string;
+  name: string;
+  description: string;
+  hours: number;
+  price_pesewas: number;
+  price_display: string;
+  room: string | null;
+  room_name: string | null;
+  includes: string[];
+}
+
 interface Page<T> {
   count: number;
   next: string | null;
@@ -50,6 +63,7 @@ export interface Catalogue {
   rooms: Room[];
   engineers: Engineer[];
   services: Service[];
+  packages: Package[];
   /** True when the API could not be reached; the page shows a calm fallback. */
   unavailable: boolean;
 }
@@ -57,7 +71,7 @@ export interface Catalogue {
 // This loader runs on the server. API_INTERNAL_URL lets it reach the API by
 // a private address (a container service name, Railway private networking)
 // while the browser keeps using the public NEXT_PUBLIC_API_URL.
-const BASE_URL = (
+export const SERVER_API_URL = (
   process.env.API_INTERNAL_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:8000/api/v1"
@@ -69,7 +83,7 @@ const BASE_URL = (
 async function list<T>(path: string): Promise<T[]> {
   // page_size=100 is the API's max. The catalogue is a handful of rows; if
   // it ever exceeds that, this needs real pagination, not a bigger number.
-  const res = await fetch(`${BASE_URL}${path}?page_size=100`, {
+  const res = await fetch(`${SERVER_API_URL}${path}?page_size=100`, {
     headers: { Accept: "application/json" },
     // Fail soft must also cover a hung API, not only an erroring one.
     signal: AbortSignal.timeout(5_000),
@@ -95,9 +109,12 @@ export async function fetchCatalogue(): Promise<Catalogue> {
       list<Engineer>("/studio/engineers/"),
       list<Service>("/studio/services/"),
     ]);
-    return { rooms, engineers, services, unavailable: false };
+    // Packages load on their own: an optional section must not take the
+    // rooms and prices down with it.
+    const packages = await list<Package>("/studio/packages/").catch(() => [] as Package[]);
+    return { rooms, engineers, services, packages, unavailable: false };
   } catch {
-    return { rooms: [], engineers: [], services: [], unavailable: true };
+    return { rooms: [], engineers: [], services: [], packages: [], unavailable: true };
   }
 }
 

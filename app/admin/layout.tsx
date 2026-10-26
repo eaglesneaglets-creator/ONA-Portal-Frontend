@@ -9,6 +9,8 @@ import {
   CreditCard,
   FolderKanban,
   LayoutDashboard,
+  MessageCircleQuestion,
+  Store,
   Star,
   UserRoundCog,
   Users,
@@ -44,6 +46,13 @@ const GROUPS: NavGroup[] = [
       { href: "/admin/professionals", label: "Professionals", icon: UserRoundCog },
       { href: "/admin/customers", label: "Customers", icon: Users },
       { href: "/admin/reviews", label: "Reviews", icon: Star, pending: true },
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      { href: "/admin/catalogue", label: "Studio & prices", icon: Store },
+      { href: "/admin/content", label: "Questions (FAQ)", icon: MessageCircleQuestion },
     ],
   },
 ];

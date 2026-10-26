@@ -41,7 +41,7 @@ export function SiteFooter() {
           </h2>
           <ul className="space-y-2 text-[14px] text-ink-dim">
             <li><Link className="text-ink-dim hover:text-ink" href="/#how">How booking works</Link></li>
-            <li><Link className="text-ink-dim hover:text-ink" href="/#faq">Questions</Link></li>
+            <li><Link className="text-ink-dim hover:text-ink" href="/faqs">Questions</Link></li>
             <li>Accra, Ghana · payments in GHS</li>
           </ul>
         </nav>

@@ -14,6 +14,7 @@
  */
 
 import {
+  Banknote,
   CheckCircle2,
   CircleCheckBig,
   Eye,
@@ -22,6 +23,7 @@ import {
   MoreHorizontal,
   Phone,
   TriangleAlert,
+  Undo2,
   UserPlus,
   XCircle,
   type LucideIcon,
@@ -61,9 +63,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   adminApi,
   type BookingAction,
+  PAYMENT_METHODS,
+  type PaymentMethod,
   type Professional,
   type StaffBooking,
   type StaffBookingDetail,
+  type StaffTransaction,
 } from "@/lib/api/admin";
 import { downloadDocument, fmtDay, fmtShortDay, fmtTime } from "@/lib/api/bookings";
 import { ApiError } from "@/lib/api/errors";
@@ -588,7 +593,12 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
                         <span className="text-[12.5px] font-bold text-ink-dim">{t.status_display}</span>
                       </div>
                       <p className="text-[12.5px] text-ink-mute">
-                        {t.provider_display}
+                        {t.is_manual ? (
+                          <span className="mr-1 rounded-pill bg-info-bg px-2 py-0.5 font-bold text-ona-blue">
+                            Recorded by staff
+                          </span>
+                        ) : null}
+                        {t.is_manual ? t.method_display : t.provider_display}
                         {t.provider_ref ? ` · ${t.provider_ref}` : ""} · {fmtShortDay(t.created_at)}
                       </p>
                       <p className="text-[12.5px] text-ink-mute">
@@ -601,16 +611,20 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
                               <span className="text-ink-dim">
                                 {e.entry_type_display}
                                 {e.commission ? ` (ONA commission ${e.commission.amount_display})` : ""}
+                                {e.recorded_by_staff ? ` · by ${e.created_by_email}` : ""}
+                                {e.note ? <span className="block text-ink-mute">“{e.note}”</span> : null}
                               </span>
                               <span className="tabular-nums text-ink">{e.amount_display}</span>
                             </li>
                           ))}
                         </ul>
                       ) : null}
+                      <RecordRefund txn={t} />
                     </li>
                   ))}
                 </ul>
               )}
+              <RecordPayment key={`${d.id}-${d.updated_at}-${d.paid_pesewas}`} booking={d} />
             </Section>
 
             <Section title="History">
@@ -757,6 +771,162 @@ function ProfessionalSection({ booking: d }: { booking: StaffBookingDetail }) {
         </Button>
       )}
     </Section>
+  );
+}
+
+/* ── Money recorded by staff (Task 16) ──────────────────────────────────── */
+
+function RecordPayment({ booking: d }: { booking: StaffBookingDetail }) {
+  const { updated } = useConsole();
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState(pesewasToInput(d.outstanding_pesewas));
+  const [method, setMethod] = useState<PaymentMethod>("mobile_money");
+  const [reference, setReference] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (d.status === "cancelled" || d.outstanding_pesewas <= 0) return null;
+  if (!open) {
+    return (
+      <Button variant="outline" size="sm" className="mt-3 h-11 md:h-8" onClick={() => setOpen(true)}>
+        <Banknote aria-hidden="true" />
+        Record a payment
+      </Button>
+    );
+  }
+
+  async function save() {
+    const pesewas = parseGhsToPesewas(amount);
+    if (!pesewas) {
+      setError("Enter the amount in cedis, e.g. 200 or 200.50.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await adminApi.recordPayment(d.id, {
+        amount_pesewas: pesewas,
+        method,
+        reference: reference.trim(),
+        note: note.trim(),
+      });
+      updated(`Payment recorded on ${r.reference}. Receipt sent to the customer.`);
+    } catch (err) {
+      setError(errorText(err));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 grid gap-3 rounded-lg border border-border-soft p-3" role="group" aria-label="Record a payment">
+      <p className="text-[13px] text-ink-dim">
+        Money ONA has already received outside the site. Still owed: <b className="text-ink">{d.outstanding_display}</b>.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-1.5">
+          <Label htmlFor="pay-amount">Amount (GHS)</Label>
+          <Input id="pay-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-11 md:h-9" />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="pay-method">How it was paid</Label>
+          <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
+            <SelectTrigger id="pay-method" className="h-11 w-full md:h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAYMENT_METHODS.map((m) => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="pay-ref">Reference {method === "cash" ? "(optional)" : "(MoMo or bank reference)"}</Label>
+        <Input id="pay-ref" value={reference} onChange={(e) => setReference(e.target.value)} className="h-11 md:h-9" />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="pay-note">Note (staff only, optional)</Label>
+        <Input id="pay-note" value={note} maxLength={255} onChange={(e) => setNote(e.target.value)} className="h-11 md:h-9" />
+      </div>
+      {error ? <FormError message={error} /> : null}
+      <div className="flex gap-2">
+        <Button className="h-11 md:h-9" disabled={busy} onClick={() => void save()}>
+          {busy ? "Recording…" : "Record payment"}
+        </Button>
+        <Button variant="outline" className="h-11 md:h-9" disabled={busy} onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function RecordRefund({ txn }: { txn: StaffTransaction }) {
+  const { updated } = useConsole();
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState(pesewasToInput(txn.held_pesewas));
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (txn.status !== "succeeded" || txn.held_pesewas <= 0) return null;
+  if (!open) {
+    return (
+      <Button variant="ghost" size="sm" className="mt-1 h-11 px-2 text-err md:h-8" onClick={() => setOpen(true)}>
+        <Undo2 aria-hidden="true" />
+        Record a refund
+      </Button>
+    );
+  }
+
+  async function save() {
+    const pesewas = parseGhsToPesewas(amount);
+    if (!pesewas) {
+      setError("Enter the amount in cedis.");
+      return;
+    }
+    if (!note.trim()) {
+      setError("Say how the money was returned, e.g. the MoMo reference.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await adminApi.recordRefund(txn.id, pesewas, note.trim());
+      updated(`Refund recorded on ${txn.booking.reference}. The customer has been emailed.`);
+    } catch (err) {
+      setError(errorText(err));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 grid gap-2 rounded-md bg-err-bg/60 p-3" role="group" aria-label="Record a refund">
+      <p className="text-[12.5px] text-ink-dim">
+        Record money ONA has <b>already</b> sent back. This does not send it. Up to {txn.held_display}.
+      </p>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`refund-amount-${txn.id}`}>Amount refunded (GHS)</Label>
+        <Input id={`refund-amount-${txn.id}`} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-11 bg-surface md:h-9" />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor={`refund-note-${txn.id}`}>How it was returned</Label>
+        <Input id={`refund-note-${txn.id}`} value={note} maxLength={255} placeholder="e.g. MoMo to 024…, ref R-123" onChange={(e) => setNote(e.target.value)} className="h-11 bg-surface md:h-9" />
+      </div>
+      {error ? <FormError message={error} /> : null}
+      <div className="flex gap-2">
+        <Button className="h-11 bg-err text-white hover:bg-err/90 md:h-9" disabled={busy} onClick={() => void save()}>
+          {busy ? "Recording…" : "Record refund"}
+        </Button>
+        <Button variant="outline" className="h-11 md:h-9" disabled={busy} onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </div>
   );
 }
 

@@ -19,6 +19,7 @@ import { LandingFaq } from "@/components/landing/faq";
 import { SiteFooter } from "@/components/public/site-footer";
 import { BOOK_HREF, SiteHeader } from "@/components/public/site-header";
 import { Button } from "@/components/ui/button";
+import { fetchFaqs } from "@/lib/api/content";
 import { fetchCatalogue, type Room } from "@/lib/api/studio";
 
 /**
@@ -66,7 +67,7 @@ const STEPS = [
 const roomHref = (r: Room) => `/register?next=${encodeURIComponent(`/customer/book?room=${r.id}`)}`;
 
 export default async function Home() {
-  const { rooms, unavailable } = await fetchCatalogue();
+  const [{ rooms, unavailable }, faqs] = await Promise.all([fetchCatalogue(), fetchFaqs()]);
   const featured = rooms.slice(0, 3);
 
   return (
@@ -251,7 +252,8 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 7 · Questions */}
+        {/* 7 · Questions — staff-edited; the section waits for real answers */}
+        {faqs && faqs.length ? (
         <section id="faq" aria-labelledby="faq-h" className={`scroll-mt-20 bg-surface ${SECTION}`}>
           <div className={`${WRAP} grid gap-10 lg:grid-cols-[1fr_1.6fr]`}>
             <div>
@@ -263,9 +265,17 @@ export default async function Home() {
                 inline
               />
             </div>
-            <LandingFaq />
+            <div>
+              <LandingFaq items={faqs.slice(0, 6)} />
+              {faqs.length > 6 ? (
+                <Link href="/faqs" className="mt-4 inline-flex min-h-11 items-center font-bold text-ona-red hover:underline">
+                  All {faqs.length} questions <ArrowRight aria-hidden="true" className="ml-1 size-4" />
+                </Link>
+              ) : null}
+            </div>
           </div>
         </section>
+        ) : null}
 
         {/* 8 · Closing call to action */}
         <section className={`bg-surface pb-[clamp(72px,10vw,128px)]`}>

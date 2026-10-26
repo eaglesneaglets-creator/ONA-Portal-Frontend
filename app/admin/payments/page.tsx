@@ -142,7 +142,16 @@ function PaymentTable({ rows }: { rows: StaffTransaction[] }) {
                 <p className="text-[12.5px] text-ink-mute">{t.customer.email}</p>
               </TableCell>
               <TableCell>
-                <p className="text-ink">{t.provider_display}</p>
+                {t.is_manual ? (
+                  <>
+                    <span className="inline-flex rounded-pill bg-info-bg px-2 py-0.5 text-[11.5px] font-bold text-ona-blue">
+                      Recorded by staff
+                    </span>
+                    <p className="text-ink">{t.method_display}</p>
+                  </>
+                ) : (
+                  <p className="text-ink">{t.provider_display}</p>
+                )}
                 {t.provider_ref ? <p className="font-mono text-[12px] text-ink-mute">{t.provider_ref}</p> : null}
               </TableCell>
               <TableCell>
@@ -176,7 +185,7 @@ function PaymentCards({ rows }: { rows: StaffTransaction[] }) {
             <div className="min-w-0">
               <p className="font-bold text-ink">{t.customer.name}</p>
               <p className="text-[13px] text-ink-mute">
-                {fmtShortDay(t.created_at)} · {t.provider_display}
+                {fmtShortDay(t.created_at)} · {t.is_manual ? `${t.method_display} · recorded by staff` : t.provider_display}
               </p>
             </div>
             <b className="tabular-nums text-ink">{t.amount_display}</b>
