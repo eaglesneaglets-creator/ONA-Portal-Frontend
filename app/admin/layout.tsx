@@ -1,5 +1,17 @@
 "use client";
 
+import {
+  BarChart3,
+  CalendarDays,
+  CheckSquare,
+  CreditCard,
+  FolderKanban,
+  LayoutDashboard,
+  Star,
+  UserRoundCog,
+  Users,
+} from "lucide-react";
+
 import { PortalShell, type NavGroup } from "@/components/portal/portal-shell";
 import { RequireAuth } from "@/lib/auth/guard";
 
@@ -8,25 +20,25 @@ const GROUPS: NavGroup[] = [
   {
     label: "Overview",
     items: [
-      { href: "/admin", label: "Dashboard" },
-      { href: "/admin/analytics", label: "Analytics", pending: true },
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/admin/analytics", label: "Analytics", icon: BarChart3, pending: true },
     ],
   },
   {
     label: "Operations",
     items: [
-      { href: "/admin/approvals", label: "Approvals", pending: true },
-      { href: "/admin/bookings", label: "Bookings", pending: true },
-      { href: "/admin/payments", label: "Payments", pending: true },
-      { href: "/admin/projects", label: "Projects", pending: true },
+      { href: "/admin/approvals", label: "Approvals", icon: CheckSquare, pending: true },
+      { href: "/admin/bookings", label: "Bookings", icon: CalendarDays, pending: true },
+      { href: "/admin/payments", label: "Payments", icon: CreditCard, pending: true },
+      { href: "/admin/projects", label: "Projects", icon: FolderKanban, pending: true },
     ],
   },
   {
     label: "People",
     items: [
-      { href: "/admin/professionals", label: "Professionals", pending: true },
-      { href: "/admin/customers", label: "Customers", pending: true },
-      { href: "/admin/reviews", label: "Reviews", pending: true },
+      { href: "/admin/professionals", label: "Professionals", icon: UserRoundCog, pending: true },
+      { href: "/admin/customers", label: "Customers", icon: Users, pending: true },
+      { href: "/admin/reviews", label: "Reviews", icon: Star, pending: true },
     ],
   },
 ];

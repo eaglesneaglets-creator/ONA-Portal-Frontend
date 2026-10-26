@@ -1,10 +1,12 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuthStore } from "@/lib/auth/store";
+import { setViewportMobile } from "@/vitest.setup";
 import { PortalShell, type NavGroup } from "../portal-shell";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/customer" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/customer/bookings" }));
 
 const groups: NavGroup[] = [{
   label: "Workspace",
@@ -13,6 +15,15 @@ const groups: NavGroup[] = [{
     { href: "/customer/bookings", label: "Bookings" },
   ],
 }];
+
+// The root layout provides TooltipProvider; the shell assumes it.
+function renderShell() {
+  return render(
+    <TooltipProvider>
+      <PortalShell role="customer" groups={groups}><p>Content</p></PortalShell>
+    </TooltipProvider>,
+  );
+}
 
 beforeEach(() => {
   useAuthStore.setState({
@@ -25,25 +36,33 @@ beforeEach(() => {
   });
 });
 
-describe("PortalShell mobile navigation", () => {
-  it("exposes every portal destination from the compact header", () => {
-    render(<PortalShell role="customer" groups={groups}><p>Content</p></PortalShell>);
-
-    const opener = screen.getByRole("button", { name: "Open navigation" });
-    expect(opener.getAttribute("aria-expanded")).toBe("false");
-    fireEvent.click(opener);
-
-    const nav = screen.getByRole("navigation", { name: "Workspace mobile" });
-    expect(within(nav).getByRole("link", { name: "Overview" })).toBeDefined();
-    expect(within(nav).getByRole("link", { name: "Bookings" })).toBeDefined();
-    expect(opener.getAttribute("aria-expanded")).toBe("true");
+describe("PortalShell", () => {
+  it("titles the page after the most specific matching nav item", () => {
+    renderShell();
+    // "/customer" is a prefix of the path, but "/customer/bookings" claims it.
+    expect(screen.getByTestId("shell-title").textContent).toBe("Bookings");
+    expect(screen.getByRole("link", { name: "Bookings" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: "Overview" }).getAttribute("aria-current")).toBeNull();
   });
 
-  it("can be dismissed without navigating", () => {
-    render(<PortalShell role="customer" groups={groups}><p>Content</p></PortalShell>);
+  it("on a phone, exposes every destination from a drawer", () => {
+    setViewportMobile(true);
+    renderShell();
+
+    expect(screen.queryByRole("dialog", { name: "Navigation" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
-    const nav = screen.getByRole("navigation", { name: "Workspace mobile" });
-    fireEvent.click(within(nav).getByRole("button", { name: "Close navigation" }));
-    expect(screen.queryByRole("navigation", { name: "Workspace mobile" })).toBeNull();
+
+    const drawer = screen.getByRole("dialog", { name: "Navigation" });
+    expect(within(drawer).getByRole("link", { name: "Overview" })).toBeDefined();
+    expect(within(drawer).getByRole("link", { name: "Bookings" })).toBeDefined();
+  });
+
+  it("on a phone, closes the drawer once a destination is chosen", () => {
+    setViewportMobile(true);
+    renderShell();
+    fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
+    const drawer = screen.getByRole("dialog", { name: "Navigation" });
+    fireEvent.click(within(drawer).getByRole("link", { name: "Overview" }));
+    expect(screen.queryByRole("dialog", { name: "Navigation" })).toBeNull();
   });
 });

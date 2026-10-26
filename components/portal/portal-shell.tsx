@@ -1,42 +1,67 @@
 /**
- * The shell all three portals share.
+ * The shell every portal shares — UI v2 (docs/design/ui-v2.md).
  *
- * Ports the sidebar + topbar from the approved designs. One component with a
- * nav table per role, not three copies — the design system already proved
- * that point: `.card` was defined four separate times across the HTML
- * prototypes before it was extracted.
+ * The industry-standard dashboard frame (Linear, Vercel, shadcn dashboard-01):
+ * a collapsible sidebar (icon rail on desktop, a sheet on phones) beside a
+ * slim header carrying the page title and the user menu. One component with a
+ * nav table per role — not three copies.
  *
- * Content is intentionally empty at this stage. Task 14 is the auth slice;
- * the portals only have to prove that the right person lands in the right
- * shell.
+ * Built on shadcn's Sidebar, coloured entirely by the ONA tokens it is mapped
+ * to in globals.css. Tap targets stay at the 44px floor on phones (ADR-013);
+ * the denser 32px rows only apply where there is a mouse.
  */
 
 "use client";
 
+import { ChevronsUpDown, LogOut, ShieldCheck, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import type { Role } from "@/lib/auth/roles";
 import { useAuthStore } from "@/lib/auth/store";
 
 export interface NavItem {
   href: string;
   label: string;
-  /** Unread or pending count, shown as a pill. */
+  icon?: LucideIcon;
+  /** Unread or pending count, shown as a badge. */
   count?: number;
   /**
    * The destination has not been built yet.
    *
    * Next prefetches the RSC payload for every <Link> in the viewport, so a
    * link to a route that does not exist fires a background 404 on every page
-   * load. Verified on staging: six per portal page. Users never saw them, but
-   * a console full of expected 404s is where a real one goes unnoticed.
-   *
-   * The link stays visible and clickable — the sidebar describes the shape of
-   * the portal, and removing entries would misrepresent it. Only the
-   * speculative fetch is suppressed.
+   * load. The link stays visible — the sidebar describes the shape of the
+   * portal — only the speculative fetch is suppressed.
    *
    * Delete this flag from an item when its page ships.
    */
@@ -54,228 +79,175 @@ const ROLE_LABEL: Record<Role, string> = {
   admin: "Admin console",
 };
 
+function isActive(pathname: string, href: string, all: NavItem[]): boolean {
+  if (pathname === href) return true;
+  if (!pathname.startsWith(`${href}/`)) return false;
+  // A parent ("/admin") is active on its children only when no more specific
+  // nav item claims the path ("/admin/bookings").
+  return !all.some((i) => i.href !== href && i.href.startsWith(href) &&
+    (pathname === i.href || pathname.startsWith(`${i.href}/`)));
+}
+
 export function PortalShell({
   role,
   groups,
   children,
+  actions,
 }: {
   role: Role;
   groups: NavGroup[];
   children: React.ReactNode;
+  /** Right side of the header — e.g. the primary action for this portal. */
+  actions?: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const mobileNavId = `mobile-${role}-navigation`;
+  const all = groups.flatMap((g) => g.items);
+  const current = all.find((i) => isActive(pathname, i.href, all));
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[248px_minmax(0,1fr)]">
-      {mobileNavOpen && (
-        <>
-          <button
-            type="button"
-            aria-label="Close navigation"
-            onClick={() => setMobileNavOpen(false)}
-            className="fixed inset-0 z-40 bg-ink/45 lg:hidden"
-          />
-          <nav
-            id={mobileNavId}
-            aria-label={`${ROLE_LABEL[role]} mobile`}
-            className="fixed inset-y-0 left-0 z-50 flex w-[min(84vw,320px)] flex-col overflow-y-auto bg-ona-gradient p-3 text-white shadow-pop lg:hidden"
-          >
-            <div className="mb-3 flex items-center gap-2">
-              <Link
-                href="/"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex min-h-[var(--tap-min)] flex-1 items-center gap-2.5 rounded-pill bg-white px-3"
-              >
-                <Image src="/ona-icon.png" alt="" width={32} height={32} />
-                <span className="font-black tracking-tight text-ink">ONA Records</span>
-              </Link>
-              <button
-                type="button"
-                aria-label="Close navigation"
-                onClick={() => setMobileNavOpen(false)}
-                className="flex h-11 w-11 flex-none items-center justify-center rounded-md text-2xl text-white hover:bg-white/10"
-              >
-                <span aria-hidden="true">×</span>
-              </button>
+    <SidebarProvider>
+      <Sidebar collapsible="icon" aria-label={ROLE_LABEL[role]}>
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild tooltip="ONA Records home">
+                <Link href="/">
+                  <Image src="/ona-icon.png" alt="" width={32} height={32} className="rounded-md" />
+                  <span className="grid leading-tight">
+                    <span className="text-[15px] font-black tracking-tight text-ink">ONA Records</span>
+                    <span className="text-xs text-ink-mute">{ROLE_LABEL[role]}</span>
+                  </span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+
+        <SidebarContent>
+          {groups.map((group) => (
+            <SidebarGroup key={group.label}>
+              {/* A single group whose name repeats the role label is noise;
+                  only label groups when there is more than one to tell apart. */}
+              {groups.length > 1 ? <SidebarGroupLabel>{group.label}</SidebarGroupLabel> : null}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <NavLink key={item.href} item={item} active={current?.href === item.href} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </SidebarContent>
+
+        <SidebarFooter>
+          {/* The customer is the one whose money is held, so the reassurance
+              sits in their sidebar specifically. Hidden on the icon rail. */}
+          {role === "customer" ? (
+            <div className="flex gap-2.5 rounded-lg bg-surface-alt p-3 text-xs leading-snug text-ink-dim group-data-[collapsible=icon]:hidden">
+              <ShieldCheck aria-hidden="true" className="mt-px size-4 flex-none text-ona-blue" />
+              <span>
+                <b className="block font-bold text-ink">Protected by ONA</b>
+                Payments and identities stay on-platform.
+              </span>
             </div>
+          ) : null}
+          <UserMenu role={role} />
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
 
-            <p className="px-3 pb-2 text-[10.5px] font-bold tracking-[0.16em] text-white/65">
-              {ROLE_LABEL[role].toUpperCase()}
-            </p>
-            {groups.map((group) => (
-              <div key={group.label} className="mb-2">
-                {groups.length > 1 && (
-                  <p className="px-3 pb-1 pt-2 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white/55">
-                    {group.label}
-                  </p>
-                )}
-                <ul>
-                  {group.items.map((item) => {
-                    const active =
-                      pathname === item.href || pathname.startsWith(`${item.href}/`);
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          // See NavItem.pending — suppresses the RSC prefetch
-                          // for routes that do not exist yet.
-                          prefetch={!item.pending}
-                          aria-current={active ? "page" : undefined}
-                          onClick={() => setMobileNavOpen(false)}
-                          className={`flex min-h-[var(--tap-min)] items-center rounded-md px-3 text-[13.5px] ${
-                            active
-                              ? "bg-white font-bold text-ink"
-                              : "text-white/85 hover:bg-white/10 hover:text-white"
-                          }`}
-                        >
-                          {item.label}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </nav>
-        </>
-      )}
+      <SidebarInset className="bg-surface-alt">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border-default bg-surface/90 px-3 backdrop-blur sm:px-4">
+          <SidebarTrigger aria-label="Open navigation" className="size-11 md:size-8" />
+          <Separator orientation="vertical" className="mx-1 data-vertical:h-5 data-vertical:self-center" />
+          {/* Where-am-I label, not a heading: each page owns its single <h1>. */}
+          <p data-testid="shell-title" className="min-w-0 flex-1 truncate text-[15px] font-bold text-ink">
+            {current?.label ?? ROLE_LABEL[role]}
+          </p>
+          {actions}
+        </header>
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
 
-      {/* The sidebar is hidden below 1024px in the approved design; a
-          mobile nav is a later task, not part of the auth slice. */}
-      <nav
-        aria-label={ROLE_LABEL[role]}
-        className="bg-ona-gradient hidden flex-col p-3 text-white lg:flex"
+function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const { isMobile, setOpenMobile } = useSidebar();
+  const Icon = item.icon;
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        isActive={active}
+        tooltip={item.label}
+        className="h-11 md:h-8 data-active:text-ona-red"
       >
         <Link
-          href="/"
-          className="mb-2 flex items-center gap-2.5 rounded-pill bg-white px-3 py-2.5"
+          href={item.href}
+          prefetch={item.pending ? false : undefined}
+          aria-current={active ? "page" : undefined}
+          onClick={() => isMobile && setOpenMobile(false)}
         >
-          <Image src="/ona-icon.png" alt="" width={34} height={34} />
-          <span>
-            <span className="block text-[15px] font-black leading-none tracking-tight text-ink">
-              ONA
-            </span>
-            <span className="mt-0.5 block text-[8px] tracking-[0.16em] text-ink-mute">
-              RECORDS
-            </span>
-          </span>
+          {Icon ? <Icon aria-hidden="true" /> : null}
+          <span>{item.label}</span>
         </Link>
+      </SidebarMenuButton>
+      {item.count ? (
+        <SidebarMenuBadge className="bg-ona-red text-white">
+          {item.count}
+          <span className="sr-only"> pending</span>
+        </SidebarMenuBadge>
+      ) : null}
+    </SidebarMenuItem>
+  );
+}
 
-        <p className="px-3 pb-3.5 text-[10.5px] font-bold tracking-[0.16em] text-white/65">
-          {ROLE_LABEL[role].toUpperCase()}
-        </p>
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("") || "·";
+}
 
-        {groups.map((group) => (
-          <div key={group.label} className="mb-1">
-            {/* A single group whose name repeats the role label is noise —
-                the customer portal read "WORKSPACE" twice in a row. Only
-                label groups when there is more than one to tell apart. */}
-            {groups.length > 1 && (
-              <p className="px-3 pb-1.5 pt-2.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white/55">
-                {group.label}
-              </p>
-            )}
-            <ul>
-              {group.items.map((item) => {
-                const active =
-                  pathname === item.href || pathname.startsWith(`${item.href}/`);
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      // See NavItem.pending — suppresses the RSC prefetch
-                      // for routes that do not exist yet.
-                      prefetch={item.pending ? false : undefined}
-                      aria-current={active ? "page" : undefined}
-                      className={`flex min-h-[var(--tap-min)] items-center gap-2.5 rounded-md px-3 text-[13.5px] transition-colors ${
-                        active
-                          ? "bg-white font-bold text-ink"
-                          : "text-white/85 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      {item.label}
-                      {item.count ? (
-                        <span className="ml-auto rounded-pill bg-ona-red px-2 py-0.5 text-[10.5px] font-bold text-white">
-                          {item.count}
-                          <span className="sr-only"> pending</span>
-                        </span>
-                      ) : null}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-
-        {/* The customer is the one whose money is held, so the reassurance
-            sits in their sidebar specifically. */}
-        {role === "customer" && (
-          <p className="mt-auto flex gap-2.5 rounded-md bg-white/10 p-3.5 text-[10.5px] leading-snug text-white/85">
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.75}
-              className="mt-px h-4 w-4 flex-none"
-            >
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-            <span>
-              <b className="block font-bold text-white">Protected by ONA</b>
-              Payments and identities stay on-platform.
-            </span>
-          </p>
-        )}
-      </nav>
-
-      <div className="flex min-w-0 flex-col">
-        <header className="flex items-center gap-3 border-b border-border-default bg-surface px-4 py-3 sm:px-6">
-          <button
-            type="button"
-            aria-label="Open navigation"
-            aria-controls={mobileNavId}
-            aria-expanded={mobileNavOpen}
-            onClick={() => setMobileNavOpen(true)}
-            className="flex h-11 w-11 flex-none items-center justify-center rounded-md border border-border-default text-ink lg:hidden"
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              className="h-5 w-5"
-            >
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          </button>
-          <span className="flex-1" />
-
-          <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-            <span className="min-w-0 text-right">
-              <span className="block max-w-28 truncate text-[13.5px] font-bold text-ink sm:max-w-none">
-                {user?.display_name ?? "…"}
+function UserMenu({ role }: { role: Role }) {
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const name = user?.display_name ?? "…";
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton size="lg" aria-label={`Account menu for ${name}`}>
+              <Avatar className="size-8 rounded-lg">
+                <AvatarFallback className="rounded-lg bg-ona-blue text-xs font-bold text-white">
+                  {initials(name)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="grid min-w-0 flex-1 leading-tight">
+                <span className="truncate text-sm font-bold text-ink">{name}</span>
+                <span className="truncate text-xs text-ink-mute">{user?.email ?? ROLE_LABEL[role]}</span>
               </span>
-              <span className="block text-[10.5px] text-ink-mute">{ROLE_LABEL[role]}</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => void logout()}
-              className="min-h-[var(--tap-min)] flex-none rounded-md border border-border-default px-3 text-[13.5px] font-bold text-ink-dim transition-colors hover:border-ink-mute hover:text-ink sm:px-4"
-            >
+              <ChevronsUpDown aria-hidden="true" className="ml-auto" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start" className="min-w-56">
+            <DropdownMenuLabel className="font-normal">
+              <span className="block text-sm font-bold text-ink">{name}</span>
+              <span className="block text-xs text-ink-mute">{ROLE_LABEL[role]}</span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => void logout()} className="min-h-11 md:min-h-8">
+              <LogOut aria-hidden="true" />
               Sign out
-            </button>
-          </div>
-        </header>
-
-        <main className="flex-1 bg-surface-alt px-4 py-6 sm:px-6 sm:py-8">{children}</main>
-      </div>
-    </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }

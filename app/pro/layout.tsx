@@ -1,5 +1,15 @@
 "use client";
 
+import {
+  BadgeCheck,
+  FolderKanban,
+  Inbox,
+  LayoutDashboard,
+  MessageSquare,
+  Settings,
+  UserRound,
+} from "lucide-react";
+
 import { PortalShell, type NavGroup } from "@/components/portal/portal-shell";
 import { RequireAuth } from "@/lib/auth/guard";
 
@@ -8,18 +18,18 @@ const GROUPS: NavGroup[] = [
   {
     label: "Work",
     items: [
-      { href: "/pro", label: "Dashboard" },
-      { href: "/pro/requests", label: "Open requests", pending: true },
-      { href: "/pro/projects", label: "My projects", pending: true },
-      { href: "/pro/messages", label: "Messages", pending: true },
+      { href: "/pro", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/pro/requests", label: "Open requests", icon: Inbox, pending: true },
+      { href: "/pro/projects", label: "My projects", icon: FolderKanban, pending: true },
+      { href: "/pro/messages", label: "Messages", icon: MessageSquare, pending: true },
     ],
   },
   {
     label: "Profile",
     items: [
-      { href: "/pro/profile", label: "My profile", pending: true },
-      { href: "/pro/status", label: "Approval status", pending: true },
-      { href: "/pro/settings", label: "Settings", pending: true },
+      { href: "/pro/profile", label: "My profile", icon: UserRound, pending: true },
+      { href: "/pro/status", label: "Approval status", icon: BadgeCheck, pending: true },
+      { href: "/pro/settings", label: "Settings", icon: Settings, pending: true },
     ],
   },
 ];
