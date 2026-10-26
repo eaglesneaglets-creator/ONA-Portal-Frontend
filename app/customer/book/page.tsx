@@ -20,6 +20,7 @@ import {
   type Slot,
 } from "@/lib/api/bookings";
 import { formatDuration, type Engineer, type Room, type Service } from "@/lib/api/studio";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/booking-draft";
 
 /**
  * Booking flow — /customer/book
@@ -37,6 +38,10 @@ import { formatDuration, type Engineer, type Room, type Service } from "@/lib/ap
  * from slots the API already labelled — the page never reasons about
  * overlap. If two people race for the same hour the API answers 409; the
  * calendar reloads so the taken slot shows as booked.
+ *
+ * A session that expires while confirming no longer loses the booking:
+ * the choices are kept for this tab (lib/booking-draft.ts) and offered again,
+ * re-checked against the calendar, once the customer has signed back in.
  *
  * Fixed after the 2026-10-13 review: a failed submit or an empty calendar
  * crashed the page (stale `start`/`day` against empty slots); re-picking the
@@ -98,6 +103,9 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
   const [pending, setPending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [done, setDone] = useState<Booking | null>(null);
+  // A start time from a kept draft, waiting for the calendar to confirm it.
+  const resumeStart = useRef<string | null>(null);
+  const [resumed, setResumed] = useState(false);
 
   const stepRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -110,6 +118,22 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
       .then((c) => {
         if (!live) return;
         setCatalogue(c);
+        // A booking interrupted by an expired session comes back first.
+        const draft = loadDraft();
+        const dr = draft && c.rooms.find((r) => r.id === draft.room);
+        const de = draft && c.engineers.find((e) => e.id === draft.engineer);
+        const ds = draft && c.services.find((s) => s.id === draft.service);
+        if (draft && dr && de && ds) {
+          setRoom(dr);
+          setEngineer(de);
+          setService(ds);
+          setHours(draft.hours);
+          setNotes(draft.notes);
+          resumeStart.current = draft.start_at;
+          setStep(3);
+          return;
+        }
+        clearDraft();
         const wanted = params.get("room");
         const pre = wanted ? c.rooms.find((r) => r.id === wanted) : undefined;
         if (pre) {
@@ -135,6 +159,21 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
         if (!live) return;
         setSlots(cal.slots);
         setCalendarFailed(false);
+        // Resuming a kept draft: offer the same time only if it is still free.
+        const wanted = resumeStart.current;
+        if (wanted) {
+          resumeStart.current = null;
+          clearDraft();
+          const slot = cal.slots.find((sl) => sl.start_at === wanted && sl.state === "available");
+          if (slot) {
+            setDay(studioDate(new Date(slot.start_at)));
+            setStart(slot);
+            setResumed(true);
+            setStep(4);
+          } else {
+            setSubmitError("The time you picked is no longer free. Please choose another.");
+          }
+        }
       })
       .catch(() => {
         if (!live) return;
@@ -218,6 +257,9 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
     if (!room || !engineer || !service || !start || pending) return;
     setPending(true);
     setSubmitError(null);
+    setResumed(false);
+    // Kept only if this attempt fails because the session ran out.
+    saveDraft({ room: room.id, engineer: engineer.id, service: service.id, start_at: start.start_at, hours, notes });
     try {
       const booking = await createBooking({
         room: room.id,
@@ -227,8 +269,13 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
         hours,
         notes: notes.trim() || undefined,
       });
+      clearDraft();
       setDone(booking);
     } catch (err) {
+      // Signed out mid-confirm: keep the draft — the guard is already
+      // sending the customer to sign in, and they will come back to it.
+      if (err instanceof ApiError && err.isAuthError) return;
+      clearDraft();
       // Whatever the reason, the calendar may have changed under us: drop
       // the chosen time, reload, and go back to the time step.
       setSubmitError(messageFrom(err));
@@ -258,6 +305,11 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
       </p>
 
       {loadError ? <FormError message={loadError} /> : null}
+      {resumed ? (
+        <p role="status" className="mb-4 rounded-md bg-info-bg px-4 py-3 text-[14px] text-info">
+          Welcome back — we kept your booking while you signed in again. Check it and confirm.
+        </p>
+      ) : null}
       <div ref={errorRef} tabIndex={-1} className="outline-none">
         <FormError message={submitError} />
       </div>

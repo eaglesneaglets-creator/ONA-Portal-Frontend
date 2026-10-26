@@ -63,8 +63,11 @@ test("staff book for a customer and add a professional; the customer sees it", a
   });
   expect(pro.status(), await pro.text()).toBe(201);
 
-  // A random slot well away from the other specs.
-  const day = new Date(Date.now() + (50 + Math.floor(Math.random() * 38)) * 86_400_000).toISOString().slice(0, 10);
+  // A random slot well away from the other specs. Earlier runs leave their
+  // bookings in the database, so a taken slot is retried on another day —
+  // the refusal itself is correct behaviour, not a failure.
+  const randomDay = () =>
+    new Date(Date.now() + (50 + Math.floor(Math.random() * 38)) * 86_400_000).toISOString().slice(0, 10);
   const hour = 9 + Math.floor(Math.random() * 10);
 
   // ── Staff book it ─────────────────────────────────────
@@ -78,11 +81,18 @@ test("staff book for a customer and add a professional; the customer sees it", a
 
   await pick(page, "Room", /Studio B/);
   await pick(page, "Engineer", /Engineer Three/);
-  await page.getByLabel("Date").fill(day);
   await pick(page, "Starts at", `${String(hour).padStart(2, "0")}:00`);
-  await page.getByRole("button", { name: "Book session" }).click();
 
   const toast = page.locator("[data-sonner-toast]");
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await page.getByLabel("Date").fill(randomDay());
+    await page.getByRole("button", { name: "Book session" }).click();
+    const outcome = await Promise.race([
+      toast.filter({ hasText: /booked for Efua/ }).waitFor().then(() => "booked"),
+      page.getByText(/already booked/).first().waitFor().then(() => "taken"),
+    ]);
+    if (outcome === "booked") break;
+  }
   await expect(toast.filter({ hasText: /booked for Efua/ })).toBeVisible();
   await expect(page).toHaveURL(/\/admin\/bookings\?/);
   const ref = /ONA-[0-9A-F]{6}/.exec((await toast.filter({ hasText: /booked for/ }).textContent()) ?? "")?.[0] as string;
