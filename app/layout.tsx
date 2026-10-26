@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { Lato } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth/guard";
+import { cn } from "@/lib/utils";
+
 
 /**
  * Lato is brand-mandated: "Use Lato Sans Font for all our communications"
@@ -36,11 +40,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${lato.variable} h-full antialiased`}>
+    <html lang="en" className={cn("h-full", "antialiased", lato.variable, "font-sans")}>
       <body className="min-h-full flex flex-col">
         {/* Restores the session once, on boot. Public pages need this too —
             the homepage shows "Sign in" or the user's name depending on it. */}
-        <AuthProvider>{children}</AuthProvider>
+        <TooltipProvider delayDuration={200}>
+          <AuthProvider>{children}</AuthProvider>
+        </TooltipProvider>
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

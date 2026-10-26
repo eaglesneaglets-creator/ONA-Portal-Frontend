@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
 
 /* ===========================================================================
    ONA Records — design tokens
@@ -87,11 +90,51 @@
   /* Minimum touch target. 44px is the figure the audit held every control
      to after several were found at 32px and 38px. */
   --tap-min: 44px;
+
+  /*
+   * shadcn/ui semantic tokens, mapped onto the ONA palette (@theme above).
+   * shadcn components read these names; they point at the brand tokens so
+   * the identity guide stays the single source. Never put a raw colour here.
+   */
+  --radius: 0.625rem;                                   /* = 10px, ONA radius-md */
+  --background: var(--color-surface);
+  --foreground: var(--color-ink);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-ona-red);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-surface-sunk);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-surface-alt);
+  --muted-foreground: var(--color-ink-mute);
+  --accent: var(--color-surface-sunk);
+  --accent-foreground: var(--color-ink);
+  --destructive: var(--color-err);
+  --border: var(--color-border-default);
+  --input: var(--color-border-default);
+  --ring: var(--color-ona-blue);
+  /* Charts walk the brand gradient, blue to red. */
+  --chart-1: var(--color-ona-blue);
+  --chart-2: var(--color-ona-secondary);
+  --chart-3: var(--color-ona-median);
+  --chart-4: var(--color-ona-tertiary);
+  --chart-5: var(--color-ona-red);
+  --sidebar: var(--color-surface);
+  --sidebar-foreground: var(--color-ink-dim);
+  --sidebar-primary: var(--color-ona-red);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--color-surface-sunk);
+  --sidebar-accent-foreground: var(--color-ink);
+  --sidebar-border: var(--color-border-soft);
+  --sidebar-ring: var(--color-ona-blue);
 }
 
 @layer base {
   html {
     height: 100%;
+    @apply font-sans;
   }
 
   body {
@@ -99,6 +142,7 @@
     color: var(--color-ink);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    @apply bg-background text-foreground;
   }
 
   /* Every interactive element gets a visible focus ring in brand red.
@@ -107,6 +151,12 @@
   :focus-visible {
     outline: 2px solid var(--color-ona-red);
     outline-offset: 2px;
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 }
 
@@ -330,4 +380,41 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+@theme inline {
+  /* Lato is the brand face (identity guide), not the preset's Geist. */
+  --font-heading: var(--font-lato), system-ui, sans-serif;
+  --font-sans: var(--font-lato), system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
 }
