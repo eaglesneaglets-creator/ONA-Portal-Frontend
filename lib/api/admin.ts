@@ -36,6 +36,10 @@ export interface StaffBooking extends Booking {
   status_display: string;
   allowed_actions: BookingAction[];
   updated_at: string;
+  /** Staff view: the real name as well as the stage name. */
+  assigned_professional: { id: string; name: string; stage_name: string } | null;
+  created_by_email: string | null;
+  room_total_display: string;
 }
 
 export interface Commission {
@@ -123,6 +127,95 @@ export interface Overview {
   today: StaffBooking[];
 }
 
+export type RateType = "hourly" | "daily" | "per_song" | "per_project" | "per_event" | "negotiable";
+
+export const RATE_TYPES: { value: RateType; label: string }[] = [
+  { value: "hourly", label: "Per hour" },
+  { value: "daily", label: "Per day" },
+  { value: "per_song", label: "Per song" },
+  { value: "per_project", label: "Per project" },
+  { value: "per_event", label: "Per event" },
+  { value: "negotiable", label: "Negotiable" },
+];
+
+export interface Professional {
+  id: string;
+  name: string;
+  stage_name: string;
+  skills: string[];
+  rate_type: RateType;
+  rate_pesewas: number | null;
+  rate_display: string;
+  phone: string;
+  email: string;
+  notes: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ProfessionalInput = Pick<
+  Professional,
+  "name" | "stage_name" | "skills" | "rate_type" | "rate_pesewas" | "phone" | "email" | "notes" | "is_active"
+>;
+
+export type JobStatus = "requested" | "arranged" | "in_progress" | "completed" | "cancelled";
+
+export const JOB_STATUSES: { value: JobStatus; label: string }[] = [
+  { value: "requested", label: "Requested" },
+  { value: "arranged", label: "Arranged" },
+  { value: "in_progress", label: "In progress" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+export interface Job {
+  id: string;
+  reference: string;
+  customer: string;
+  customer_brief: { id: string; name: string; email: string; phone: string };
+  professional: string | null;
+  professional_brief: { id: string; name: string; stage_name: string } | null;
+  title: string;
+  brief: string;
+  status: JobStatus;
+  status_display: string;
+  due_on: string | null;
+  fee_pesewas: number | null;
+  fee_display: string;
+  notes: string;
+  created_by_email: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type JobInput = Partial<
+  Pick<Job, "customer" | "professional" | "title" | "brief" | "status" | "due_on" | "fee_pesewas" | "notes">
+>;
+
+export interface NewCustomer {
+  email: string;
+  first_name: string;
+  last_name?: string;
+  phone?: string;
+}
+
+export interface StaffBookingInput {
+  customer?: string;
+  new_customer?: NewCustomer;
+  room: string;
+  engineer: string;
+  service: string;
+  /** ISO datetime, on the hour, studio time. */
+  start_at: string;
+  hours: number;
+  notes?: string;
+  status: "pending" | "confirmed";
+  professional?: string | null;
+  professional_fee_pesewas?: number;
+  allow_outside_hours?: boolean;
+}
+
 type Query = Record<string, string | number | undefined | null>;
 
 function qs(params: Query): string {
@@ -149,4 +242,26 @@ export const adminApi = {
 
   payments: (q: { status?: string; search?: string; page?: number }) =>
     api.get<Page<StaffTransaction>>(`/admin/payments/${qs({ ...q, page_size: PAGE_SIZE })}`),
+
+  // Task 15 — manual brokering.
+  createBooking: (input: StaffBookingInput) =>
+    api.post<StaffBookingDetail>("/admin/bookings/", input, { retries: 0 }),
+  assign: (id: string, professional: string | null, professional_fee_pesewas: number) =>
+    api.post<StaffBookingDetail>(
+      `/admin/bookings/${id}/assign/`,
+      { professional, professional_fee_pesewas },
+      { retries: 0 },
+    ),
+
+  professionals: (q: { search?: string; is_active?: boolean; page?: number; page_size?: number }) =>
+    api.get<Page<Professional>>(`/admin/professionals/${qs({ page_size: PAGE_SIZE, ...q, is_active: q.is_active === undefined ? undefined : String(q.is_active) })}`),
+  createProfessional: (input: ProfessionalInput) =>
+    api.post<Professional>("/admin/professionals/", input, { retries: 0 }),
+  updateProfessional: (id: string, input: Partial<ProfessionalInput>) =>
+    api.patch<Professional>(`/admin/professionals/${id}/`, input, { retries: 0 }),
+
+  jobs: (q: { status?: string; open?: boolean; search?: string; page?: number }) =>
+    api.get<Page<Job>>(`/admin/jobs/${qs({ ...q, open: q.open ? "1" : undefined, page_size: PAGE_SIZE })}`),
+  createJob: (input: JobInput) => api.post<Job>("/admin/jobs/", input, { retries: 0 }),
+  updateJob: (id: string, input: JobInput) => api.patch<Job>(`/admin/jobs/${id}/`, input, { retries: 0 }),
 };

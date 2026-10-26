@@ -174,6 +174,7 @@ function BookingTable({ rows, onAct }: { rows: Booking[]; onAct: (p: Pending) =>
                 <p className="text-[13px] text-ink-mute">
                   {b.service.name} with {b.engineer.name} · <span className="whitespace-nowrap font-mono">{b.reference}</span>
                 </p>
+                <ProfessionalLine booking={b} />
               </TableCell>
               <TableCell>
                 <p className="text-ink">{fmtShortDay(b.start_at)}</p>
@@ -218,6 +219,7 @@ function BookingCards({ rows, onAct }: { rows: Booking[]; onAct: (p: Pending) =>
           <p className="mt-2 text-[13px] text-ink-mute">
             {b.service.name} with {b.engineer.name} · <span className="whitespace-nowrap font-mono">{b.reference}</span>
           </p>
+          <ProfessionalLine booking={b} />
           <div className="mt-3 flex items-center justify-between border-t border-border-soft pt-3">
             <StatusPill status={b.status} />
             <b className="tabular-nums text-ink">{b.total_display}</b>
@@ -225,6 +227,17 @@ function BookingCards({ rows, onAct }: { rows: Booking[]; onAct: (p: Pending) =>
         </li>
       ))}
     </ul>
+  );
+}
+
+/** A professional ONA arranged for the session (Task 15) — stage name and fee. */
+function ProfessionalLine({ booking: b }: { booking: Booking }) {
+  if (!b.professional) return null;
+  return (
+    <p className="mt-0.5 text-[13px] font-bold text-ona-blue">
+      With {b.professional.display_name}
+      {b.professional_fee_pesewas ? <span className="font-normal text-ink-mute"> · {b.professional_fee_display}</span> : null}
+    </p>
   );
 }
 

@@ -46,3 +46,17 @@ test("unknown route shows the 404 page", async ({ page }) => {
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/catalogue/i);
 });
+
+test("the password Show button sits inside its input, on phones too", async ({ page }) => {
+  // Regression: an unlayered `position: relative` (touch screens only)
+  // overrode the button's `absolute`, dropping it under the field.
+  await page.goto("/login");
+  const input = page.getByLabel(/^password/i);
+  const toggle = page.getByRole("button", { name: "Show" });
+  const i = await input.boundingBox();
+  const t = await toggle.boundingBox();
+  expect(i && t).toBeTruthy();
+  expect(t!.y).toBeGreaterThanOrEqual(i!.y - 1);
+  expect(t!.y + t!.height).toBeLessThanOrEqual(i!.y + i!.height + 1);
+  expect(t!.x + t!.width).toBeLessThanOrEqual(i!.x + i!.width + 1);
+});

@@ -22,6 +22,7 @@ import {
   MoreHorizontal,
   Phone,
   TriangleAlert,
+  UserPlus,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -48,16 +49,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { adminApi, type BookingAction, type StaffBooking, type StaffBookingDetail } from "@/lib/api/admin";
+import {
+  adminApi,
+  type BookingAction,
+  type Professional,
+  type StaffBooking,
+  type StaffBookingDetail,
+} from "@/lib/api/admin";
 import { downloadDocument, fmtDay, fmtShortDay, fmtTime } from "@/lib/api/bookings";
 import { ApiError } from "@/lib/api/errors";
+import { parseGhsToPesewas, pesewasToInput } from "@/lib/money";
 
 const hours = (b: StaffBooking) => Math.round(b.duration_minutes / 60);
 const plural = (n: number) => `${n} ${n === 1 ? "hour" : "hours"}`;
@@ -72,6 +82,8 @@ function errorText(err: unknown): string {
 interface Console {
   view: (id: string) => void;
   act: (b: StaffBooking, action: BookingAction) => void;
+  /** A change made inside the sheet (e.g. a professional assigned). */
+  updated: (message: string) => void;
 }
 const ConsoleCtx = createContext<Console | null>(null);
 
@@ -90,11 +102,6 @@ export function BookingConsole({ children, onChanged }: { children: React.ReactN
   const [acting, setActing] = useState<{ booking: StaffBooking; action: BookingAction } | null>(null);
   const [detailVersion, setDetailVersion] = useState(0);
 
-  const value = useMemo<Console>(
-    () => ({ view: setViewing, act: (booking, action) => setActing({ booking, action }) }),
-    [],
-  );
-
   const done = useCallback(
     (message: string) => {
       setActing(null);
@@ -103,6 +110,11 @@ export function BookingConsole({ children, onChanged }: { children: React.ReactN
       onChanged();
     },
     [onChanged],
+  );
+
+  const value = useMemo<Console>(
+    () => ({ view: setViewing, act: (booking, action) => setActing({ booking, action }), updated: done }),
+    [done],
   );
 
   return (
@@ -520,6 +532,9 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
               <Row label="Engineer">{d.engineer.name}</Row>
               <Row label="Service">{d.service.name}</Row>
               {d.notes ? <Row label="Notes">{d.notes}</Row> : null}
+              <Row label="Booked by">
+                {d.created_by_email ? `ONA staff · ${d.created_by_email}` : "The customer, online"}
+              </Row>
             </Section>
 
             <Section title="Customer">
@@ -551,7 +566,15 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
               </Link>
             </Section>
 
+            <ProfessionalSection key={`${d.id}-${d.updated_at}`} booking={d} />
+
             <Section title="Money">
+              {d.professional_fee_pesewas ? (
+                <>
+                  <Row label="Room and engineer">{d.room_total_display}</Row>
+                  <Row label="Professional">{d.professional_fee_display}</Row>
+                </>
+              ) : null}
               <Row label="Total">{d.total_display}</Row>
               <Row label="Paid">{d.paid_display}</Row>
               {d.transactions.length === 0 ? (
@@ -613,6 +636,127 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+/* ── Professional on a booking (Task 15) ────────────────────────────────── */
+
+function ProfessionalSection({ booking: d }: { booking: StaffBookingDetail }) {
+  const { updated } = useConsole();
+  const holds = d.status === "pending" || d.status === "confirmed";
+  const paid = d.paid_pesewas > 0;
+  const [editing, setEditing] = useState(false);
+  const [pros, setPros] = useState<Professional[] | null>(null);
+  const [proId, setProId] = useState<string>(d.assigned_professional?.id ?? "none");
+  const [fee, setFee] = useState<string>(
+    d.professional_fee_pesewas ? pesewasToInput(d.professional_fee_pesewas) : "",
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!editing || pros) return;
+    adminApi
+      .professionals({ is_active: true, page_size: 100 })
+      .then((p) => setPros(p.results))
+      .catch(() => setError("Professionals could not be loaded."));
+  }, [editing, pros]);
+
+  async function save() {
+    const none = proId === "none";
+    const pesewas = none || fee.trim() === "" ? 0 : parseGhsToPesewas(fee);
+    if (pesewas === null) {
+      setError("Enter the fee in cedis, e.g. 150 or 150.50.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await adminApi.assign(d.id, none ? null : proId, pesewas);
+      setEditing(false);
+      const who = r.assigned_professional;
+      updated(
+        who
+          ? `${r.reference}: ${who.stage_name || who.name} assigned. New total ${r.total_display}.`
+          : `${r.reference}: professional removed. Total ${r.total_display}.`,
+      );
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const current = d.assigned_professional;
+  return (
+    <Section title="Professional">
+      {current ? (
+        <p className="text-[14px] text-ink">
+          <b>{current.stage_name || current.name}</b>
+          {current.stage_name ? <span className="text-ink-mute"> · {current.name}</span> : null}
+          <span className="block text-ink-dim">
+            Fee {d.professional_fee_display} · the customer sees the stage name only
+          </span>
+        </p>
+      ) : (
+        <p className="text-[13.5px] text-ink-mute">No professional on this session.</p>
+      )}
+
+      {!holds ? null : paid ? (
+        <p className="mt-2 text-[12.5px] text-ink-mute">
+          Paid for — what this booking includes can no longer change.
+        </p>
+      ) : editing ? (
+        <div className="mt-3 grid gap-3 rounded-lg border border-border-soft p-3">
+          <div className="grid gap-1.5">
+            <Label htmlFor="assign-pro">Professional</Label>
+            <Select value={proId} onValueChange={setProId}>
+              <SelectTrigger id="assign-pro" className="h-11 w-full md:h-9">
+                <SelectValue placeholder={pros ? "Choose" : "Loading…"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No professional</SelectItem>
+                {(pros ?? []).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.stage_name ? `${p.stage_name} (${p.name})` : p.name} · {p.rate_display}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {proId !== "none" ? (
+            <div className="grid gap-1.5">
+              <Label htmlFor="assign-fee">Fee to the customer (GHS)</Label>
+              <Input
+                id="assign-fee"
+                inputMode="decimal"
+                placeholder="e.g. 300"
+                value={fee}
+                onChange={(e) => setFee(e.target.value)}
+                className="h-11 md:h-9"
+              />
+              <p className="text-[12px] text-ink-mute">
+                Added to the total and to the invoice as its own line. The customer is emailed.
+              </p>
+            </div>
+          ) : null}
+          {error ? <FormError message={error} /> : null}
+          <div className="flex gap-2">
+            <Button className="h-11 md:h-9" disabled={busy} onClick={() => void save()}>
+              {busy ? "Saving…" : "Save"}
+            </Button>
+            <Button variant="outline" className="h-11 md:h-9" disabled={busy} onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="outline" size="sm" className="mt-2 h-11 md:h-8" onClick={() => setEditing(true)}>
+          <UserPlus aria-hidden="true" />
+          {current ? "Change professional" : "Assign a professional"}
+        </Button>
+      )}
+    </Section>
   );
 }
 

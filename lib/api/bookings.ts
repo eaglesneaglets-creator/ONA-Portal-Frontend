@@ -47,6 +47,10 @@ export interface Booking {
   can_change: boolean;
   /** A payment is confirmed, so a receipt can be downloaded. */
   has_receipt: boolean;
+  /** A professional ONA arranged for the session (Task 15): name and skills only. */
+  professional: { id: string; display_name: string; skills: string[] } | null;
+  professional_fee_pesewas: number;
+  professional_fee_display: string;
 }
 
 export interface BookingInput {

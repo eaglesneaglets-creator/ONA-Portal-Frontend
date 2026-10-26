@@ -361,20 +361,26 @@
 
    Only on coarse pointers: a mouse is precise, and an invisible 44px box
    around a 38px button would swallow clicks meant for its neighbours. */
-@media (pointer: coarse) {
-  .ona-tap-44 {
-    position: relative;
-  }
-  .ona-tap-44::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    min-width: 44px;
-    min-height: 44px;
-    width: 100%;
-    height: 100%;
-    transform: translate(-50%, -50%);
+/* In the components layer, BELOW utilities. Unlayered, this `position:
+   relative` beat every Tailwind utility on touch screens — including the
+   `absolute` that pins the password field's Show button inside its input,
+   which then fell out under the field on every phone. */
+@layer components {
+  @media (pointer: coarse) {
+    .ona-tap-44 {
+      position: relative;
+    }
+    .ona-tap-44::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 44px;
+      min-height: 44px;
+      width: 100%;
+      height: 100%;
+      transform: translate(-50%, -50%);
+    }
   }
 }
 

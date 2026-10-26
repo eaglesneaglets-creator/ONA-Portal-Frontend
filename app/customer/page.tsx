@@ -128,6 +128,9 @@ export default function CustomerHome() {
                       {next.room.name} with {next.engineer.name} ·{" "}
                       <span className="whitespace-nowrap font-mono">{next.reference}</span>
                     </p>
+                    {next.professional ? (
+                      <p className="mt-1 text-[14px] font-bold text-ona-blue">With {next.professional.display_name}</p>
+                    ) : null}
                   </div>
                   <Button asChild variant="outline" className="h-11">
                     <Link href="/customer/bookings">Manage bookings</Link>

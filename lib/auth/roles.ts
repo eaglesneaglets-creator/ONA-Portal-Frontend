@@ -62,7 +62,7 @@ const PROTECTED: ReadonlyArray<{ prefix: string; roles: readonly Role[] }> = [
 ];
 
 /** Signed-in users are bounced off these — nobody logs in twice. */
-const GUEST_ONLY = ["/login", "/register", "/reset-password"];
+const GUEST_ONLY = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 export function isProtectedRoute(pathname: string): boolean {
   return PROTECTED.some((r) => pathname === r.prefix || pathname.startsWith(`${r.prefix}/`));
