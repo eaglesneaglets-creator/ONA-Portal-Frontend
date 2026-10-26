@@ -9,8 +9,12 @@
  * `_display` strings; this is input only.
  */
 export function parseGhsToPesewas(input: string): number | null {
-  const s = input.trim().replace(/^GHS\s*/i, "").replace(/,/g, "");
-  const m = /^(\d{1,9})(?:\.(\d{1,2}))?$/.exec(s);
+  const s = input.trim().replace(/^GHS\s*/i, "");
+  // Commas only as thousands separators ("1,250.00"). "1,50" is ambiguous —
+  // a decimal comma would mean 1.50, stripping it means 150 — so it is
+  // refused rather than guessed (QA F8).
+  if (s.includes(",") && !/^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(s)) return null;
+  const m = /^(\d{1,9})(?:\.(\d{1,2}))?$/.exec(s.replace(/,/g, ""));
   if (!m) return null;
   const cedis = Number(m[1]);
   const pesewas = Number((m[2] ?? "").padEnd(2, "0"));

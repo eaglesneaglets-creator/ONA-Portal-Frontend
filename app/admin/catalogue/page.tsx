@@ -214,7 +214,7 @@ export default function AdminCataloguePage() {
               <DialogTitle className="text-[18px] font-black">
                 {editing === "new" ? `Add a ${def.singular}` : `Edit ${editing.name}`}
               </DialogTitle>
-              <DialogDescription>Changes appear on the public pages within a minute.</DialogDescription>
+              <DialogDescription>Changes reach the public pages within a minute or two.</DialogDescription>
             </DialogHeader>
             <ItemForm
               key={`${kind}-${editing === "new" ? "new" : editing.id}`}

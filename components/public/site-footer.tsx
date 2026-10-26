@@ -28,10 +28,10 @@ export function SiteFooter() {
           <h2 id="f-book" className="mb-3 text-[12px] font-bold uppercase tracking-[0.14em] text-ink-mute">
             Book
           </h2>
-          <ul className="space-y-2 text-[14px]">
-            <li><Link className="text-ink-dim hover:text-ink" href="/studio">Studio time &amp; prices</Link></li>
-            <li><Link className="text-ink-dim hover:text-ink" href="/register">Create an account</Link></li>
-            <li><Link className="text-ink-dim hover:text-ink" href="/login">Sign in</Link></li>
+          <ul className="space-y-0 text-[14px] md:space-y-2">
+            <li><Link className="inline-flex min-h-11 items-center text-ink-dim hover:text-ink md:min-h-0" href="/studio">Studio time &amp; prices</Link></li>
+            <li><Link className="inline-flex min-h-11 items-center text-ink-dim hover:text-ink md:min-h-0" href="/register">Create an account</Link></li>
+            <li><Link className="inline-flex min-h-11 items-center text-ink-dim hover:text-ink md:min-h-0" href="/login">Sign in</Link></li>
           </ul>
         </nav>
 
@@ -40,8 +40,8 @@ export function SiteFooter() {
             Help
           </h2>
           <ul className="space-y-2 text-[14px] text-ink-dim">
-            <li><Link className="text-ink-dim hover:text-ink" href="/#how">How booking works</Link></li>
-            <li><Link className="text-ink-dim hover:text-ink" href="/faqs">Questions</Link></li>
+            <li><Link className="inline-flex min-h-11 items-center text-ink-dim hover:text-ink md:min-h-0" href="/#how">How booking works</Link></li>
+            <li><Link className="inline-flex min-h-11 items-center text-ink-dim hover:text-ink md:min-h-0" href="/faqs">Questions</Link></li>
             <li>Accra, Ghana · payments in GHS</li>
           </ul>
         </nav>

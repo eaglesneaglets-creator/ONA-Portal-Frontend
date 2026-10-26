@@ -458,7 +458,16 @@ const HISTORY_LABEL: Record<string, string> = {
   "booking.completed": "Marked completed",
   "booking.cancelled": "Cancelled",
   "booking.rescheduled": "Rescheduled",
+  "booking.created_by_staff": "Booked on the customer's behalf",
+  "booking.professional_assigned": "Professional changed",
 };
+
+/** A readable label for any audit action, known or not ("job.updated" → "Job updated"). */
+function historyLabel(action: string): string {
+  if (HISTORY_LABEL[action]) return HISTORY_LABEL[action];
+  const words = action.replace(/[._]/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
 
 function BookingSheet({ id, version, onClose }: { id: string | null; version: number; onClose: () => void }) {
   const [detail, setDetail] = useState<StaffBookingDetail | null>(null);
@@ -637,7 +646,7 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
                   .reverse()
                   .map((h, i) => (
                     <li key={i} className="text-ink-dim">
-                      <b className="text-ink">{HISTORY_LABEL[h.action] ?? h.action}</b> by {h.actor_email ?? "the system"} ·{" "}
+                      <b className="text-ink">{historyLabel(h.action)}</b> by {h.actor_email ?? "the system"} ·{" "}
                       {fmtShortDay(h.created_at)} {fmtTime(h.created_at)}
                       {typeof h.metadata.reason === "string" && h.metadata.reason ? (
                         <span className="block text-ink-mute">“{h.metadata.reason}”</span>
@@ -709,7 +718,10 @@ function ProfessionalSection({ booking: d }: { booking: StaffBookingDetail }) {
           <b>{current.stage_name || current.name}</b>
           {current.stage_name ? <span className="text-ink-mute"> · {current.name}</span> : null}
           <span className="block text-ink-dim">
-            Fee {d.professional_fee_display} · the customer sees the stage name only
+            Fee {d.professional_fee_display} ·{" "}
+            {current.stage_name
+              ? "the customer sees the stage name only"
+              : "no stage name, so the customer sees \"ONA session professional\""}
           </span>
         </p>
       ) : (

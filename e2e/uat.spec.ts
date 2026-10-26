@@ -54,9 +54,18 @@ test("a session that expires while confirming keeps the booking", async ({ page 
   await page.getByRole("button", { name: /Mix Suite/ }).click();
   await page.getByRole("button", { name: /Engineer Three/ }).click();
   await page.getByRole("button", { name: /Recording session/ }).click();
+  // Earlier runs leave bookings behind, so pick the day with the most free
+  // slots rather than assuming one (QA: the last day had filled up).
   const days = page.getByRole("list", { name: "Days" }).getByRole("button");
   await expect(days.first()).toBeVisible();
-  await days.last().click(); // the far end of the window, least likely to be busy
+  let best = 0;
+  let bestFree = -1;
+  for (let i = 0; i < (await days.count()); i++) {
+    const free = Number(/(\d+) free/.exec((await days.nth(i).textContent()) ?? "")?.[1] ?? 0);
+    if (free > bestFree) [best, bestFree] = [i, free];
+  }
+  expect(bestFree, "no free day left in the window — sweep e2e bookings").toBeGreaterThan(3);
+  await days.nth(best).click();
   const slots = page.getByRole("list", { name: "Start times" }).getByRole("button", { disabled: false });
   await expect(slots.first()).toBeVisible();
   const slot = slots.nth(test.info().project.name === "mobile" ? 3 : 1);
@@ -99,10 +108,12 @@ async function audit(page: Page, path: string) {
   const r = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - window.innerWidth,
     h1: document.querySelectorAll("h1").length,
+    main: document.querySelectorAll("main").length,
     imgNoAlt: [...document.querySelectorAll("img")].filter((i) => !i.hasAttribute("alt")).length,
   }));
   expect.soft(r.overflow, `${path}: page scrolls sideways by ${r.overflow}px`).toBeLessThanOrEqual(1);
   expect.soft(r.h1, `${path}: should have exactly one h1`).toBe(1);
+  expect.soft(r.main, `${path}: should have exactly one <main> landmark (QA F10)`).toBe(1);
   expect.soft(r.imgNoAlt, `${path}: images without alt`).toBe(0);
 }
 

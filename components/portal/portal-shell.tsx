@@ -169,7 +169,8 @@ export function PortalShell({
           </p>
           {actions}
         </header>
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        {/* SidebarInset is the page's <main>; this is just its padding (QA F10). */}
+        <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

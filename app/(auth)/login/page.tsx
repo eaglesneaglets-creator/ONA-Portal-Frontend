@@ -63,7 +63,8 @@ function LoginForm() {
           labelAction={
             <Link
               href="/forgot-password"
-              className="text-[10.5px] font-bold text-ona-red hover:underline"
+              // ona-tap-44: a 44px hit area on touch screens without moving the label row (QA F11).
+              className="ona-tap-44 text-[10.5px] font-bold text-ona-red hover:underline"
             >
               Forgot password?
             </Link>

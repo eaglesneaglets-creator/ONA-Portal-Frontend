@@ -271,7 +271,7 @@ function ProfessionalForm({
     <form onSubmit={(e) => void save(e)} noValidate className="grid gap-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <F id="pro-name" label="Name" value={f.name} onChange={(v) => set("name", v)} error={err("name")} />
-        <F id="pro-stage" label="Stage name (shown to customers)" value={f.stage_name} onChange={(v) => set("stage_name", v)} error={err("stage_name")} />
+        <F id="pro-stage" label="Stage name (shown to customers)" placeholder="Empty = “ONA session professional”" value={f.stage_name} onChange={(v) => set("stage_name", v)} error={err("stage_name")} />
       </div>
       <F id="pro-skills" label="Skills, separated by commas" placeholder="session guitar, mixing" value={f.skills} onChange={(v) => set("skills", v)} error={err("skills")} />
       <div className="grid gap-3 sm:grid-cols-2">

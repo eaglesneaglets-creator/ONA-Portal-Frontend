@@ -51,6 +51,9 @@ export interface Booking {
   professional: { id: string; display_name: string; skills: string[] } | null;
   professional_fee_pesewas: number;
   professional_fee_display: string;
+  /** Paid so far, net of refunds (server-computed). */
+  paid_pesewas: number;
+  paid_display: string;
 }
 
 export interface BookingInput {

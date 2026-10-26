@@ -19,7 +19,7 @@ import { ApiError } from "@/lib/api/errors";
 
 /**
  * /admin/content — the public FAQ (Task 16). Answers are policy: they show
- * on the homepage and /faqs within a minute of saving, and every change is
+ * on the homepage and /faqs within a minute or so of saving, and every change is
  * in the audit log with what it said before.
  */
 export default function AdminContentPage() {
@@ -127,7 +127,7 @@ function FaqForm({ existing, onCancel, onDone }: { existing: AdminFaq | null; on
     try {
       if (existing) await adminApi.updateFaq(existing.id, body);
       else await adminApi.createFaq(body);
-      onDone(published ? "Saved. It shows on the public pages within a minute." : "Saved as a draft.");
+      onDone(published ? "Saved. Visitors see it within a minute or so." : "Saved as a draft.");
     } catch (err) {
       if (err instanceof ApiError) {
         const fe: Record<string, string> = {};

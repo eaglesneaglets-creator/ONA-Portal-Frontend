@@ -344,9 +344,16 @@ function CancelDialog({
             <DialogTitle className="text-[18px] font-black">Cancel {b.reference}?</DialogTitle>
             <DialogDescription>
               {b.room.name}, {fmtDay(b.start_at)} at {fmtTime(b.start_at)}. The slot is released for someone else.
-              No payment has been taken.
+              {b.paid_pesewas > 0 ? null : " No payment has been taken."}
             </DialogDescription>
           </DialogHeader>
+          {b.paid_pesewas > 0 ? (
+            // QA F1: a paid booking must never be told "no payment has been taken".
+            <p role="note" className="rounded-md bg-warn-bg px-3 py-2.5 text-[14px] text-warn">
+              You have paid <b>{b.paid_display}</b> for this booking. Cancelling does not return it
+              automatically — ONA holds it and will contact you about it.
+            </p>
+          ) : null}
           {error ? <FormError message={error} /> : null}
           <DialogFooter>
             <Button variant="outline" className="h-11" disabled={busy} onClick={onClose}>

@@ -55,7 +55,7 @@ test("an FAQ edited by staff appears on the public page", async ({ page }) => {
   await page.getByLabel("Answer", { exact: true }).fill("Yes, on site.");
   await page.getByLabel("Order", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.locator("[data-sonner-toast]").filter({ hasText: /public pages/ })).toBeVisible();
+  await expect(page.locator("[data-sonner-toast]").filter({ hasText: /Visitors see it/ })).toBeVisible();
 
   // ISR: the public page refreshes within a minute of the change.
   const visitor = await page.context().browser()!.newPage();
