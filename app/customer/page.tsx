@@ -1,19 +1,33 @@
 "use client";
 
+import { ArrowRight, CalendarCheck2, CalendarClock, CalendarPlus, Clock3, Hourglass } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { StatusPill } from "@/components/booking/status-pill";
-import { fetchBookingSummary, fmtDay, fmtShortDay, fmtTime, type BookingSummary } from "@/lib/api/bookings";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { StatCard, StatGrid } from "@/components/dashboard/stat-card";
+import { EmptyState } from "@/components/dashboard/states";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  fetchBookingSummary,
+  fmtDay,
+  fmtShortDay,
+  fmtTime,
+  listBookings,
+  type Booking,
+  type BookingSummary,
+} from "@/lib/api/bookings";
 import { useAuthStore } from "@/lib/auth/store";
 
 /**
- * Customer overview — /customer
+ * Customer overview — /customer (UI v2: KPI row → primary card → list).
  *
- * Ports the studio half of docs/design/pages/dashboard-customer.html: a
- * greeting, the stats row, and the next session. The template's projects,
- * activity feed and escrow panel belong to the marketplace (ADR-015) and the
- * payments phase, and arrive with them.
+ * The studio half of the customer dashboard. Projects, activity and escrow
+ * belong to the marketplace (ADR-015) and the payments phase, and arrive
+ * with them — no placeholder panels in the meantime.
  */
 
 function greeting(): string {
@@ -25,31 +39,36 @@ function greeting(): string {
 
 export default function CustomerHome() {
   const user = useAuthStore((s) => s.user);
-  const [summary, setSummary] = useState<BookingSummary | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [summary, setSummary] = useState<BookingSummary | null | undefined>(undefined);
+  const [upcoming, setUpcoming] = useState<Booking[] | null | undefined>(undefined);
 
   useEffect(() => {
     let live = true;
     fetchBookingSummary()
       .then((s) => live && setSummary(s))
-      .catch(() => live && setFailed(true));
+      .catch(() => live && setSummary(null));
+    listBookings("upcoming")
+      .then((r) => live && setUpcoming(r))
+      .catch(() => live && setUpcoming(null));
     return () => {
       live = false;
     };
   }, []);
 
   const next = summary?.next ?? null;
+  // The next session already has its own card; the list shows what follows.
+  const later = upcoming?.filter((b) => b.id !== next?.id).slice(0, 4);
+  const stat = (n: number | undefined) => (summary === null ? null : n);
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
-      <h1 className="mb-1 text-[clamp(26px,4vw,34px)] font-black tracking-tight text-ink">
-        {greeting()}
-        {user?.first_name ? `, ${user.first_name}` : ""}
-      </h1>
-      <p className="mb-6 text-[15px] text-ink-dim">Your studio sessions at a glance.</p>
+    <div className="mx-auto w-full max-w-6xl">
+      <PageHeader
+        title={`${greeting()}${user?.first_name ? `, ${user.first_name}` : ""}`}
+        description="Your studio sessions at a glance."
+      />
 
-      {failed ? (
-        <p className="mb-6 rounded-md bg-warn-bg px-4 py-3 text-[14px] text-warn">
+      {summary === null ? (
+        <p role="alert" className="mb-6 rounded-md bg-warn-bg px-4 py-3 text-[14px] text-warn">
           Your numbers could not be loaded just now. Your bookings are safe —{" "}
           <Link href="/customer/bookings" className="font-bold underline">
             see the full list
@@ -58,74 +77,123 @@ export default function CustomerHome() {
         </p>
       ) : null}
 
-      <ul className="mb-6 grid gap-3 sm:grid-cols-3" aria-label="Summary">
-        <Stat
-          label="Upcoming sessions"
-          value={summary?.upcoming_count}
-          hint={next ? `Next on ${fmtShortDay(next.start_at)}` : "Nothing booked yet"}
+      <StatGrid label="Summary">
+        <StatCard
           brand
+          icon={CalendarCheck2}
+          label="Upcoming sessions"
+          value={stat(summary?.upcoming_count)}
+          hint={next ? `Next on ${fmtShortDay(next.start_at)}` : "Nothing booked yet"}
         />
-        <Stat
+        <StatCard
+          icon={Hourglass}
           label="Awaiting confirmation"
-          value={summary?.pending_count}
+          value={stat(summary?.pending_count)}
           hint={summary?.pending_count ? "ONA will confirm these with you" : "All confirmed"}
         />
-        <Stat label="Hours booked ahead" value={summary?.upcoming_hours} hint="Across upcoming sessions" />
-      </ul>
+        <StatCard
+          icon={Clock3}
+          label="Hours booked ahead"
+          value={stat(summary?.upcoming_hours)}
+          hint="Across upcoming sessions"
+        />
+      </StatGrid>
 
-      <section aria-labelledby="next-h" className="rounded-xl border border-border-default bg-surface p-5 sm:p-6">
-        <h2 id="next-h" className="mb-4 text-[17px] font-black tracking-tight text-ink">
-          Next session
-        </h2>
-        {summary === null && !failed ? (
-          <p className="text-ink-mute">Loading…</p>
-        ) : next ? (
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="mb-1 flex flex-wrap items-center gap-2">
-                <b className="text-[18px] text-ink">{next.service.name}</b>
-                <StatusPill status={next.status} />
-              </p>
-              <p className="text-[15px] text-ink-dim">
-                {fmtDay(next.start_at)}, {fmtTime(next.start_at)}–{fmtTime(next.end_at)}
-              </p>
-              <p className="text-[14px] text-ink-mute">
-                {next.room.name} with {next.engineer.name} · <span className="font-mono">{next.reference}</span>
-              </p>
-            </div>
-            <Link
-              href="/customer/bookings"
-              className="flex min-h-[var(--tap-min)] items-center rounded-md border border-border-default px-5 font-bold text-ink hover:border-ink-mute"
-            >
-              Manage bookings
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-[15px] text-ink-dim">No session booked. Rooms come with an engineer.</p>
-            <Link
-              href="/customer/book"
-              className="flex min-h-[var(--tap-min)] items-center rounded-md bg-ona-red px-5 font-bold text-white hover:bg-ona-tertiary"
-            >
-              Book a session
-            </Link>
-          </div>
-        )}
-      </section>
+      <div className="grid gap-4 lg:grid-cols-5">
+        <section aria-labelledby="next-h" className="lg:col-span-3">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle id="next-h" className="text-[17px] font-black">
+                Next session
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {summary === undefined ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-4 w-64" />
+                </div>
+              ) : next ? (
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="mb-2 flex flex-wrap items-center gap-2">
+                      <b className="text-[19px] text-ink">{next.service.name}</b>
+                      <StatusPill status={next.status} />
+                    </p>
+                    <p className="flex items-center gap-2 text-[15px] text-ink">
+                      <CalendarClock aria-hidden="true" className="size-4 text-ona-blue" />
+                      {fmtDay(next.start_at)}, {fmtTime(next.start_at)}–{fmtTime(next.end_at)}
+                    </p>
+                    <p className="mt-1 text-[14px] text-ink-mute">
+                      {next.room.name} with {next.engineer.name} ·{" "}
+                      <span className="whitespace-nowrap font-mono">{next.reference}</span>
+                    </p>
+                  </div>
+                  <Button asChild variant="outline" className="h-11">
+                    <Link href="/customer/bookings">Manage bookings</Link>
+                  </Button>
+                </div>
+              ) : (
+                <EmptyState
+                  icon={CalendarPlus}
+                  title="No session booked"
+                  body="Rooms come with an engineer. Pick a time and ONA confirms it with you."
+                  action={
+                    <Button asChild className="h-11">
+                      <Link href="/customer/book">Book a session</Link>
+                    </Button>
+                  }
+                />
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+        <section aria-labelledby="later-h" className="lg:col-span-2">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle id="later-h" className="text-[17px] font-black">
+                Coming up
+              </CardTitle>
+              <CardAction>
+                <Button asChild variant="ghost" size="sm" className="h-11 md:h-8">
+                  <Link href="/customer/bookings">
+                    View all <ArrowRight aria-hidden="true" />
+                  </Link>
+                </Button>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              {upcoming === undefined ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : upcoming === null ? (
+                <p className="text-[14px] text-ink-mute">Could not load your sessions just now.</p>
+              ) : later && later.length > 0 ? (
+                <ul className="divide-y divide-border-soft">
+                  {later.map((b) => (
+                    <li key={b.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                      <div className="min-w-0">
+                        <p className="truncate text-[14.5px] font-bold text-ink">{b.room.name}</p>
+                        <p className="text-[13px] text-ink-mute">
+                          {fmtShortDay(b.start_at)} · {fmtTime(b.start_at)}
+                        </p>
+                      </div>
+                      <StatusPill status={b.status} />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[14px] text-ink-mute">
+                  {next ? "Nothing else booked after your next session." : "Your upcoming sessions will show here."}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      </div>
     </div>
-  );
-}
-
-function Stat({ label, value, hint, brand }: { label: string; value?: number; hint: string; brand?: boolean }) {
-  return (
-    <li
-      className={`rounded-xl border p-4 ${brand ? "border-transparent bg-ona-gradient text-white" : "border-border-default bg-surface"}`}
-    >
-      <p className={`text-[12.5px] font-bold ${brand ? "text-white/85" : "text-ink-dim"}`}>{label}</p>
-      <p className={`my-1 text-[30px] font-black leading-none ${brand ? "text-white" : "text-ink"}`} data-testid={`stat-${label}`}>
-        {value ?? "—"}
-      </p>
-      <p className={`text-[12.5px] ${brand ? "text-white/80" : "text-ink-mute"}`}>{hint}</p>
-    </li>
   );
 }

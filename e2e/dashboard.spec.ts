@@ -84,34 +84,44 @@ test("dashboard shows the booking; it can be rescheduled and cancelled", async (
   await expect(row).toContainText("Awaiting confirmation");
   await expect(row).toContainText("10:00");
 
-  // Invoice downloads as a PDF; no receipt until a payment is confirmed.
+  // Row actions live in a menu. Invoice downloads as a PDF; no receipt
+  // until a payment is confirmed.
+  const menu = (r: typeof row) => r.getByRole("button", { name: `Actions for ${ref}` }).click();
+  const item = (name: string | RegExp) => page.getByRole("menuitem", { name });
+  const toastText = page.locator("[data-sonner-toast]");
+
+  await menu(row);
+  await expect(item("Receipt (PDF)")).toHaveCount(0);
   const download = page.waitForEvent("download");
-  await row.getByRole("button", { name: "Invoice (PDF)" }).click();
+  await item("Invoice (PDF)").click();
   const file = await download;
   expect(file.suggestedFilename()).toBe(`ONA-invoice-${ref}.pdf`);
   const fs = await import("node:fs/promises");
   const bytes = await fs.readFile(await file.path());
   expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
   expect(bytes.toString("latin1")).toContain(ref);
-  await expect(row.getByRole("button", { name: "Receipt (PDF)" })).toHaveCount(0);
 
-  // Reschedule. The picker opens three days before the booking, so the
-  // first offered day differs per project (offset 40 vs 41) — the two
-  // projects never compete for the same hour.
-  await row.getByRole("button", { name: "Reschedule" }).click();
-  const days = row.getByRole("list", { name: "Days" }).getByRole("button");
+  // Reschedule, in a dialog. The picker opens three days before the
+  // booking, so the first offered day differs per project (offset 40 vs
+  // 41) — the two projects never compete for the same hour.
+  await menu(row);
+  await item("Reschedule").click();
+  const move = page.getByRole("dialog", { name: `Reschedule ${ref}` });
+  const days = move.getByRole("list", { name: "Days" }).getByRole("button");
   await expect(days.first()).toContainText(/free/);
   await days.first().click();
-  const times = row.getByRole("list", { name: "New start times" }).getByRole("button");
+  const times = move.getByRole("list", { name: "New start times" }).getByRole("button");
   await expect(times.first()).toBeVisible();
   await times.last().click();
-  await expect(page.getByRole("status")).toContainText(`${ref} moved to`);
+  await expect(toastText.filter({ hasText: `${ref} moved to` })).toBeVisible();
+  await expect(move).toHaveCount(0);
 
-  // Cancel, with confirmation.
+  // Cancel, confirmed in a dialog.
   const moved = page.getByTestId("booking-row").filter({ hasText: ref });
-  await moved.getByRole("button", { name: "Cancel booking" }).click();
-  await moved.getByRole("button", { name: "Yes, cancel it" }).click();
-  await expect(page.getByRole("status")).toContainText(`${ref} was cancelled`);
+  await menu(moved);
+  await item("Cancel booking").click();
+  await page.getByRole("dialog", { name: `Cancel ${ref}?` }).getByRole("button", { name: "Yes, cancel it" }).click();
+  await expect(toastText.filter({ hasText: `${ref} was cancelled` })).toBeVisible();
   await expect(page.getByTestId("booking-row").filter({ hasText: ref })).toHaveCount(0);
 
   // It now sits under Past, marked cancelled, with no actions.
@@ -119,6 +129,7 @@ test("dashboard shows the booking; it can be rescheduled and cancelled", async (
   const past = page.getByTestId("booking-row").filter({ hasText: ref });
   await expect(past).toContainText("Cancelled");
   // Nothing left to change — but the invoice stays: it is a record.
-  await expect(past.getByRole("button", { name: /reschedule|cancel booking/i })).toHaveCount(0);
-  await expect(past.getByRole("button", { name: "Invoice (PDF)" })).toBeVisible();
+  await menu(past);
+  await expect(item(/reschedule|cancel booking/i)).toHaveCount(0);
+  await expect(item("Invoice (PDF)")).toBeVisible();
 });
