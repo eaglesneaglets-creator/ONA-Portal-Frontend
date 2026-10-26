@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Lato } from "next/font/google";
+import { connection } from "next/server";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -34,11 +35,16 @@ export const metadata: Metadata = {
     "Book a studio. Hire a vetted creative professional. Every payment is held by ONA until you approve the work.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Every page renders per request so Next can stamp this request's CSP
+  // nonce on its scripts (proxy.ts). A static page has no request, so no
+  // nonce, so its scripts would be blocked. API data is still cached by
+  // fetch's own revalidate.
+  await connection();
   return (
     <html lang="en" className={cn("h-full", "antialiased", lato.variable, "font-sans")}>
       <body className="min-h-full flex flex-col">

@@ -45,6 +45,8 @@ export interface User {
   public_ref: number | null;
   is_email_verified: boolean;
   date_joined: string;
+  /** Booking is blocked until the email is confirmed (Task 18). Absent on older APIs. */
+  must_verify_email?: boolean;
 }
 
 interface AuthTokens {

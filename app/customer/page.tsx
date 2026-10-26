@@ -4,6 +4,7 @@ import { ArrowRight, CalendarCheck2, CalendarClock, CalendarPlus, Clock3, Hourgl
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { VerifyEmailBanner } from "@/components/auth/verify-email-banner";
 import { StatusPill } from "@/components/booking/status-pill";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard, StatGrid } from "@/components/dashboard/stat-card";
@@ -66,6 +67,8 @@ export default function CustomerHome() {
         title={`${greeting()}${user?.first_name ? `, ${user.first_name}` : ""}`}
         description="Your studio sessions at a glance."
       />
+
+      <VerifyEmailBanner />
 
       {summary === null ? (
         <p role="alert" className="mb-6 rounded-md bg-warn-bg px-4 py-3 text-[14px] text-warn">

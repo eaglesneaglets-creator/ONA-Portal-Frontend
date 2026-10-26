@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { FormError } from "@/components/auth/fields";
+import { VerifyEmailBanner } from "@/components/auth/verify-email-banner";
+import { useAuthStore } from "@/lib/auth/store";
 import { ApiError } from "@/lib/api/errors";
 import {
   createBooking,
@@ -105,6 +107,8 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
   const [done, setDone] = useState<Booking | null>(null);
   // A start time from a kept draft, waiting for the calendar to confirm it.
   const resumeStart = useRef<string | null>(null);
+  // Booking needs a confirmed email when the API says so (Task 18).
+  const mustVerify = useAuthStore((s) => Boolean(s.user?.must_verify_email));
   const [resumed, setResumed] = useState(false);
 
   const stepRef = useRef<HTMLDivElement>(null);
@@ -305,6 +309,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
       </p>
 
       {loadError ? <FormError message={loadError} /> : null}
+      <VerifyEmailBanner />
       {resumed ? (
         <p role="status" className="mb-4 rounded-md bg-info-bg px-4 py-3 text-[14px] text-info">
           Welcome back — we kept your booking while you signed in again. Check it and confirm.
@@ -414,8 +419,9 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
             ) : (
               <button
                 type="button"
-                disabled={pending || !start}
+                disabled={pending || !start || mustVerify}
                 aria-busy={pending}
+                title={mustVerify ? "Confirm your email first" : undefined}
                 onClick={() => void confirm()}
                 className="flex min-h-[var(--tap-min)] items-center rounded-md bg-ona-red px-6 font-bold text-white transition-colors hover:bg-ona-tertiary disabled:opacity-60"
               >
