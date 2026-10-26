@@ -53,7 +53,7 @@ export function StatCard({
           className={cn("my-1.5 text-[32px] font-black leading-none tabular-nums", brand ? "text-white" : "text-ink")}
           data-testid={`stat-${label}`}
         >
-          {value ?? "—"}
+          <Value value={value ?? "—"} />
         </p>
       )}
       {hint ? <p className={cn("text-[12.5px]", brand ? "text-white/80" : "text-ink-mute")}>{hint}</p> : null}
@@ -61,9 +61,24 @@ export function StatCard({
   );
 }
 
+/** "GHS 1,250.00" as a small currency code and a large amount, so money fits
+ *  the same tile as a count. The string is the server's; nothing is computed. */
+function Value({ value }: { value: React.ReactNode }) {
+  const money = typeof value === "string" ? /^(-?GHS) (.+)$/.exec(value) : null;
+  if (!money) return <>{value}</>;
+  return (
+    <>
+      <span className="mr-1 align-top text-[14px] font-bold">{money[1]}</span>
+      {money[2]}
+    </>
+  );
+}
+
+/** On phones the brand tile spans the row and the rest pair up; a final tile
+ *  left alone in its row spans it too, so there is never an orphan half. */
 export function StatGrid({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <ul aria-label={label} className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+    <ul aria-label={label} className="mb-6 grid grid-cols-2 gap-3 max-sm:[&>li:last-child:nth-child(even)]:col-span-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
       {children}
     </ul>
   );

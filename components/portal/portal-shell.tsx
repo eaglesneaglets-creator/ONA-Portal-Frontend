@@ -157,7 +157,9 @@ export function PortalShell({
         <SidebarRail />
       </Sidebar>
 
-      <SidebarInset className="bg-surface-alt">
+      {/* min-w-0: a wide table must scroll inside its own container, not
+          stretch the whole content column past the viewport. */}
+      <SidebarInset className="min-w-0 bg-surface-alt">
         <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border-default bg-surface/90 px-3 backdrop-blur sm:px-4">
           <SidebarTrigger aria-label="Open navigation" className="size-11 md:size-8" />
           <Separator orientation="vertical" className="mx-1 data-vertical:h-5 data-vertical:self-center" />

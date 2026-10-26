@@ -28,8 +28,8 @@ const GROUPS: NavGroup[] = [
     label: "Operations",
     items: [
       { href: "/admin/approvals", label: "Approvals", icon: CheckSquare, pending: true },
-      { href: "/admin/bookings", label: "Bookings", icon: CalendarDays, pending: true },
-      { href: "/admin/payments", label: "Payments", icon: CreditCard, pending: true },
+      { href: "/admin/bookings", label: "Bookings", icon: CalendarDays },
+      { href: "/admin/payments", label: "Payments", icon: CreditCard },
       { href: "/admin/projects", label: "Projects", icon: FolderKanban, pending: true },
     ],
   },
@@ -37,7 +37,7 @@ const GROUPS: NavGroup[] = [
     label: "People",
     items: [
       { href: "/admin/professionals", label: "Professionals", icon: UserRoundCog, pending: true },
-      { href: "/admin/customers", label: "Customers", icon: Users, pending: true },
+      { href: "/admin/customers", label: "Customers", icon: Users },
       { href: "/admin/reviews", label: "Reviews", icon: Star, pending: true },
     ],
   },
