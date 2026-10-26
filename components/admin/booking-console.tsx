@@ -525,10 +525,12 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
             <Section title="Customer">
               <p className="font-bold text-ink">{d.customer.name}</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <Button asChild variant="outline" size="sm" className="h-11 md:h-8">
-                  <a href={`mailto:${d.customer.email}`}>
+                {/* max-w-full + truncate: a long address must not push the
+                    sheet sideways on a phone. */}
+                <Button asChild variant="outline" size="sm" className="h-11 max-w-full md:h-8">
+                  <a href={`mailto:${d.customer.email}`} title={d.customer.email}>
                     <Mail aria-hidden="true" />
-                    {d.customer.email}
+                    <span className="truncate">{d.customer.email}</span>
                   </a>
                 </Button>
                 {d.customer.phone ? (

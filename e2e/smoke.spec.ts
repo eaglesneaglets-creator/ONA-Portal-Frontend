@@ -12,7 +12,7 @@ test("homepage renders with its two ways in", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/ONA/i);
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/book the room/i);
-  await expect(page.getByRole("link", { name: /rooms & prices/i })).toHaveAttribute("href", "/studio");
+  await expect(page.getByRole("link", { name: /rooms & prices/i }).first()).toHaveAttribute("href", "/studio");
   // Marketplace is deferred (ADR-015): no link may promise it.
   await expect(page.getByRole("link", { name: /find a professional/i })).toHaveCount(0);
 });
