@@ -54,7 +54,14 @@ export interface Catalogue {
   unavailable: boolean;
 }
 
-const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1").replace(
+// This loader runs on the server. API_INTERNAL_URL lets it reach the API by
+// a private address (a container service name, Railway private networking)
+// while the browser keeps using the public NEXT_PUBLIC_API_URL.
+const BASE_URL = (
+  process.env.API_INTERNAL_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8000/api/v1"
+).replace(
   /\/+$/,
   "",
 );
