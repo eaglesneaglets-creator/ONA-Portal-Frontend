@@ -96,7 +96,7 @@ test("a session that expires while confirming keeps the booking", async ({ page 
 });
 
 const PUBLIC = ["/", "/studio", "/faqs", "/login", "/register", "/forgot-password", "/reset-password?uid=x&token=y", "/coming-soon"];
-const CUSTOMER = ["/customer", "/customer/book", "/customer/bookings"];
+const CUSTOMER = ["/customer", "/customer/book", "/customer/bookings", "/customer/payments/return?reference=nope"];
 const ADMIN = [
   "/admin", "/admin/bookings", "/admin/bookings/new", "/admin/customers", "/admin/payments", "/admin/jobs",
   "/admin/professionals", "/admin/catalogue", "/admin/content",

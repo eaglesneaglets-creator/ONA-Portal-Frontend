@@ -133,3 +133,11 @@ test("dashboard shows the booking; it can be rescheduled and cancelled", async (
   await expect(item(/reschedule|cancel booking/i)).toHaveCount(0);
   await expect(item("Invoice (PDF)")).toBeVisible();
 });
+
+test("the payment return page trusts the server, not the URL", async ({ page }) => {
+  await registerCustomer(page);
+  // A made-up reference: visiting the return page proves nothing (ADR-018).
+  await page.goto("/customer/payments/return?reference=ONA-FAKE-1234");
+  await expect(page.getByRole("heading", { name: /could not find this payment/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /your bookings/i })).toBeVisible();
+});

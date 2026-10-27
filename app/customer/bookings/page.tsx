@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { FormError } from "@/components/auth/fields";
+import { PayButton } from "@/components/booking/pay-button";
 import { SlotPicker } from "@/components/booking/slot-picker";
 import { StatusPill } from "@/components/booking/status-pill";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -185,7 +186,10 @@ function BookingTable({ rows, onAct }: { rows: Booking[]; onAct: (p: Pending) =>
               <TableCell>
                 <StatusPill status={b.status} />
               </TableCell>
-              <TableCell className="text-right font-bold tabular-nums text-ink">{b.total_display}</TableCell>
+              <TableCell className="text-right">
+                <p className="font-bold tabular-nums text-ink">{b.total_display}</p>
+                {b.can_pay_online ? <PayButton booking={b} compact className="mt-1.5" /> : null}
+              </TableCell>
               <TableCell className="pr-4 text-right">
                 <RowActions booking={b} onAct={onAct} />
               </TableCell>
@@ -224,6 +228,7 @@ function BookingCards({ rows, onAct }: { rows: Booking[]; onAct: (p: Pending) =>
             <StatusPill status={b.status} />
             <b className="tabular-nums text-ink">{b.total_display}</b>
           </div>
+          <PayButton booking={b} className="mt-3 w-full" />
         </li>
       ))}
     </ul>

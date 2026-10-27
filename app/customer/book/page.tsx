@@ -23,6 +23,7 @@ import { FormError } from "@/components/auth/fields";
 import { VerifyEmailBanner } from "@/components/auth/verify-email-banner";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState } from "@/components/dashboard/states";
+import { PayButton } from "@/components/booking/pay-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -825,12 +826,15 @@ function Confirmed({ booking, onAnother }: { booking: Booking; onAnother: () => 
           </h1>
           <p className="mb-6 text-[15.5px] leading-relaxed text-ink-dim">
             {booking.room.name} with {booking.engineer.name}, {fmtDay(booking.start_at)} from {fmtTime(booking.start_at)} to{" "}
-            {fmtTime(booking.end_at)}. Total {booking.total_display}. It is held as pending — ONA will confirm it with you, and
-            no payment has been taken.
+            {fmtTime(booking.end_at)}. Total {booking.total_display}.{" "}
+            {booking.can_pay_online
+              ? "The slot is held for you — pay now to confirm it."
+              : "It is held as pending — ONA will confirm it with you, and no payment has been taken."}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Button asChild className="h-11 px-6 font-bold">
-              <Link href="/customer">Back to your workspace</Link>
+            <PayButton booking={booking} />
+            <Button asChild variant={booking.can_pay_online ? "outline" : "default"} className="h-11 px-6 font-bold">
+              <Link href="/customer">{booking.can_pay_online ? "Pay later" : "Back to your workspace"}</Link>
             </Button>
             <Button type="button" variant="outline" className="h-11 px-6 font-bold" onClick={onAnother}>
               Book another

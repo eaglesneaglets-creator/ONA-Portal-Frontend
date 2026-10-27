@@ -54,6 +54,11 @@ export interface Booking {
   /** Paid so far, net of refunds (server-computed). */
   paid_pesewas: number;
   paid_display: string;
+  /** Still owed: the total less what has been paid. */
+  outstanding_pesewas: number;
+  outstanding_display: string;
+  /** Online payment is switched on and this booking can be paid now (ADR-018). */
+  can_pay_online: boolean;
 }
 
 export interface BookingInput {
@@ -224,4 +229,45 @@ export async function downloadDocument(
   a.remove();
   // Revoke after the click has been handled, or some browsers cancel it.
   setTimeout(() => URL.revokeObjectURL(url), 1_000);
+}
+
+/* ── Online payment (Paystack, ADR-018) ────────────────────────────────── */
+
+export interface Checkout {
+  authorization_url: string;
+  reference: string;
+}
+
+/** Start a Paystack checkout for what is still owed on a booking. */
+export function startCheckout(bookingId: string): Promise<Checkout> {
+  // No retry: each call opens a new payment attempt.
+  return api.post<Checkout>("/payments/checkout/", { booking: bookingId }, { retries: 0 });
+}
+
+export interface PaymentOutcome {
+  status: "pending" | "succeeded" | "failed";
+  /** False when Paystack could not be asked just now — "still checking", not "failed". */
+  checked: boolean;
+  amount_display: string;
+  failure_reason: string;
+  booking: { id: string; reference: string; status: BookingStatus };
+}
+
+/** Ask the server to confirm a payment with Paystack (the return page). */
+export function verifyPayment(reference: string): Promise<PaymentOutcome> {
+  return api.post<PaymentOutcome>("/payments/verify/", { reference }, { retries: 0 });
+}
+
+/**
+ * Only ever send the browser to Paystack's own checkout. The URL comes from
+ * our API, but a redirect target is worth checking anyway: an open redirect
+ * on a payment button is exactly where a phishing page would want to be.
+ */
+export function isPaystackCheckout(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && u.hostname === "checkout.paystack.com";
+  } catch {
+    return false;
+  }
 }
