@@ -1,11 +1,33 @@
 "use client";
 
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarCheck2,
+  CalendarX2,
+  Check,
+  CheckCircle2,
+  DoorOpen,
+  Headphones,
+  Minus,
+  Music,
+  Plus,
+  ShieldCheck,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { FormError } from "@/components/auth/fields";
 import { VerifyEmailBanner } from "@/components/auth/verify-email-banner";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { EmptyState, ErrorState } from "@/components/dashboard/states";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/lib/auth/store";
 import { ApiError } from "@/lib/api/errors";
 import {
@@ -23,6 +45,7 @@ import {
 } from "@/lib/api/bookings";
 import { formatDuration, type Engineer, type Room, type Service } from "@/lib/api/studio";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/booking-draft";
+import { cn } from "@/lib/utils";
 
 /**
  * Booking flow — /customer/book
@@ -294,14 +317,10 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
-      <header className="mb-6">
-        <p className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-ink-mute">
-          Book a session
-        </p>
-        <h1 className="text-[clamp(26px,4vw,38px)] font-black leading-[1.08] tracking-tight text-ink">
-          Your session, your way
-        </h1>
-      </header>
+      <PageHeader
+        title="Your session, your way"
+        description="Pick a room, an engineer and a time. Rooms come with the engineer; times are Accra time."
+      />
 
       <Stepper step={step} onJump={(i) => i < step && setStep(i)} />
       <p className="sr-only" aria-live="polite">
@@ -311,7 +330,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
       {loadError ? <FormError message={loadError} /> : null}
       <VerifyEmailBanner />
       {resumed ? (
-        <p role="status" className="mb-4 rounded-md bg-info-bg px-4 py-3 text-[14px] text-info">
+        <p role="status" className="mb-4 rounded-lg bg-info-bg px-4 py-3 text-[14px] text-info">
           Welcome back — we kept your booking while you signed in again. Check it and confirm.
         </p>
       ) : null}
@@ -321,114 +340,117 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
         <section className="min-w-0" ref={stepRef}>
-          {!catalogue ? (
-            <p className="py-10 text-center text-ink-mute">Loading the studio…</p>
-          ) : step === 0 ? (
-            <Choose
-              title="Choose your studio"
-              lede="Every room comes with an engineer. Rate is per hour."
-              items={catalogue.rooms}
-              selected={room?.id}
-              onPick={pickRoom}
-              render={(r) => (
-                <>
-                  <b className="block text-[17px] font-black text-ink">{r.name}</b>
-                  <span className="block text-[15px] font-bold text-ink">
-                    {r.hourly_rate_display} <span className="font-normal text-ink-mute">/ hour</span>
-                  </span>
-                  {r.description ? <span className="mt-1 block text-[13.5px] text-ink-dim">{r.description}</span> : null}
-                </>
+          <Card>
+            <CardContent className="pt-1">
+              {!catalogue ? (
+                <div className="grid gap-3 sm:grid-cols-2" aria-busy="true" aria-label="Loading the studio">
+                  {[0, 1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-24 rounded-xl" />
+                  ))}
+                </div>
+              ) : step === 0 ? (
+                <Choose
+                  icon={DoorOpen}
+                  title="Choose your studio"
+                  lede="Every room comes with an engineer. Rate is per hour."
+                  items={catalogue.rooms}
+                  selected={room?.id}
+                  onPick={pickRoom}
+                  render={(r) => (
+                    <>
+                      <b className="block text-[17px] font-black text-ink">{r.name}</b>
+                      <span className="block text-[15px] font-bold text-ink">
+                        {r.hourly_rate_display} <span className="font-normal text-ink-mute">/ hour</span>
+                      </span>
+                      {r.description ? <span className="mt-1 block text-[13.5px] text-ink-dim">{r.description}</span> : null}
+                    </>
+                  )}
+                />
+              ) : step === 1 ? (
+                <Choose
+                  icon={Headphones}
+                  title="Pick an engineer"
+                  lede="Who runs your session. Availability is checked for both room and engineer."
+                  items={catalogue.engineers}
+                  selected={engineer?.id}
+                  onPick={pickEngineer}
+                  render={(e) => (
+                    <>
+                      <b className="block text-[17px] font-black text-ink">{e.name}</b>
+                      {e.specialties.length ? (
+                        <span className="mt-1 block text-[13.5px] text-ink-dim">{e.specialties.join(" · ")}</span>
+                      ) : null}
+                    </>
+                  )}
+                />
+              ) : step === 2 ? (
+                <Choose
+                  icon={Music}
+                  title="What is the session for?"
+                  lede="This tells the engineer what to prepare. Your price is the room rate."
+                  items={catalogue.services}
+                  selected={service?.id}
+                  onPick={(s) => {
+                    setService(s);
+                    setStep(3);
+                  }}
+                  render={(s) => (
+                    <>
+                      <b className="block text-[17px] font-black text-ink">{s.name}</b>
+                      <span className="block text-[13.5px] text-ink-dim">Typically {formatDuration(s.duration_minutes)}</span>
+                    </>
+                  )}
+                />
+              ) : step === 3 ? (
+                <DateTime
+                  byDay={byDay}
+                  loading={slots === null}
+                  failed={calendarFailed}
+                  onRetry={retryCalendar}
+                  day={day}
+                  onDay={(d) => {
+                    setDay(d);
+                    setStart(null);
+                  }}
+                  daySlots={daySlots}
+                  start={start}
+                  onStart={setStart}
+                  hours={hours}
+                  maxHours={maxHours}
+                  onHours={setHours}
+                />
+              ) : (
+                <Review notes={notes} onNotes={setNotes} />
               )}
-            />
-          ) : step === 1 ? (
-            <Choose
-              title="Pick an engineer"
-              lede="Who runs your session. Availability is checked for both room and engineer."
-              items={catalogue.engineers}
-              selected={engineer?.id}
-              onPick={pickEngineer}
-              render={(e) => (
-                <>
-                  <b className="block text-[17px] font-black text-ink">{e.name}</b>
-                  {e.specialties.length ? (
-                    <span className="mt-1 block text-[13.5px] text-ink-dim">{e.specialties.join(" · ")}</span>
-                  ) : null}
-                </>
-              )}
-            />
-          ) : step === 2 ? (
-            <Choose
-              title="What is the session for?"
-              lede="This tells the engineer what to prepare. Your price is the room rate."
-              items={catalogue.services}
-              selected={service?.id}
-              onPick={(s) => {
-                setService(s);
-                setStep(3);
-              }}
-              render={(s) => (
-                <>
-                  <b className="block text-[17px] font-black text-ink">{s.name}</b>
-                  <span className="block text-[13.5px] text-ink-dim">
-                    Typically {formatDuration(s.duration_minutes)}
-                  </span>
-                </>
-              )}
-            />
-          ) : step === 3 ? (
-            <DateTime
-              byDay={byDay}
-              loading={slots === null}
-              failed={calendarFailed}
-              onRetry={retryCalendar}
-              day={day}
-              onDay={(d) => {
-                setDay(d);
-                setStart(null);
-              }}
-              daySlots={daySlots}
-              start={start}
-              onStart={setStart}
-              hours={hours}
-              maxHours={maxHours}
-              onHours={setHours}
-            />
-          ) : (
-            <Review notes={notes} onNotes={setNotes} />
-          )}
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            {step > 0 ? (
-              <button
-                type="button"
-                onClick={() => setStep(step - 1)}
-                className="flex min-h-[var(--tap-min)] items-center rounded-md border border-border-default px-5 font-bold text-ink transition-colors hover:border-ink-mute"
-              >
-                Back
-              </button>
-            ) : null}
-            {step < 4 ? (
-              <button
-                type="button"
-                disabled={!canNext}
-                onClick={() => setStep(step + 1)}
-                className="flex min-h-[var(--tap-min)] items-center rounded-md bg-ona-red px-6 font-bold text-white transition-colors hover:bg-ona-tertiary disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Continue
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={pending || !start || mustVerify}
-                aria-busy={pending}
-                title={mustVerify ? "Confirm your email first" : undefined}
-                onClick={() => void confirm()}
-                className="flex min-h-[var(--tap-min)] items-center rounded-md bg-ona-red px-6 font-bold text-white transition-colors hover:bg-ona-tertiary disabled:opacity-60"
-              >
-                {pending ? "One moment…" : "Confirm booking"}
-              </button>
-            )}
-          </div>
+              <div className="mt-6 flex flex-wrap gap-3 border-t border-border-soft pt-5">
+                {step > 0 ? (
+                  <Button type="button" variant="outline" className="h-11 px-5 font-bold" onClick={() => setStep(step - 1)}>
+                    <ArrowLeft aria-hidden="true" />
+                    Back
+                  </Button>
+                ) : null}
+                {step < 4 ? (
+                  <Button type="button" className="h-11 px-6 font-bold" disabled={!canNext} onClick={() => setStep(step + 1)}>
+                    Continue
+                    <ArrowRight aria-hidden="true" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    className="h-11 px-6 font-bold"
+                    disabled={pending || !start || mustVerify}
+                    aria-busy={pending}
+                    title={mustVerify ? "Confirm your email first" : undefined}
+                    onClick={() => void confirm()}
+                  >
+                    <CalendarCheck2 aria-hidden="true" />
+                    {pending ? "One moment…" : "Confirm booking"}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
         <Summary
@@ -453,40 +475,53 @@ function StepHeading({ id, children }: { id?: string; children: React.ReactNode 
       id={id}
       data-step-heading
       tabIndex={-1}
-      className="mb-1 text-[clamp(20px,3vw,26px)] font-black tracking-tight text-ink outline-none"
+      className="mb-1 mt-4 text-[clamp(20px,3vw,24px)] font-black tracking-tight text-ink outline-none"
     >
       {children}
     </h2>
   );
 }
 
+/** Numbered steps joined by a line; done steps are tappable to go back. */
 function Stepper({ step, onJump }: { step: number; onJump: (i: number) => void }) {
   return (
-    <ol className="mb-6 grid grid-cols-5 gap-1.5" aria-label="Progress">
+    <ol className="mb-6 flex items-center" aria-label="Progress">
       {STEPS.map((label, i) => {
         const state = i < step ? "done" : i === step ? "current" : "todo";
         return (
-          <li key={label} className="min-w-0">
+          <li key={label} className="flex min-w-0 flex-1 items-center last:flex-none">
             <button
               type="button"
               disabled={state === "todo"}
               aria-current={state === "current" ? "step" : undefined}
               aria-label={`Step ${i + 1}: ${label}${state === "done" ? " (done)" : ""}`}
               onClick={() => onJump(i)}
-              className={`flex min-h-[var(--tap-min)] w-full flex-col justify-center rounded-md border px-1.5 py-1.5 text-left text-[11.5px] font-bold leading-tight transition-colors sm:px-2 sm:text-[12px] ${
-                state === "current"
-                  ? "border-ona-red bg-surface text-ink"
-                  : state === "done"
-                    ? "border-ok/30 bg-ok-bg text-ok"
-                    : "border-border-soft bg-surface-sunk text-ink-mute"
-              }`}
+              className="flex min-h-[var(--tap-min)] items-center gap-2 rounded-lg pr-2 text-left disabled:cursor-default"
             >
-              <span className="block text-[10px] uppercase tracking-[0.12em] opacity-70">{i + 1}</span>
-              {/* Full label from sm up; at 390px five columns are ~64px, so
-                  "Date & time" would truncate — the number and aria-label
-                  carry it there. */}
-              <span className="hidden truncate sm:block">{label}</span>
+              <span
+                className={cn(
+                  "grid size-8 flex-none place-items-center rounded-pill text-[13px] font-black transition-colors",
+                  state === "current" && "bg-ona-red text-white ring-4 ring-ona-red/15",
+                  state === "done" && "bg-ok text-white",
+                  state === "todo" && "bg-surface-sunk text-ink-mute",
+                )}
+              >
+                {state === "done" ? <Check aria-hidden="true" className="size-4" /> : i + 1}
+              </span>
+              {/* Labels from md up; at 390px the circles carry it, the
+                  aria-label says it in full. */}
+              <span
+                className={cn(
+                  "hidden truncate text-[13px] font-bold lg:block",
+                  state === "current" ? "text-ink" : state === "done" ? "text-ink-dim" : "text-ink-mute",
+                )}
+              >
+                {label}
+              </span>
             </button>
+            {i < STEPS.length - 1 ? (
+              <span aria-hidden="true" className={cn("mx-1 h-0.5 flex-1 rounded-pill", i < step ? "bg-ok" : "bg-border-default")} />
+            ) : null}
           </li>
         );
       })}
@@ -495,6 +530,7 @@ function Stepper({ step, onJump }: { step: number; onJump: (i: number) => void }
 }
 
 function Choose<T extends { id: string }>({
+  icon: Icon,
   title,
   lede,
   items,
@@ -502,6 +538,7 @@ function Choose<T extends { id: string }>({
   onPick,
   render,
 }: {
+  icon: LucideIcon;
   title: string;
   lede: string;
   items: T[];
@@ -514,27 +551,33 @@ function Choose<T extends { id: string }>({
       <StepHeading id="choose-h">{title}</StepHeading>
       <p className="mb-5 text-[14.5px] text-ink-dim">{lede}</p>
       {items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border-default px-5 py-8 text-center text-ink-mute">
-          Nothing is available to book right now.
-        </p>
+        <EmptyState icon={Icon} title="Nothing to book right now" body="Please check back soon, or call ONA." />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
-          {items.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                aria-pressed={selected === item.id}
-                onClick={() => onPick(item)}
-                className={`w-full rounded-xl border p-4 text-left transition-shadow ${
-                  selected === item.id
-                    ? "border-ona-red shadow-[0_0_0_3px_rgba(201,0,7,0.1)]"
-                    : "border-border-default bg-surface hover:border-ink-mute"
-                }`}
-              >
-                {render(item)}
-              </button>
-            </li>
-          ))}
+          {items.map((item) => {
+            const on = selected === item.id;
+            return (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => onPick(item)}
+                  className={cn(
+                    "relative flex w-full gap-3 rounded-xl border p-4 text-left transition-all",
+                    on
+                      ? "border-ona-red bg-surface ring-4 ring-ona-red/10"
+                      : "border-border-default bg-surface hover:border-ink-mute hover:shadow-card",
+                  )}
+                >
+                  <span aria-hidden="true" className={cn("grid size-10 flex-none place-items-center rounded-lg", on ? "bg-ona-red text-white" : "bg-surface-alt text-ona-blue")}>
+                    <Icon className="size-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">{render(item)}</span>
+                  {on ? <CheckCircle2 aria-hidden="true" className="absolute top-3 right-3 size-5 text-ona-red" /> : null}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -572,28 +615,21 @@ function DateTime({
   return (
     <div>
       <StepHeading>Pick a date &amp; time</StepHeading>
-      <p className="mb-5 text-[14.5px] text-ink-dim">
-        Studio hours are 09:00 to 21:00, Accra time. Sessions start on the hour.
-      </p>
+      <p className="mb-5 text-[14.5px] text-ink-dim">Studio hours are 09:00 to 21:00, Accra time. Sessions start on the hour.</p>
 
       {loading ? (
-        <p className="py-6 text-ink-mute">Checking availability…</p>
-      ) : failed ? (
-        <div className="rounded-lg border border-border-default bg-surface px-5 py-6 text-center">
-          <p className="mb-3 text-[15px] text-ink">Availability could not be loaded.</p>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="inline-flex min-h-[var(--tap-min)] items-center rounded-md border border-border-default px-5 font-bold text-ink hover:border-ink-mute"
-          >
-            Try again
-          </button>
+        <div aria-busy="true" aria-label="Checking availability" className="space-y-3">
+          <p className="text-[14px] text-ink-mute">Checking availability…</p>
+          <div className="flex gap-2">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-14 w-[88px] rounded-lg" />
+            ))}
+          </div>
         </div>
+      ) : failed ? (
+        <ErrorState message="Availability could not be loaded." onRetry={onRetry} />
       ) : days.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border-default px-5 py-8 text-center text-ink-mute">
-          No times are open in the next two weeks for this room and engineer. Try another
-          engineer.
-        </p>
+        <EmptyState icon={CalendarX2} title="No open times in the next two weeks" body="Try another engineer — availability is checked for both." />
       ) : (
         <>
           <ul className="mb-6 flex gap-2 overflow-x-auto pb-1" aria-label="Days">
@@ -601,20 +637,23 @@ function DateTime({
               const free = ss.filter((s) => s.state === "available").length;
               const closed = ss.every((s) => s.state === "holiday");
               const reason = closed ? "Closed" : free === 0 ? "Full" : `${free} free`;
+              const on = day === k;
               return (
                 <li key={k} className="flex-none">
                   <button
                     type="button"
                     disabled={free === 0}
-                    aria-pressed={day === k}
+                    aria-pressed={on}
                     aria-label={`${fmtShortDay(ss[0].start_at)}, ${closed ? "studio closed" : free === 0 ? "fully booked" : `${free} slots available`}`}
                     onClick={() => onDay(k)}
-                    className={`min-h-[var(--tap-min)] min-w-[88px] rounded-md border px-3 py-2 text-center text-[13px] font-bold transition-colors disabled:cursor-not-allowed disabled:border-border-soft disabled:bg-surface-sunk disabled:text-ink-mute ${
-                      day === k ? "border-ona-red bg-surface text-ink" : "border-border-default bg-surface text-ink-dim hover:border-ink-mute"
-                    }`}
+                    className={cn(
+                      "min-h-[var(--tap-min)] min-w-[92px] rounded-lg border px-3 py-2 text-center text-[13px] font-bold transition-all",
+                      "disabled:cursor-not-allowed disabled:border-border-soft disabled:bg-surface-sunk disabled:text-ink-mute",
+                      on ? "border-ona-red bg-ona-red text-white" : "border-border-default bg-surface text-ink hover:border-ink-mute",
+                    )}
                   >
                     <span className="block">{fmtShortDay(ss[0].start_at)}</span>
-                    <span className="block text-[11px] font-normal">{reason}</span>
+                    <span className={cn("block text-[11px] font-normal", on ? "text-white/85" : "text-ink-mute")}>{reason}</span>
                   </button>
                 </li>
               );
@@ -623,24 +662,23 @@ function DateTime({
 
           {day && daySlots.length > 0 ? (
             <fieldset className="mb-6">
-              <legend className="mb-3 text-[14px] font-bold text-ink">
-                Start times on {fmtDay(daySlots[0].start_at)}
-              </legend>
+              <legend className="mb-3 text-[14px] font-bold text-ink">Start times on {fmtDay(daySlots[0].start_at)}</legend>
               <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6" aria-label="Start times">
                 {daySlots.map((s) => {
                   const free = s.state === "available";
+                  const on = start?.start_at === s.start_at;
                   return (
                     <li key={s.start_at}>
                       <button
                         type="button"
                         disabled={!free}
-                        aria-pressed={start?.start_at === s.start_at}
+                        aria-pressed={on}
                         onClick={() => onStart(s)}
-                        className={`min-h-[var(--tap-min)] w-full rounded-md border px-2 py-2 text-[14px] font-bold transition-colors disabled:cursor-not-allowed disabled:border-border-soft disabled:bg-surface-sunk disabled:text-ink-mute ${
-                          start?.start_at === s.start_at
-                            ? "border-ona-red bg-surface text-ink"
-                            : "border-border-default bg-surface text-ink hover:border-ink-mute"
-                        }`}
+                        className={cn(
+                          "min-h-[var(--tap-min)] w-full rounded-lg border px-2 py-2 text-[14px] font-bold tabular-nums transition-all",
+                          "disabled:cursor-not-allowed disabled:border-border-soft disabled:bg-surface-sunk disabled:text-ink-mute",
+                          on ? "border-ona-red bg-ona-red text-white" : "border-border-default bg-surface text-ink hover:border-ink-mute",
+                        )}
                       >
                         {fmtTime(s.start_at)}
                         {!free ? <span className="block text-[10px] font-normal capitalize">{s.state}</span> : null}
@@ -657,28 +695,16 @@ function DateTime({
               <p id="dur-h" className="mb-2 text-[14px] font-bold text-ink">
                 How long do you need?
               </p>
-              <div className="inline-flex items-center rounded-md border border-border-default" role="group" aria-labelledby="dur-h">
-                <button
-                  type="button"
-                  aria-label="Decrease by 1 hour"
-                  disabled={hours <= 1}
-                  onClick={() => onHours(hours - 1)}
-                  className="min-h-[var(--tap-min)] min-w-[var(--tap-min)] px-4 text-lg font-black text-ink disabled:opacity-30"
-                >
-                  −
-                </button>
-                <span className="min-w-[88px] text-center text-[15px] font-bold text-ink" aria-live="polite">
+              <div className="inline-flex items-center gap-1 rounded-lg border border-border-default bg-surface p-1" role="group" aria-labelledby="dur-h">
+                <Button type="button" variant="ghost" size="icon" className="size-11" aria-label="Decrease by 1 hour" disabled={hours <= 1} onClick={() => onHours(hours - 1)}>
+                  <Minus aria-hidden="true" />
+                </Button>
+                <span className="min-w-[88px] text-center text-[15px] font-bold text-ink tabular-nums" aria-live="polite">
                   {hours} {hours === 1 ? "hour" : "hours"}
                 </span>
-                <button
-                  type="button"
-                  aria-label="Increase by 1 hour"
-                  disabled={hours >= maxHours}
-                  onClick={() => onHours(hours + 1)}
-                  className="min-h-[var(--tap-min)] min-w-[var(--tap-min)] px-4 text-lg font-black text-ink disabled:opacity-30"
-                >
-                  +
-                </button>
+                <Button type="button" variant="ghost" size="icon" className="size-11" aria-label="Increase by 1 hour" disabled={hours >= maxHours} onClick={() => onHours(hours + 1)}>
+                  <Plus aria-hidden="true" />
+                </Button>
               </div>
               {maxHours < MAX_HOURS ? (
                 <p className="mt-2 text-[12.5px] text-ink-mute">
@@ -700,19 +726,20 @@ function Review({ notes, onNotes }: { notes: string; onNotes: (v: string) => voi
       <p className="mb-5 text-[14.5px] text-ink-dim">
         No payment is taken yet. Your booking is held as pending and ONA will confirm it with you.
       </p>
-      <label htmlFor="notes" className="mb-1.5 block text-[13.5px] font-bold text-ink">
-        Anything the engineer should know? <span className="font-normal text-ink-mute">(optional)</span>
-      </label>
-      <textarea
-        id="notes"
-        name="notes"
-        rows={4}
-        maxLength={1000}
-        value={notes}
-        onChange={(e) => onNotes(e.target.value)}
-        className="w-full rounded-md border border-border-default bg-surface px-3 py-2.5 text-[15px] text-ink focus:border-ink-mute"
-        placeholder="Instruments, number of people, references…"
-      />
+      <div className="grid gap-1.5">
+        <Label htmlFor="notes">
+          Anything the engineer should know? <span className="font-normal text-ink-mute">(optional)</span>
+        </Label>
+        <Textarea
+          id="notes"
+          name="notes"
+          rows={4}
+          maxLength={1000}
+          value={notes}
+          onChange={(e) => onNotes(e.target.value)}
+          placeholder="Instruments, number of people, references…"
+        />
+      </div>
     </div>
   );
 }
@@ -735,34 +762,43 @@ function Summary({
   total: string;
 }) {
   return (
-    <aside aria-label="Session summary" className="rounded-xl border border-border-default bg-surface p-5 lg:sticky lg:top-6">
-      <h2 className="mb-1 text-[17px] font-black tracking-tight text-ink">{service?.name ?? "Your session"}</h2>
-      <p className="mb-4 text-[13.5px] text-ink-dim">
-        {room?.name ?? "Choose a room"}
-        {start ? ` · ${fmtDay(start.start_at)}` : ""}
-      </p>
-      <dl>
-        <Row k="Engineer" v={engineer?.name ?? "—"} />
-        <Row k="Start" v={start ? fmtTime(start.start_at) : "—"} />
-        <Row k="Length" v={start ? `${hours} ${hours === 1 ? "hour" : "hours"}` : "—"} />
-        <Row k="Ends" v={endIso ? fmtTime(endIso) : "—"} />
-        <Row k="Rate" v={room ? `${room.hourly_rate_display} / hr` : "—"} />
-      </dl>
-      <p className="mt-4 flex items-baseline justify-between">
-        <span className="text-[13.5px] font-bold text-ink-dim">Total</span>
-        <b className="text-[24px] font-black text-ink" data-testid="summary-total">{room ? total : "—"}</b>
-      </p>
-      <p className="mt-4 rounded-md bg-surface-sunk px-3 py-2.5 text-[12.5px] leading-snug text-ink-dim">
-        <b className="block text-ink">No payment yet</b>
-        Online payment arrives with the next release. Nothing is charged today.
-      </p>
+    <aside aria-label="Session summary" className="lg:sticky lg:top-20">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-[17px] font-black">{service?.name ?? "Your session"}</CardTitle>
+          <p className="text-[13.5px] text-ink-dim">
+            {room?.name ?? "Choose a room"}
+            {start ? ` · ${fmtDay(start.start_at)}` : ""}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <dl>
+            <Row k="Engineer" v={engineer?.name ?? "—"} />
+            <Row k="Start" v={start ? fmtTime(start.start_at) : "—"} />
+            <Row k="Length" v={start ? `${hours} ${hours === 1 ? "hour" : "hours"}` : "—"} />
+            <Row k="Ends" v={endIso ? fmtTime(endIso) : "—"} />
+            <Row k="Rate" v={room ? `${room.hourly_rate_display} / hr` : "—"} />
+          </dl>
+          <p className="mt-4 flex items-baseline justify-between">
+            <span className="text-[13.5px] font-bold text-ink-dim">Total</span>
+            <b className="text-[26px] font-black tabular-nums text-ink" data-testid="summary-total">{room ? total : "—"}</b>
+          </p>
+          <p className="mt-4 flex gap-2.5 rounded-lg bg-surface-alt px-3 py-2.5 text-[12.5px] leading-snug text-ink-dim">
+            <ShieldCheck aria-hidden="true" className="mt-px size-4 flex-none text-ona-blue" />
+            <span>
+              <b className="block text-ink">No payment yet</b>
+              Online payment arrives with the next release. Nothing is charged today.
+            </span>
+          </p>
+        </CardContent>
+      </Card>
     </aside>
   );
 }
 
 function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-border-soft py-2 text-[13.5px]">
+    <div className="flex justify-between gap-4 border-b border-border-soft py-2 text-[13.5px] last:border-b-0">
       <dt className="text-ink-dim">{k}</dt>
       <dd className="text-right font-bold text-ink">{v}</dd>
     </div>
@@ -773,35 +809,35 @@ function Confirmed({ booking, onAnother }: { booking: Booking; onAnother: () => 
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus(), []);
   return (
-    <div className="mx-auto max-w-xl py-6 text-center">
-      <p className="mb-3 text-[10.5px] font-bold uppercase tracking-[0.16em] text-ok">Booking received</p>
-      <h1
-        ref={headingRef}
-        tabIndex={-1}
-        className="mb-3 text-[clamp(26px,4vw,38px)] font-black leading-[1.08] tracking-tight text-ink outline-none"
-      >
-        Your reference is <span className="font-mono" data-testid="booking-reference">{booking.reference}</span>
-      </h1>
-      <p className="mb-6 text-[16px] leading-relaxed text-ink-dim">
-        {booking.room.name} with {booking.engineer.name}, {fmtDay(booking.start_at)} from {fmtTime(booking.start_at)}{" "}
-        to {fmtTime(booking.end_at)}. Total {booking.total_display}. It is held as pending — ONA will confirm it with
-        you, and no payment has been taken.
-      </p>
-      <div className="flex flex-wrap justify-center gap-3">
-        <Link
-          href="/customer"
-          className="flex min-h-[var(--tap-min)] items-center rounded-md bg-ona-red px-6 font-bold text-white transition-colors hover:bg-ona-tertiary"
-        >
-          Back to your workspace
-        </Link>
-        <button
-          type="button"
-          onClick={onAnother}
-          className="flex min-h-[var(--tap-min)] items-center rounded-md border border-border-default px-6 font-bold text-ink transition-colors hover:border-ink-mute"
-        >
-          Book another
-        </button>
-      </div>
+    <div className="mx-auto max-w-xl py-6">
+      <Card className="text-center">
+        <CardContent className="py-8">
+          <span aria-hidden="true" className="mx-auto mb-4 grid size-14 place-items-center rounded-pill bg-ok-bg text-ok">
+            <CheckCircle2 className="size-8" />
+          </span>
+          <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.16em] text-ok">Booking received</p>
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="mb-3 text-[clamp(24px,4vw,34px)] font-black leading-[1.1] tracking-tight text-ink outline-none"
+          >
+            Your reference is <span className="font-mono" data-testid="booking-reference">{booking.reference}</span>
+          </h1>
+          <p className="mb-6 text-[15.5px] leading-relaxed text-ink-dim">
+            {booking.room.name} with {booking.engineer.name}, {fmtDay(booking.start_at)} from {fmtTime(booking.start_at)} to{" "}
+            {fmtTime(booking.end_at)}. Total {booking.total_display}. It is held as pending — ONA will confirm it with you, and
+            no payment has been taken.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button asChild className="h-11 px-6 font-bold">
+              <Link href="/customer">Back to your workspace</Link>
+            </Button>
+            <Button type="button" variant="outline" className="h-11 px-6 font-bold" onClick={onAnother}>
+              Book another
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
