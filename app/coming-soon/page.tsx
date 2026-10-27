@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
+
 import { useAuthStore } from "@/lib/auth/store";
 
 /**
@@ -41,19 +43,12 @@ export default function ComingSoon() {
       </p>
 
       <div className="flex flex-wrap justify-center gap-3">
-        <Link
-          href="/"
-          className="flex min-h-[var(--tap-min)] items-center rounded-md bg-ona-red px-6 font-bold text-white transition-colors hover:bg-ona-tertiary"
-        >
-          Back to the homepage
-        </Link>
-        <button
-          type="button"
-          onClick={() => void logout()}
-          className="flex min-h-[var(--tap-min)] items-center rounded-md border border-border-default px-6 font-bold text-ink transition-colors hover:border-ink-mute"
-        >
+        <Button asChild className="h-11 px-6 font-bold">
+          <Link href="/">Back to the homepage</Link>
+        </Button>
+        <Button type="button" variant="outline" className="h-11 px-6 font-bold" onClick={() => void logout()}>
           Sign out
-        </button>
+        </Button>
       </div>
     </main>
   );

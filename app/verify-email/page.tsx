@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { useAuthStore, type User } from "@/lib/auth/store";
@@ -53,10 +54,9 @@ function Verify() {
           <div role="status">
             <h1 className="mb-2 text-[24px] font-black tracking-tight text-ink">Email confirmed</h1>
             <p className="mb-6 text-[15px] text-ink-dim">Thank you. You can book studio time now.</p>
-            <Link href={status === "authenticated" ? "/customer/book" : "/login?next=%2Fcustomer%2Fbook"}
-              className="inline-flex min-h-[var(--tap-min)] items-center rounded-md bg-ona-red px-6 font-bold text-white hover:bg-ona-tertiary">
-              Book a session
-            </Link>
+            <Button asChild className="h-11 px-6 font-bold">
+              <Link href={status === "authenticated" ? "/customer/book" : "/login?next=%2Fcustomer%2Fbook"}>Book a session</Link>
+            </Button>
           </div>
         ) : (
           <div role="alert">
@@ -64,7 +64,9 @@ function Verify() {
             <p className="mb-6 text-[15px] text-ink-dim">
               {message} Sign in and ask for a new link from the booking page.
             </p>
-            <Link href="/login" className="font-bold text-ona-red hover:underline">Sign in</Link>
+            <Button asChild variant="outline" className="h-11 px-6 font-bold">
+              <Link href="/login">Sign in</Link>
+            </Button>
           </div>
         )}
       </div>

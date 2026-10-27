@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
+
 /**
  * 404.
  *
@@ -27,18 +29,13 @@ export default function NotFound() {
       </p>
 
       <div className="flex flex-wrap justify-center gap-3">
-        <Link
-          href="/"
-          className="flex min-h-[var(--tap-min)] items-center rounded-md bg-ona-red px-6 font-bold text-white transition-colors hover:bg-ona-tertiary"
-        >
-          Back to the homepage
-        </Link>
-        <Link
-          href="/contact"
-          className="flex min-h-[var(--tap-min)] items-center rounded-md border border-border-default px-6 font-bold text-ink transition-colors hover:border-ink-mute"
-        >
-          Contact ONA
-        </Link>
+        <Button asChild className="h-11 px-6 font-bold">
+          <Link href="/">Back to the homepage</Link>
+        </Button>
+        {/* There is no contact page; the questions page is the real next step. */}
+        <Button asChild variant="outline" className="h-11 px-6 font-bold">
+          <Link href="/faqs">Questions and answers</Link>
+        </Button>
       </div>
     </main>
   );

@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { DoorOpen, Headphones, Music, TriangleAlert } from "lucide-react";
+
+import { SiteFooter } from "@/components/public/site-footer";
 import { SiteHeader } from "@/components/public/site-header";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   fetchCatalogue,
   formatDuration,
@@ -41,21 +47,20 @@ export default async function StudioCataloguePage() {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl px-5 pb-20 sm:px-6">
-        <section className="py-12 sm:py-16">
-          <p className="mb-3 text-[10.5px] font-bold uppercase tracking-[0.16em] text-ink-mute">
-            Studio
-          </p>
-          <h1 className="mb-4 max-w-[20ch] text-[clamp(30px,5vw,46px)] font-black leading-[1.08] tracking-tight text-ink">
+      <section className="bg-ona-wash border-b border-border-soft">
+        <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+          <p className="mb-2 text-[12.5px] font-bold uppercase tracking-[0.14em] text-ona-red">Studio</p>
+          <h1 className="mb-4 max-w-[20ch] text-[clamp(30px,5vw,46px)] font-black leading-[1.06] tracking-tight text-ink">
             Clear prices, before you commit
           </h1>
           <p className="max-w-[56ch] text-[17px] leading-relaxed text-ink-dim">
             Studio time is charged by the hour with the engineer included. Pick a room, a
             service and a time, and pay in GHS by Mobile Money or card.
           </p>
-        </section>
-
-        {unavailable ? <Unavailable /> : null}
+        </div>
+      </section>
+      <main className="mx-auto w-full max-w-6xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
+        {unavailable ? <div className="pt-8"><Unavailable /></div> : null}
 
         <Section
           title="Studio time"
@@ -91,6 +96,7 @@ export default async function StudioCataloguePage() {
           render={(eng) => <EngineerCard key={eng.id} engineer={eng} />}
         />
       </main>
+      <SiteFooter />
     </>
   );
 }
@@ -109,7 +115,7 @@ function Section<T>({
   render: (item: T) => React.ReactNode;
 }) {
   return (
-    <section className="border-t border-border-soft py-10 sm:py-14" aria-labelledby={slug(title)}>
+    <section className="border-t border-border-soft py-10 first-of-type:border-t-0 sm:py-14" aria-labelledby={slug(title)}>
       <div className="mb-7 max-w-[56ch]">
         <h2 id={slug(title)} className="mb-2 text-[clamp(22px,3vw,30px)] font-black tracking-tight text-ink">
           {title}
@@ -117,7 +123,7 @@ function Section<T>({
         <p className="text-[15px] leading-relaxed text-ink-dim">{lede}</p>
       </div>
       {items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border-default px-5 py-8 text-center text-[15px] text-ink-mute">
+        <p className="rounded-xl border border-dashed border-border-default bg-surface px-5 py-8 text-center text-[15px] text-ink-mute">
           {empty}
         </p>
       ) : (
@@ -129,7 +135,8 @@ function Section<T>({
 
 function RoomCard({ room }: { room: Room }) {
   return (
-    <li className="flex flex-col rounded-xl border border-border-default bg-surface p-6">
+    <li className="flex flex-col rounded-xl border border-border-default bg-surface p-6 shadow-card">
+      <CardIcon icon={DoorOpen} />
       <h3 className="mb-2 text-[19px] font-black tracking-tight text-ink">{room.name}</h3>
       <p className="mb-4 flex items-baseline gap-1.5">
         <span className="text-[26px] font-black leading-none text-ink">{room.hourly_rate_display}</span>
@@ -150,12 +157,11 @@ function RoomCard({ room }: { room: Room }) {
           <dd className="font-bold text-ink">Included</dd>
         </div>
       </dl>
-      <Link
-        href={`/register?next=${encodeURIComponent(`/customer/book?room=${room.id}`)}`}
-        className="flex min-h-[var(--tap-min)] items-center justify-center rounded-md bg-ona-red px-5 font-bold text-white transition-colors hover:bg-ona-tertiary"
-      >
-        Book {room.name}
-      </Link>
+      <Button asChild className="h-11 w-full font-bold">
+        <Link href={`/register?next=${encodeURIComponent(`/customer/book?room=${room.id}`)}`}>
+          Book {room.name}
+        </Link>
+      </Button>
     </li>
   );
 }
@@ -163,6 +169,7 @@ function RoomCard({ room }: { room: Room }) {
 function ServiceCard({ service }: { service: Service }) {
   return (
     <li className="flex flex-col rounded-xl border border-border-default bg-surface p-6">
+      <CardIcon icon={Music} />
       <h3 className="mb-2 text-[19px] font-black tracking-tight text-ink">{service.name}</h3>
       <p className="mb-4 flex items-baseline gap-1.5">
         <span className="text-[26px] font-black leading-none text-ink">{service.base_price_display}</span>
@@ -180,15 +187,15 @@ function ServiceCard({ service }: { service: Service }) {
 function EngineerCard({ engineer }: { engineer: Engineer }) {
   return (
     <li className="rounded-xl border border-border-default bg-surface p-6">
+      <CardIcon icon={Headphones} />
       <h3 className="mb-2 text-[19px] font-black tracking-tight text-ink">{engineer.name}</h3>
       {engineer.specialties.length > 0 ? (
-        <ul className="mb-3 flex flex-wrap gap-1.5">
+        <ul className="mb-3 flex flex-wrap gap-1.5" aria-label="Specialties">
           {engineer.specialties.map((s) => (
-            <li
-              key={s}
-              className="rounded-pill bg-surface-sunk px-2.5 py-1 text-[12px] font-bold text-ink-dim"
-            >
-              {s}
+            <li key={s}>
+              <Badge variant="secondary" className="font-bold">
+                {s}
+              </Badge>
             </li>
           ))}
         </ul>
@@ -202,13 +209,21 @@ function EngineerCard({ engineer }: { engineer: Engineer }) {
 
 function Unavailable() {
   return (
-    <p
-      role="status"
-      className="mb-6 rounded-lg border border-warn/30 bg-warn-bg px-5 py-4 text-[14.5px] text-warn"
-    >
-      Live prices are unavailable at the moment. Please try again shortly — nothing has
-      happened to any booking or payment.
-    </p>
+    <Alert role="status" className="mb-2 border-warn/30 bg-warn-bg text-warn">
+      <TriangleAlert aria-hidden="true" />
+      <AlertDescription className="text-[14.5px] text-warn">
+        Live prices are unavailable at the moment. Please try again shortly — nothing has
+        happened to any booking or payment.
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+function CardIcon({ icon: Icon }: { icon: typeof DoorOpen }) {
+  return (
+    <span aria-hidden="true" className="mb-4 grid size-10 place-items-center rounded-lg bg-surface-alt text-ona-blue">
+      <Icon className="size-5" />
+    </span>
   );
 }
 

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
 import { FormError, PasswordField, SubmitButton } from "@/components/auth/fields";
+import { Button } from "@/components/ui/button";
 import { useAuthSubmit } from "@/components/auth/shared";
 import { api } from "@/lib/api/client";
 
@@ -49,12 +50,9 @@ function ResetForm() {
           Sign in with your email and the password you just chose
           {welcome ? " to see the session ONA booked with you." : "."}
         </p>
-        <Link
-          href="/login"
-          className="inline-flex min-h-[var(--tap-min)] items-center rounded-md bg-ona-red px-6 font-bold text-white hover:bg-ona-tertiary"
-        >
-          Sign in
-        </Link>
+        <Button asChild className="h-11 px-6 font-bold">
+          <Link href="/login">Sign in</Link>
+        </Button>
       </div>
     );
   }
