@@ -151,7 +151,7 @@ export interface AdminRoom {
   id: string;
   name: string;
   description: string;
-  hourly_rate_pesewas: number;
+  hourly_rate_pesewas: number | null;
   hourly_rate_display: string;
   capacity: number;
   is_active: boolean;
@@ -164,6 +164,9 @@ export interface AdminService {
   description: string;
   base_price_pesewas: number;
   base_price_display: string;
+  price_unit: "hour" | "day" | "song" | "track";
+  unit_label: string;
+  category: string;
   duration_minutes: number;
   is_active: boolean;
   sort_order: number;
@@ -284,6 +287,8 @@ export interface StaffBookingInput {
   /** ISO datetime, on the hour, studio time. */
   start_at: string;
   hours: number;
+  /** Songs or tracks, for services priced that way. */
+  quantity?: number;
   notes?: string;
   status: "pending" | "confirmed";
   professional?: string | null;

@@ -44,7 +44,7 @@ export function HeroBookingCard({ room }: { room: Room | null }) {
         <div className="min-w-0">
           <p className="truncate text-[17px] font-black tracking-tight">{room?.name ?? "Live room"}</p>
           <p className="text-[13px] text-ink-mute">
-            {room ? `${room.hourly_rate_display} per hour · engineer included` : "Engineer included"}
+            {room?.hourly_rate_pesewas ? `${room.hourly_rate_display} per hour · engineer included` : "Engineer included · priced by service"}
           </p>
         </div>
         <span className="flex-none rounded-pill bg-surface-sunk px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-ink-mute">

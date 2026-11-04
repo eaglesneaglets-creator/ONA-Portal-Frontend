@@ -23,7 +23,7 @@ import { FormError } from "@/components/auth/fields";
 import { VerifyEmailBanner } from "@/components/auth/verify-email-banner";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState } from "@/components/dashboard/states";
-import { PayButton } from "@/components/booking/pay-button";
+import { PayOptions } from "@/components/booking/pay-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -44,8 +44,18 @@ import {
   type Booking,
   type Slot,
 } from "@/lib/api/bookings";
-import { formatDuration, type Engineer, type Room, type Service } from "@/lib/api/studio";
+import { type Engineer, type Room, type Service } from "@/lib/api/studio";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/booking-draft";
+import {
+  DAY_HOURS,
+  DEPOSIT_PERCENT,
+  MAX_QUANTITY,
+  depositPesewas,
+  isDay,
+  isPerItem,
+  quotePesewas,
+  unitNoun,
+} from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
 /**
@@ -78,7 +88,8 @@ import { cn } from "@/lib/utils";
 
 const STEPS = ["Room", "Engineer", "Service", "Date & time", "Review"] as const;
 const DAYS_AHEAD = 14;
-const MAX_HOURS = 4;
+// Longest session booked online (the API's MAX_HOURS). A Full Day Studio Pass is 8.
+const MAX_HOURS = 12;
 
 type Catalogue = { rooms: Room[]; engineers: Engineer[]; services: Service[] };
 
@@ -101,7 +112,7 @@ export default function BookPage() {
 function messageFrom(err: unknown): string {
   if (err instanceof ApiError) {
     const fields = err.fieldErrors;
-    for (const key of ["start_at", "hours", "room", "engineer", "service", "notes"]) {
+    for (const key of ["start_at", "hours", "quantity", "room", "engineer", "service", "notes"]) {
       if (fields[key]?.length) return fields[key][0];
     }
     return err.formError;
@@ -125,6 +136,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
   const [day, setDay] = useState<string | null>(null);
   const [start, setStart] = useState<Slot | null>(null);
   const [hoursWanted, setHours] = useState(1);
+  const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -156,6 +168,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
           setEngineer(de);
           setService(ds);
           setHours(draft.hours);
+          setQuantity(draft.quantity ?? 1);
           setNotes(draft.notes);
           resumeStart.current = draft.start_at;
           setStep(3);
@@ -273,13 +286,16 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
   }, [start, daySlots]);
 
   // The stepper stores the customer's wish; the value used everywhere is
-  // clamped to what is actually free from the chosen start.
-  const hours = Math.min(hoursWanted, maxHours);
+  // clamped to what is actually free from the chosen start. A day pass is
+  // always a whole day — it needs DAY_HOURS free hours from the start.
+  const dayPass = !!service && isDay(service);
+  const hours = dayPass ? DAY_HOURS : Math.min(hoursWanted, maxHours);
+  const dayPassFits = !dayPass || freeFromStart(daySlots, start) >= DAY_HOURS;
 
   const endIso = start ? new Date(new Date(start.start_at).getTime() + hours * 3_600_000).toISOString() : null;
-  const totalPesewas = room ? room.hourly_rate_pesewas * hours : 0;
+  const totalPesewas = room && service ? quotePesewas(room, service, hours, quantity) : 0;
 
-  const canNext = [!!room, !!engineer, !!service, !!start, true][step];
+  const canNext = [!!room, !!engineer, !!service, !!start && dayPassFits, true][step];
 
   async function confirm() {
     if (!room || !engineer || !service || !start || pending) return;
@@ -287,7 +303,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
     setSubmitError(null);
     setResumed(false);
     // Kept only if this attempt fails because the session ran out.
-    saveDraft({ room: room.id, engineer: engineer.id, service: service.id, start_at: start.start_at, hours, notes });
+    saveDraft({ room: room.id, engineer: engineer.id, service: service.id, start_at: start.start_at, hours, quantity, notes });
     try {
       const booking = await createBooking({
         room: room.id,
@@ -295,6 +311,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
         service: service.id,
         start_at: start.start_at,
         hours,
+        quantity: isPerItem(service) ? quantity : undefined,
         notes: notes.trim() || undefined,
       });
       clearDraft();
@@ -320,7 +337,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
     <div className="mx-auto w-full max-w-6xl">
       <PageHeader
         title="Your session, your way"
-        description="Pick a room, an engineer and a time. Rooms come with the engineer; times are Accra time."
+        description="Pick the studio, an engineer, what the session is for and a time. The engineer is included; times are Accra time."
       />
 
       <Stepper step={step} onJump={(i) => i < step && setStep(i)} />
@@ -353,15 +370,18 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
                 <Choose
                   icon={DoorOpen}
                   title="Choose your studio"
-                  lede="Every room comes with an engineer. Rate is per hour."
+                  lede="Every session comes with an engineer. The price depends on what the session is for."
                   items={catalogue.rooms}
                   selected={room?.id}
                   onPick={pickRoom}
                   render={(r) => (
                     <>
                       <b className="block text-[17px] font-black text-ink">{r.name}</b>
-                      <span className="block text-[15px] font-bold text-ink">
-                        {r.hourly_rate_display} <span className="font-normal text-ink-mute">/ hour</span>
+                      <span className="block text-[14px] font-bold text-ink">
+                        Up to {r.capacity} {r.capacity === 1 ? "person" : "people"}
+                        {r.hourly_rate_pesewas ? (
+                          <span className="font-normal text-ink-mute"> · room hire {r.hourly_rate_display} / hour</span>
+                        ) : null}
                       </span>
                       {r.description ? <span className="mt-1 block text-[13.5px] text-ink-dim">{r.description}</span> : null}
                     </>
@@ -388,7 +408,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
                 <Choose
                   icon={Music}
                   title="What is the session for?"
-                  lede="This tells the engineer what to prepare. Your price is the room rate."
+                  lede="Your price is the service's. Per-song and per-track services include the studio time you book."
                   items={catalogue.services}
                   selected={service?.id}
                   onPick={(s) => {
@@ -397,8 +417,14 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
                   }}
                   render={(s) => (
                     <>
+                      {s.category ? (
+                        <span className="block text-[11.5px] font-bold uppercase tracking-[0.12em] text-ona-red">{s.category}</span>
+                      ) : null}
                       <b className="block text-[17px] font-black text-ink">{s.name}</b>
-                      <span className="block text-[13.5px] text-ink-dim">Typically {formatDuration(s.duration_minutes)}</span>
+                      <span className="block text-[15px] font-bold text-ink">
+                        {s.base_price_display} <span className="font-normal text-ink-mute">{s.unit_label}</span>
+                      </span>
+                      {s.description ? <span className="mt-1 block text-[13.5px] text-ink-dim">{s.description}</span> : null}
                     </>
                   )}
                 />
@@ -419,6 +445,10 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
                   hours={hours}
                   maxHours={maxHours}
                   onHours={setHours}
+                  service={service}
+                  quantity={quantity}
+                  onQuantity={setQuantity}
+                  dayPassFits={dayPassFits}
                 />
               ) : (
                 <Review notes={notes} onNotes={setNotes} />
@@ -461,7 +491,9 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
           start={start}
           endIso={endIso}
           hours={hours}
+          quantity={quantity}
           total={previewGhs(totalPesewas)}
+          deposit={previewGhs(depositPesewas(totalPesewas))}
         />
       </div>
     </div>
@@ -598,6 +630,10 @@ function DateTime({
   hours,
   maxHours,
   onHours,
+  service,
+  quantity,
+  onQuantity,
+  dayPassFits,
 }: {
   byDay: Map<string, Slot[]>;
   loading: boolean;
@@ -611,12 +647,18 @@ function DateTime({
   hours: number;
   maxHours: number;
   onHours: (h: number) => void;
+  service: Service | null;
+  quantity: number;
+  onQuantity: (n: number) => void;
+  dayPassFits: boolean;
 }) {
   const days = [...byDay.entries()];
+  const perItem = !!service && isPerItem(service);
+  const dayPass = !!service && isDay(service);
   return (
     <div>
       <StepHeading>Pick a date &amp; time</StepHeading>
-      <p className="mb-5 text-[14.5px] text-ink-dim">Studio hours are 09:00 to 21:00, Accra time. Sessions start on the hour.</p>
+      <p className="mb-5 text-[14.5px] text-ink-dim">{hoursSentence(days)} Sessions start on the hour, Accra time. Walk-ins are not possible — every session is booked ahead.</p>
 
       {loading ? (
         <div aria-busy="true" aria-label="Checking availability" className="space-y-3">
@@ -691,10 +733,16 @@ function DateTime({
             </fieldset>
           ) : null}
 
-          {start ? (
+          {start && dayPass ? (
+            <p className={cn("text-[14px]", dayPassFits ? "text-ink-dim" : "font-bold text-err")} role={dayPassFits ? undefined : "alert"}>
+              {dayPassFits
+                ? `A Full Day Studio Pass is ${DAY_HOURS} hours, from ${fmtTime(start.start_at)}.`
+                : `A day pass needs ${DAY_HOURS} free hours in a row — pick an earlier start or another day.`}
+            </p>
+          ) : start ? (
             <div>
               <p id="dur-h" className="mb-2 text-[14px] font-bold text-ink">
-                How long do you need?
+                {perItem ? "How much studio time do you need?" : "How long do you need?"}
               </p>
               <div className="inline-flex items-center gap-1 rounded-lg border border-border-default bg-surface p-1" role="group" aria-labelledby="dur-h">
                 <Button type="button" variant="ghost" size="icon" className="size-11" aria-label="Decrease by 1 hour" disabled={hours <= 1} onClick={() => onHours(hours - 1)}>
@@ -712,6 +760,27 @@ function DateTime({
                   Up to {maxHours} {maxHours === 1 ? "hour" : "hours"} from this start before the next booking or closing.
                 </p>
               ) : null}
+              {perItem && service ? (
+                <div className="mt-5">
+                  <p id="qty-h" className="mb-2 text-[14px] font-bold text-ink">
+                    How many {unitNoun(service, 2)}?
+                  </p>
+                  <div className="inline-flex items-center gap-1 rounded-lg border border-border-default bg-surface p-1" role="group" aria-labelledby="qty-h">
+                    <Button type="button" variant="ghost" size="icon" className="size-11" aria-label={`One fewer ${unitNoun(service, 1)}`} disabled={quantity <= 1} onClick={() => onQuantity(quantity - 1)}>
+                      <Minus aria-hidden="true" />
+                    </Button>
+                    <span className="min-w-[88px] text-center text-[15px] font-bold text-ink tabular-nums" aria-live="polite">
+                      {quantity} {unitNoun(service, quantity)}
+                    </span>
+                    <Button type="button" variant="ghost" size="icon" className="size-11" aria-label={`One more ${unitNoun(service, 1)}`} disabled={quantity >= MAX_QUANTITY} onClick={() => onQuantity(quantity + 1)}>
+                      <Plus aria-hidden="true" />
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-[12.5px] text-ink-mute">
+                    {service.base_price_display} {service.unit_label}. The studio time above is included.
+                  </p>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </>
@@ -725,7 +794,11 @@ function Review({ notes, onNotes }: { notes: string; onNotes: (v: string) => voi
     <div>
       <StepHeading>Review and confirm</StepHeading>
       <p className="mb-5 text-[14.5px] text-ink-dim">
-        No payment is taken yet. Your booking is held as pending and ONA will confirm it with you.
+        After you confirm, the slot is held for you for one hour. Pay the {DEPOSIT_PERCENT}% deposit in that time to
+        secure it; the balance is due before or on the day.{" "}
+        <Link href="/legal/terms" className="font-bold text-ona-red hover:underline">
+          Booking terms
+        </Link>
       </p>
       <div className="grid gap-1.5">
         <Label htmlFor="notes">
@@ -752,7 +825,9 @@ function Summary({
   start,
   endIso,
   hours,
+  quantity,
   total,
+  deposit,
 }: {
   room: Room | null;
   engineer: Engineer | null;
@@ -760,7 +835,9 @@ function Summary({
   start: Slot | null;
   endIso: string | null;
   hours: number;
+  quantity: number;
   total: string;
+  deposit: string;
 }) {
   return (
     <aside aria-label="Session summary" className="lg:sticky lg:top-20">
@@ -778,17 +855,25 @@ function Summary({
             <Row k="Start" v={start ? fmtTime(start.start_at) : "—"} />
             <Row k="Length" v={start ? `${hours} ${hours === 1 ? "hour" : "hours"}` : "—"} />
             <Row k="Ends" v={endIso ? fmtTime(endIso) : "—"} />
-            <Row k="Rate" v={room ? `${room.hourly_rate_display} / hr` : "—"} />
+            <Row k="Price" v={service ? `${service.base_price_display} ${service.unit_label}` : "—"} />
+            {service && isPerItem(service) ? <Row k={unitNoun(service, 2).replace(/^./, (c) => c.toUpperCase())} v={quantity} /> : null}
+            {room?.hourly_rate_pesewas ? <Row k="Room hire" v={`${room.hourly_rate_display} / hr`} /> : null}
           </dl>
           <p className="mt-4 flex items-baseline justify-between">
             <span className="text-[13.5px] font-bold text-ink-dim">Total</span>
-            <b className="text-[26px] font-black tabular-nums text-ink" data-testid="summary-total">{room ? total : "—"}</b>
+            <b className="text-[26px] font-black tabular-nums text-ink" data-testid="summary-total">{room && service ? total : "—"}</b>
           </p>
+          {room && service ? (
+            <p className="flex items-baseline justify-between text-[13.5px]">
+              <span className="text-ink-dim">{DEPOSIT_PERCENT}% deposit to secure it</span>
+              <b className="tabular-nums text-ink" data-testid="summary-deposit">{deposit}</b>
+            </p>
+          ) : null}
           <p className="mt-4 flex gap-2.5 rounded-lg bg-surface-alt px-3 py-2.5 text-[12.5px] leading-snug text-ink-dim">
             <ShieldCheck aria-hidden="true" className="mt-px size-4 flex-none text-ona-blue" />
             <span>
-              <b className="block text-ink">No payment yet</b>
-              Online payment arrives with the next release. Nothing is charged today.
+              <b className="block text-ink">Held for one hour</b>
+              Pay the deposit by Mobile Money to confirm. A small Paystack processing fee is added and shown before you pay.
             </span>
           </p>
         </CardContent>
@@ -828,11 +913,11 @@ function Confirmed({ booking, onAnother }: { booking: Booking; onAnother: () => 
             {booking.room.name} with {booking.engineer.name}, {fmtDay(booking.start_at)} from {fmtTime(booking.start_at)} to{" "}
             {fmtTime(booking.end_at)}. Total {booking.total_display}.{" "}
             {booking.can_pay_online
-              ? "The slot is held for you — pay now to confirm it."
+              ? `The slot is held for one hour — pay the ${booking.deposit_display} deposit to secure it.`
               : "It is held as pending — ONA will confirm it with you, and no payment has been taken."}
           </p>
+          <PayOptions booking={booking} className="mb-4" />
           <div className="flex flex-wrap justify-center gap-3">
-            <PayButton booking={booking} />
             <Button asChild variant={booking.can_pay_online ? "outline" : "default"} className="h-11 px-6 font-bold">
               <Link href="/customer">{booking.can_pay_online ? "Pay later" : "Back to your workspace"}</Link>
             </Button>
@@ -844,4 +929,23 @@ function Confirmed({ booking, onAnother }: { booking: Booking; onAnother: () => 
       </Card>
     </div>
   );
+}
+
+/** Consecutive free hours from a start, on its day. */
+function freeFromStart(daySlots: Slot[], start: Slot | null): number {
+  if (!start) return 0;
+  const i = daySlots.findIndex((s) => s.start_at === start.start_at);
+  if (i < 0) return 0;
+  let n = 0;
+  for (let j = i; j < daySlots.length && daySlots[j].state === "available"; j++) n++;
+  return n;
+}
+
+/** "Open 24 hours." or "Open 09:00–21:00." — read from the calendar the API sent. */
+function hoursSentence(days: [string, Slot[]][]): string {
+  const longest = days.reduce((m, [, ss]) => Math.max(m, ss.length), 0);
+  if (longest >= 24) return "The studio is open 24 hours, every day.";
+  const any = days.find(([, ss]) => ss.length === longest)?.[1];
+  if (!any?.length) return "";
+  return `The studio is open ${fmtTime(any[0].start_at)}–${fmtTime(any[any.length - 1].end_at)}.`;
 }

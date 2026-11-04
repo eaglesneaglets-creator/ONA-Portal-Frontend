@@ -21,6 +21,8 @@ export interface BookingDraft {
   service: string;
   start_at: string;
   hours: number;
+  /** Songs or tracks; absent in drafts saved before per-song pricing. */
+  quantity?: number;
   notes: string;
 }
 

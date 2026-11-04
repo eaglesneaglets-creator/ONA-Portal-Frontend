@@ -106,7 +106,7 @@ test("staff record an off-platform payment and a refund", async ({ page, request
   const sheet = page.getByRole("dialog", { name: new RegExp(ref) });
   await sheet.getByRole("button", { name: "Record a payment" }).click();
   const form = sheet.getByRole("group", { name: "Record a payment" });
-  await expect(form.getByLabel("Amount (GHS)")).toHaveValue("120.00"); // the outstanding amount, from the server
+  await expect(form.getByLabel("Amount (GHS)")).toHaveValue("200.00"); // the outstanding amount, from the server (1 h × GHS 200 Recording)
   await form.getByLabel(/^Reference/).fill(`MOMO-${tag}`);
   await form.getByRole("button", { name: "Record payment" }).click();
   const toast = page.locator("[data-sonner-toast]");
@@ -130,7 +130,7 @@ test("staff record an off-platform payment and a refund", async ({ page, request
   const pay = page.getByTestId("admin-payment-row").filter({ hasText: ref });
   await expect(pay).toHaveCount(1);
   await expect(pay).toContainText(/Recorded by staff|recorded by staff/);
-  await expect(pay).toContainText("GHS 120.00");
-  await expect(pay).toContainText("GHS 100.00"); // still held after the refund
+  await expect(pay).toContainText("GHS 200.00");
+  await expect(pay).toContainText("GHS 180.00"); // still held after the refund
   if (test.info().project.name !== "mobile") await expect(pay).toContainText("%"); // commission rate column
 });

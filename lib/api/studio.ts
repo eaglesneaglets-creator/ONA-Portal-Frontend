@@ -18,7 +18,8 @@ export interface Room {
   id: string;
   name: string;
   description: string;
-  hourly_rate_pesewas: number;
+  /** Optional room hire per hour, added to the service price. Null for ONA's room. */
+  hourly_rate_pesewas: number | null;
   hourly_rate_display: string;
   capacity: number;
 }
@@ -36,6 +37,12 @@ export interface Service {
   description: string;
   base_price_pesewas: number;
   base_price_display: string;
+  /** What one price buys (ONA prices by service). */
+  price_unit: "hour" | "day" | "song" | "track";
+  /** "per hour", "per 8-hour day", "per song", "per track". */
+  unit_label: string;
+  /** How the price list is grouped, e.g. "Space & Studio Rental". */
+  category: string;
   duration_minutes: number;
 }
 

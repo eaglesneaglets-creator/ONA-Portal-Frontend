@@ -123,9 +123,10 @@ test("customer books a session and gets a reference; summary maths is right", as
   await registerCustomer(page);
   await chooseEverything(page, slotOffset(0));
 
-  // 2 hours at GHS 200/hr (seeded Studio A) = GHS 400.00, mirrored live.
+  // 2 hours of "Recording session" at GHS 200/hr = GHS 400.00, mirrored live; deposit half.
   await page.getByRole("button", { name: "Increase by 1 hour" }).click();
   await expect(page.getByTestId("summary-total")).toHaveText("GHS 400.00");
+  await expect(page.getByTestId("summary-deposit")).toHaveText("GHS 200.00");
 
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByLabel(/engineer should know/i).fill("Bring a cajon");
@@ -135,6 +136,22 @@ test("customer books a session and gets a reference; summary maths is right", as
   await expect(ref).toBeVisible();
   await expect(ref).toHaveText(/^ONA-[0-9A-F]{6}$/);
   await expect(page.getByText(/GHS 400\.00/)).toBeVisible();
+});
+
+test("a per-song service is priced by the songs, not the studio time", async ({ page }) => {
+  await registerCustomer(page);
+  await page.goto("/customer/book");
+  await page.getByRole("button", { name: /Studio B/ }).click();
+  await page.getByRole("button", { name: /Engineer Two/ }).click();
+  await page.getByRole("button", { name: /Mixing \(per song\)/ }).click();
+  await pickEmptiestDay(page);
+  const slots = page.getByRole("list", { name: "Start times" }).getByRole("button", { disabled: false });
+  await slots.nth(slotOffset(3)).click();
+
+  await expect(page.getByTestId("summary-total")).toHaveText("GHS 300.00");
+  await page.getByRole("button", { name: "One more song" }).click();
+  await page.getByRole("button", { name: "Increase by 1 hour" }).click(); // more studio time costs nothing more
+  await expect(page.getByTestId("summary-total")).toHaveText("GHS 600.00");
 });
 
 test("the same slot cannot be booked twice — the second attempt is refused politely", async ({ page, browser }) => {

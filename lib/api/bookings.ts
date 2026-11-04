@@ -59,6 +59,26 @@ export interface Booking {
   outstanding_display: string;
   /** Online payment is switched on and this booking can be paid now (ADR-018). */
   can_pay_online: boolean;
+  /** Songs or tracks, for services priced that way; 1 otherwise. */
+  quantity: number;
+  /** What "Pay" offers now: the deposit or in full, or the balance (ONA's terms). */
+  payment_options: PaymentOption[];
+  deposit_pesewas: number;
+  deposit_display: string;
+  /** The deposit is paid: the booking is the customer's. */
+  secured: boolean;
+}
+
+export interface PaymentOption {
+  kind: "deposit" | "full" | "balance";
+  label: string;
+  amount_pesewas: number;
+  amount_display: string;
+  /** Paystack's processing fee, added on top (ONA passes it on). */
+  fee_pesewas: number;
+  fee_display: string;
+  charge_pesewas: number;
+  charge_display: string;
 }
 
 export interface BookingInput {
@@ -68,6 +88,8 @@ export interface BookingInput {
   /** ISO datetime, on the hour, studio time. */
   start_at: string;
   hours: number;
+  /** Songs or tracks, for services priced that way. */
+  quantity?: number;
   notes?: string;
 }
 
@@ -239,9 +261,9 @@ export interface Checkout {
 }
 
 /** Start a Paystack checkout for what is still owed on a booking. */
-export function startCheckout(bookingId: string): Promise<Checkout> {
+export function startCheckout(bookingId: string, pay: "deposit" | "full" = "deposit"): Promise<Checkout> {
   // No retry: each call opens a new payment attempt.
-  return api.post<Checkout>("/payments/checkout/", { booking: bookingId }, { retries: 0 });
+  return api.post<Checkout>("/payments/checkout/", { booking: bookingId, pay }, { retries: 0 });
 }
 
 export interface PaymentOutcome {

@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   fetchCatalogue,
-  formatDuration,
   type Engineer,
   type Package,
   type Room,
@@ -54,17 +53,33 @@ export default async function StudioCataloguePage() {
             Clear prices, before you commit
           </h1>
           <p className="max-w-[56ch] text-[17px] leading-relaxed text-ink-dim">
-            Studio time is charged by the hour with the engineer included. Pick a room, a
-            service and a time, and pay in GHS by Mobile Money or card.
+            Every service is priced up front, with the engineer included. Pick what your
+            session is for and a time, secure it with a 50% deposit by Mobile Money, and pay
+            the balance on the day. Open around the clock, by booking only.
           </p>
         </div>
       </section>
       <main className="mx-auto w-full max-w-6xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
         {unavailable ? <div className="pt-8"><Unavailable /></div> : null}
 
+        {byCategory(services).map(([category, items]) => (
+          <Section
+            key={category}
+            title={category}
+            lede={category === "Services" ? "What a session is for, and what it costs." : ""}
+            empty="No services are listed right now."
+            items={items}
+            render={(svc) => <ServiceCard key={svc.id} service={svc} />}
+          />
+        ))}
+        {services.length === 0 ? (
+          <Section title="Services" lede="" empty="No services are listed right now." items={services}
+            render={(svc) => <ServiceCard key={svc.id} service={svc} />} />
+        ) : null}
+
         <Section
-          title="Studio time"
-          lede="Every room comes with a recording engineer. Minimum booking is one hour."
+          title="The studio"
+          lede="Every session comes with an engineer. Minimum booking is one hour."
           empty="No rooms are open for booking right now."
           items={rooms}
           render={(room) => <RoomCard key={room.id} room={room} />}
@@ -79,14 +94,6 @@ export default async function StudioCataloguePage() {
             render={(p) => <PackageCard key={p.id} pkg={p} />}
           />
         ) : null}
-
-        <Section
-          title="Services"
-          lede="What a session is for. Prices are for one unit of the stated length."
-          empty="No services are listed right now."
-          items={services}
-          render={(svc) => <ServiceCard key={svc.id} service={svc} />}
-        />
 
         <Section
           title="Engineers"
@@ -138,9 +145,10 @@ function RoomCard({ room }: { room: Room }) {
     <li className="flex flex-col rounded-xl border border-border-default bg-surface p-6 shadow-card">
       <CardIcon icon={DoorOpen} />
       <h3 className="mb-2 text-[19px] font-black tracking-tight text-ink">{room.name}</h3>
-      <p className="mb-4 flex items-baseline gap-1.5">
-        <span className="text-[26px] font-black leading-none text-ink">{room.hourly_rate_display}</span>
-        <span className="text-[13px] font-bold text-ink-mute">per hour</span>
+      <p className="mb-4 text-[14px] font-bold text-ink-mute">
+        {room.hourly_rate_pesewas
+          ? `Room hire ${room.hourly_rate_display} per hour, plus the service`
+          : "Priced by service — see the list above"}
       </p>
       {room.description ? (
         <p className="mb-5 text-[14.5px] leading-relaxed text-ink-dim">{room.description}</p>
@@ -173,9 +181,7 @@ function ServiceCard({ service }: { service: Service }) {
       <h3 className="mb-2 text-[19px] font-black tracking-tight text-ink">{service.name}</h3>
       <p className="mb-4 flex items-baseline gap-1.5">
         <span className="text-[26px] font-black leading-none text-ink">{service.base_price_display}</span>
-        <span className="text-[13px] font-bold text-ink-mute">
-          per {formatDuration(service.duration_minutes)}
-        </span>
+        <span className="text-[13px] font-bold text-ink-mute">{service.unit_label}</span>
       </p>
       {service.description ? (
         <p className="text-[14.5px] leading-relaxed text-ink-dim">{service.description}</p>
@@ -253,4 +259,14 @@ function PackageCard({ pkg }: { pkg: Package }) {
       <p className="mt-auto border-t border-border-soft pt-4 text-[22px] font-black text-ink">{pkg.price_display}</p>
     </li>
   );
+}
+
+/** Services in ONA's own groups, in catalogue order. Ungrouped ones last, as "Services". */
+function byCategory(services: Service[]): [string, Service[]][] {
+  const groups = new Map<string, Service[]>();
+  for (const s of services) {
+    const key = s.category || "Services";
+    groups.set(key, [...(groups.get(key) ?? []), s]);
+  }
+  return [...groups.entries()];
 }

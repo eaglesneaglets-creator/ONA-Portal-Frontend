@@ -52,14 +52,14 @@ const WRAP = "mx-auto w-full max-w-6xl px-4 sm:px-6";
 
 const PROMISES = [
   { icon: Headphones, label: "Engineer included" },
-  { icon: Smartphone, label: "Mobile Money, card or bank" },
+  { icon: Smartphone, label: "Mobile Money or bank transfer" },
   { icon: ShieldCheck, label: "Payment held by ONA" },
   { icon: Lock, label: "Prices fixed before you confirm" },
 ];
 
 const STEPS = [
   { title: "Pick a room, engineer and time", body: "Live availability. A slot shown as free is free." },
-  { title: "Confirm and pay ONA", body: "See the total first. Pay in GHS by Mobile Money, card or bank." },
+  { title: "Confirm and pay ONA", body: "See the total first. Secure it with a 50% deposit by Mobile Money; the balance is due on the day." },
   { title: "ONA confirms it", body: "You get a reference and an invoice by email, and a reminder the day before." },
   { title: "Record", body: "Turn up, plug in, make the thing. Your payment was with ONA the whole time." },
 ];
@@ -67,8 +67,10 @@ const STEPS = [
 const roomHref = (r: Room) => `/register?next=${encodeURIComponent(`/customer/book?room=${r.id}`)}`;
 
 export default async function Home() {
-  const [{ rooms, unavailable }, faqs] = await Promise.all([fetchCatalogue(), fetchFaqs()]);
+  const [{ rooms, services, unavailable }, faqs] = await Promise.all([fetchCatalogue(), fetchFaqs()]);
   const featured = rooms.slice(0, 3);
+  // ONA prices by service: a room shows where prices start, not a rate of its own.
+  const cheapest = [...services].sort((a, b) => a.base_price_pesewas - b.base_price_pesewas)[0];
 
   return (
     <>
@@ -236,8 +238,18 @@ export default async function Home() {
                     </p>
                     <div className="mt-auto flex items-end justify-between gap-3 border-t border-border-soft pt-4">
                       <p>
-                        <span className="block text-[22px] font-black leading-none text-ink">{r.hourly_rate_display}</span>
-                        <span className="text-[13px] text-ink-mute">per hour</span>
+                        {r.hourly_rate_pesewas ? (
+                          <>
+                            <span className="block text-[22px] font-black leading-none text-ink">{r.hourly_rate_display}</span>
+                            <span className="text-[13px] text-ink-mute">room hire per hour</span>
+                          </>
+                        ) : cheapest ? (
+                          <>
+                            <span className="block text-[13px] text-ink-mute">From</span>
+                            <span className="block text-[22px] font-black leading-none text-ink">{cheapest.base_price_display}</span>
+                            <span className="text-[13px] text-ink-mute">{cheapest.unit_label}</span>
+                          </>
+                        ) : null}
                       </p>
                       <Button asChild className="h-11 font-bold">
                         <Link href={roomHref(r)} aria-label={`Book ${r.name}`}>

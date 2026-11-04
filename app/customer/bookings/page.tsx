@@ -249,6 +249,8 @@ function ProfessionalLine({ booking: b }: { booking: Booking }) {
 /* ── Row actions ────────────────────────────────────────────────────────── */
 
 function RowActions({ booking: b, onAct }: { booking: Booking; onAct: (p: Pending) => void }) {
+  // Read once per mount: "is it still ahead?" only gates a hint in the menu.
+  const [now] = useState(() => Date.now());
   async function download(kind: "invoice" | "receipt") {
     const id = toast.loading(`Preparing your ${kind}…`);
     try {
@@ -295,6 +297,14 @@ function RowActions({ booking: b, onAct }: { booking: Booking; onAct: (p: Pendin
             >
               <XCircle aria-hidden="true" />
               Cancel booking
+            </DropdownMenuItem>
+          </>
+        ) : (b.status === "pending" || b.status === "confirmed") && new Date(b.start_at).getTime() > now ? (
+          <>
+            <DropdownMenuSeparator />
+            {/* ONA's terms: a paid booking changes only with 48 hours' notice. */}
+            <DropdownMenuItem disabled className="min-h-11 whitespace-normal md:min-h-8">
+              Less than 48 hours to go — contact ONA to change it
             </DropdownMenuItem>
           </>
         ) : null}
@@ -355,8 +365,10 @@ function CancelDialog({
           {b.paid_pesewas > 0 ? (
             // QA F1: a paid booking must never be told "no payment has been taken".
             <p role="note" className="rounded-md bg-warn-bg px-3 py-2.5 text-[14px] text-warn">
-              You have paid <b>{b.paid_display}</b> for this booking. Cancelling does not return it
-              automatically — ONA holds it and will contact you about it.
+              You have paid <b>{b.paid_display}</b>. Under ONA&rsquo;s{" "}
+              <Link href="/legal/terms" className="font-bold underline">booking terms</Link> deposits are not
+              refunded — because you are cancelling at least 48 hours ahead, it is kept as credit towards a new
+              session booked and completed within 30 days.
             </p>
           ) : null}
           {error ? <FormError message={error} /> : null}

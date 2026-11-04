@@ -18,10 +18,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { adminApi, type Professional, type StaffCustomer } from "@/lib/api/admin";
-import { fetchCatalogueFromBrowser, studioDate } from "@/lib/api/bookings";
+import { fetchCatalogueFromBrowser, previewGhs, studioDate } from "@/lib/api/bookings";
 import { ApiError } from "@/lib/api/errors";
 import type { Engineer, Room, Service } from "@/lib/api/studio";
 import { parseGhsToPesewas } from "@/lib/money";
+import { MAX_QUANTITY, isPerItem, quotePesewas, unitNoun } from "@/lib/pricing";
+
 
 /**
  * /admin/bookings/new — book a session on a customer's behalf (Task 15).
@@ -71,6 +73,7 @@ export default function NewBookingPage() {
   const [day, setDay] = useState(() => studioDate(new Date(Date.now() + 86_400_000)));
   const [hour, setHour] = useState("10");
   const [length, setLength] = useState("2");
+  const [quantity, setQuantity] = useState("1");
   const [status, setStatus] = useState<"pending" | "confirmed">("confirmed");
   const [notes, setNotes] = useState("");
 
@@ -136,6 +139,7 @@ export default function NewBookingPage() {
         // wall-clock hour is the UTC hour.
         start_at: `${day}T${hour.padStart(2, "0")}:00:00+00:00`,
         hours: Number(length),
+        quantity: Number(quantity),
         notes: notes.trim(),
         status,
         professional: pro === "none" ? null : pro,
@@ -156,6 +160,11 @@ export default function NewBookingPage() {
   }
 
   const selectedRoom = catalogue?.rooms.find((r) => r.id === room);
+  const selectedService = catalogue?.services.find((s) => s.id === service);
+  const perItem = !!selectedService && isPerItem(selectedService);
+  const estimate =
+    selectedRoom && selectedService ? quotePesewas(selectedRoom, selectedService, Number(length), Number(quantity)) + (pro !== "none" ? (parseGhsToPesewas(fee) ?? 0) : 0)
+      : 0;
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -228,11 +237,11 @@ export default function NewBookingPage() {
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <PickField id="room" label="Room" value={room} onChange={setRoom}
-                options={(catalogue?.rooms ?? []).map((r) => ({ value: r.id, label: `${r.name} · ${r.hourly_rate_display}/hr` }))} />
+                options={(catalogue?.rooms ?? []).map((r) => ({ value: r.id, label: r.hourly_rate_pesewas ? `${r.name} · hire ${r.hourly_rate_display}/hr` : r.name }))} />
               <PickField id="engineer" label="Engineer" value={engineer} onChange={setEngineer}
                 options={(catalogue?.engineers ?? []).map((e) => ({ value: e.id, label: e.name }))} />
               <PickField id="service" label="Service" value={service} onChange={setService}
-                options={(catalogue?.services ?? []).map((s) => ({ value: s.id, label: s.name }))} />
+                options={(catalogue?.services ?? []).map((s) => ({ value: s.id, label: `${s.name} · ${s.base_price_display} ${s.unit_label}` }))} />
               <div className="grid gap-1.5">
                 <Label htmlFor="day">Date</Label>
                 <Input id="day" type="date" value={day} min={studioDate(new Date())} onChange={(e) => setDay(e.target.value)}
@@ -242,8 +251,12 @@ export default function NewBookingPage() {
                 options={HOURS.map((h) => ({ value: String(h), label: `${String(h).padStart(2, "0")}:00` }))} />
               <PickField id="length" label="Length" value={length} onChange={(v) => { setLength(v); setOutsideOk(false); }}
                 options={LENGTHS.map((n) => ({ value: String(n), label: `${n} ${n === 1 ? "hour" : "hours"}` }))} />
-              {errors.start_at || errors.hours ? (
-                <p role="alert" className="text-[13.5px] text-err sm:col-span-2">{errors.start_at ?? errors.hours}</p>
+              {perItem && selectedService ? (
+                <PickField id="quantity" label={`${unitNoun(selectedService, 2).replace(/^./, (c) => c.toUpperCase())}`} value={quantity} onChange={setQuantity}
+                  options={Array.from({ length: MAX_QUANTITY }, (_, i) => ({ value: String(i + 1), label: `${i + 1} ${unitNoun(selectedService, i + 1)}` }))} />
+              ) : null}
+              {errors.start_at || errors.hours || errors.quantity ? (
+                <p role="alert" className="text-[13.5px] text-err sm:col-span-2">{errors.start_at ?? errors.hours ?? errors.quantity}</p>
               ) : null}
 
               {errors.outside_hours ? (
@@ -298,7 +311,8 @@ export default function NewBookingPage() {
                 <SummaryRow label="Customer" value={mode === "existing" ? customer?.name ?? "—" : newCustomer.first_name || "New customer"} />
                 <SummaryRow label="Room" value={selectedRoom?.name ?? "—"} />
                 <SummaryRow label="When" value={`${day} · ${hour.padStart(2, "0")}:00 · ${length}h`} />
-                <SummaryRow label="Rate" value={selectedRoom ? `${selectedRoom.hourly_rate_display}/hr` : "—"} />
+                <SummaryRow label="Price" value={selectedService ? `${selectedService.base_price_display} ${selectedService.unit_label}${perItem ? ` × ${quantity}` : ""}` : "—"} />
+                <SummaryRow label="Estimated total" value={estimate ? previewGhs(estimate) : "—"} />
               </dl>
               <p className="text-[12.5px] text-ink-mute">The total, invoice and reference are created by the server when you book.</p>
               <PickField id="status" label="Start as" value={status} onChange={(v) => setStatus(v as "pending" | "confirmed")}

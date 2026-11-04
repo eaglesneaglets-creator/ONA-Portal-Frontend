@@ -32,11 +32,21 @@ import { parseGhsToPesewas, pesewasToInput } from "@/lib/money";
 
 type Row = Record<string, unknown> & { id: string; name: string; is_active: boolean; sort_order: number };
 
-type FieldKind = "text" | "textarea" | "money" | "int" | "comma" | "lines" | "room";
+type FieldKind = "text" | "textarea" | "money" | "int" | "comma" | "lines" | "room" | "unit";
+
+// What one service price buys (apps/studio/pricing.py).
+const UNITS = [
+  { value: "hour", label: "Per hour" },
+  { value: "day", label: "Per 8-hour day" },
+  { value: "song", label: "Per song" },
+  { value: "track", label: "Per track" },
+];
 interface FieldDef {
   key: string;
   label: string;
   kind: FieldKind;
+  /** Money only: may be left empty (sent as null). */
+  optional?: boolean;
   hint?: string;
 }
 interface KindDef {
@@ -53,11 +63,12 @@ const KINDS: Record<CatalogueKind, KindDef> = {
     fields: [
       { key: "name", label: "Name", kind: "text" },
       { key: "description", label: "Description", kind: "textarea" },
-      { key: "hourly_rate_pesewas", label: "Rate per hour (GHS)", kind: "money", hint: "Engineer included. New bookings only." },
+      { key: "hourly_rate_pesewas", label: "Room hire per hour (GHS) — optional", kind: "money", optional: true,
+        hint: "Leave empty when the service price covers the room (ONA's Studio One). If set, it is added to the service price." },
       { key: "capacity", label: "Capacity (people)", kind: "int" },
     ],
     columns: [
-      { label: "Rate", value: (r) => `${r.hourly_rate_display}/hr`, align: "right" },
+      { label: "Room hire", value: (r) => (r.hourly_rate_display ? `${r.hourly_rate_display}/hr` : "By service"), align: "right" },
       { label: "Capacity", value: (r) => String(r.capacity), align: "right" },
     ],
   },
@@ -67,12 +78,13 @@ const KINDS: Record<CatalogueKind, KindDef> = {
     fields: [
       { key: "name", label: "Name", kind: "text" },
       { key: "description", label: "Description", kind: "textarea" },
-      { key: "base_price_pesewas", label: "Price (GHS)", kind: "money", hint: "For one unit of the length below." },
-      { key: "duration_minutes", label: "Length (minutes)", kind: "int" },
+      { key: "category", label: "Group on the price list", kind: "text", hint: "e.g. Space & Studio Rental. Services with the same group are listed together." },
+      { key: "base_price_pesewas", label: "Price (GHS)", kind: "money", hint: "Engineer included. New bookings only." },
+      { key: "price_unit", label: "Priced", kind: "unit", hint: "Per song or track: the customer also books studio time, which is included." },
+      { key: "duration_minutes", label: "Typical studio time (minutes)", kind: "int", hint: "Guidance only. A day is always 8 hours." },
     ],
     columns: [
-      { label: "Price", value: (r) => String(r.base_price_display), align: "right" },
-      { label: "Length", value: (r) => `${r.duration_minutes} min`, align: "right" },
+      { label: "Price", value: (r) => `${String(r.base_price_display)} ${String(r.unit_label ?? "")}`, align: "right" },
     ],
   },
   engineers: {
@@ -242,7 +254,7 @@ function StatusBadge({ active }: { active: boolean }) {
 
 function initialValue(f: FieldDef, existing: Row | null): string {
   const v = existing?.[f.key];
-  if (v === undefined || v === null) return f.kind === "room" ? "any" : "";
+  if (v === undefined || v === null) return f.kind === "room" ? "any" : f.kind === "unit" ? "hour" : "";
   if (f.kind === "money") return pesewasToInput(v as number);
   if (f.kind === "comma") return (v as string[]).join(", ");
   if (f.kind === "lines") return (v as string[]).join("\n");
@@ -281,7 +293,8 @@ function ItemForm({
       const raw = values[f.key] ?? "";
       if (f.kind === "money") {
         const p = parseGhsToPesewas(raw);
-        if (!p) errs[f.key] = "Enter an amount in cedis, e.g. 200 or 200.50.";
+        if (f.optional && !raw.trim()) out[f.key] = null;
+        else if (!p) errs[f.key] = "Enter an amount in cedis, e.g. 200 or 200.50.";
         else out[f.key] = p;
       } else if (f.kind === "int") {
         if (!/^\d+$/.test(raw.trim())) errs[f.key] = "Enter a whole number.";
@@ -338,6 +351,15 @@ function ItemForm({
             <Label htmlFor={id}>{f.label}</Label>
             {f.kind === "textarea" || f.kind === "lines" ? (
               <Textarea id={id} value={values[f.key]} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} aria-invalid={Boolean(err)} />
+            ) : f.kind === "unit" ? (
+              <Select value={values[f.key]} onValueChange={(v) => setValues({ ...values, [f.key]: v })}>
+                <SelectTrigger id={id} className="h-11 w-full md:h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {UNITS.map((u) => (
+                    <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             ) : f.kind === "room" ? (
               <Select value={values[f.key]} onValueChange={(v) => setValues({ ...values, [f.key]: v })}>
                 <SelectTrigger id={id} className="h-11 w-full md:h-9"><SelectValue /></SelectTrigger>
