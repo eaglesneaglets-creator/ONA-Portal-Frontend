@@ -22,6 +22,7 @@ import {
   Mail,
   MoreHorizontal,
   Phone,
+  TicketCheck,
   TriangleAlert,
   Undo2,
   UserPlus,
@@ -126,7 +127,8 @@ export function BookingConsole({ children, onChanged }: { children: React.ReactN
     <ConsoleCtx.Provider value={value}>
       {children}
       <BookingSheet id={viewing} version={detailVersion} onClose={() => setViewing(null)} />
-      <TransitionDialog pending={acting} onClose={() => setActing(null)} onDone={done} />
+      {/* Keyed so each opening starts fresh — and measures "48 hours ahead" from now. */}
+      <TransitionDialog key={acting ? `${acting.booking.id}-${acting.action}` : "none"} pending={acting} onClose={() => setActing(null)} onDone={done} />
     </ConsoleCtx.Provider>
   );
 }
@@ -373,11 +375,18 @@ function TransitionDialog({
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // ONA's terms: with 48 hours' notice the deposit becomes credit; less (or a
+  // no-show) forfeits it. Pre-ticked only when the notice was given; staff decide.
+  const [keepCredit, setKeepCredit] = useState<boolean | null>(null);
+  const [openedAt] = useState(() => Date.now());
+  const notice48 = pending ? new Date(pending.booking.start_at).getTime() - openedAt >= 48 * 3_600_000 : false;
+  const keep = keepCredit ?? notice48;
 
   function close() {
     if (busy) return;
     setReason("");
     setError(null);
+    setKeepCredit(null);
     onClose();
   }
 
@@ -386,7 +395,9 @@ function TransitionDialog({
     setBusy(true);
     setError(null);
     try {
-      const updated = await adminApi.transition(pending.booking.id, pending.action, reason.trim() || undefined);
+      const credit = pending.action === "cancel" && netPaid(pending.booking) > 0 && keep;
+      const updated = await adminApi.transition(pending.booking.id, pending.action, reason.trim() || undefined, credit);
+      setKeepCredit(null);
       setReason("");
       onDone(COPY[pending.action].done(updated.reference));
     } catch (err) {
@@ -413,9 +424,20 @@ function TransitionDialog({
             <Alert className="border-warn/30 bg-warn-bg text-warn">
               <TriangleAlert aria-hidden="true" />
               <AlertDescription className="text-warn">
-                {b.paid_display} has been paid. Cancelling does not refund it — record the refund separately.
+                {b.paid_display} has been paid. Under ONA&rsquo;s terms the deposit is not refunded.
               </AlertDescription>
             </Alert>
+          ) : null}
+          {destructive && netPaid(b) > 0 ? (
+            <label className="flex min-h-11 items-start gap-2.5 text-[14px] text-ink">
+              <input type="checkbox" checked={keep} onChange={(e) => setKeepCredit(e.target.checked)} className="mt-1 size-4 accent-ona-red" />
+              <span>
+                Keep it as credit for a new session within 30 days
+                <span className="block text-[12.5px] text-ink-mute">
+                  {notice48 ? "48+ hours' notice given." : "Less than 48 hours' notice — normally forfeited."} The customer is told by email.
+                </span>
+              </span>
+            </label>
           ) : null}
 
           <div className="grid gap-2">
@@ -601,6 +623,11 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
                         <b className="text-ink">{t.amount_display}</b>
                         <span className="text-[12.5px] font-bold text-ink-dim">{t.status_display}</span>
                       </div>
+                      {t.fee_pesewas ? (
+                        <p className="text-[12.5px] text-ink-mute">
+                          + {t.fee_display} Paystack fee · customer charged {t.charged_display}
+                        </p>
+                      ) : null}
                       <p className="text-[12.5px] text-ink-mute">
                         {t.is_manual ? (
                           <span className="mr-1 rounded-pill bg-info-bg px-2 py-0.5 font-bold text-ona-blue">
@@ -633,6 +660,7 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
                   ))}
                 </ul>
               )}
+              <CreditSection booking={d} />
               <RecordPayment key={`${d.id}-${d.updated_at}-${d.paid_pesewas}`} booking={d} />
             </Section>
 
@@ -787,6 +815,47 @@ function ProfessionalSection({ booking: d }: { booking: StaffBookingDetail }) {
 }
 
 /* ── Money recorded by staff (Task 16) ──────────────────────────────────── */
+
+/** Deposit credit from a cancelled booking of the same customer (ONA's terms). */
+function CreditSection({ booking: d }: { booking: StaffBookingDetail }) {
+  const { updated } = useConsole();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  if (!d.available_credits?.length) return null;
+
+  async function apply(source: string) {
+    setBusy(source);
+    setError(null);
+    try {
+      const r = await adminApi.applyCredit(d.id, source);
+      updated(`Credit applied to ${r.reference}. Receipt sent to the customer.`);
+    } catch (err) {
+      setError(errorText(err));
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="mt-3 grid gap-2 rounded-lg border border-ok/30 bg-ok-bg p-3" role="group" aria-label="Deposit credit">
+      <p className="flex items-center gap-1.5 text-[13.5px] font-bold text-ink">
+        <TicketCheck aria-hidden="true" className="size-4 text-ok" />
+        This customer has deposit credit
+      </p>
+      {d.available_credits.map((c) => (
+        <div key={c.booking} className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+          <span className="text-ink-dim">
+            <b className="text-ink">{c.amount_display}</b> from {c.reference} · use by{" "}
+            {new Date(`${c.until}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+          </span>
+          <Button size="sm" className="h-11 md:h-8" disabled={busy !== null} aria-busy={busy === c.booking} onClick={() => void apply(c.booking)}>
+            {busy === c.booking ? "Applying…" : "Apply to this booking"}
+          </Button>
+        </div>
+      ))}
+      {error ? <FormError message={error} /> : null}
+    </div>
+  );
+}
 
 function RecordPayment({ booking: d }: { booking: StaffBookingDetail }) {
   const { updated } = useConsole();

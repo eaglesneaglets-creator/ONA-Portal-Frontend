@@ -158,7 +158,14 @@ function PaymentTable({ rows }: { rows: StaffTransaction[] }) {
                 <StatusChip t={t} />
                 {t.failure_reason ? <p className="mt-1 text-[12px] text-err">{t.failure_reason}</p> : null}
               </TableCell>
-              <TableCell className="text-right font-bold tabular-nums text-ink">{t.amount_display}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                <b className="text-ink">{t.amount_display}</b>
+                {t.fee_pesewas ? (
+                  <span className="block text-[12px] text-ink-mute" title={`Customer charged ${t.charged_display}; the fee is Paystack's`}>
+                    + {t.fee_display} fee
+                  </span>
+                ) : null}
+              </TableCell>
               <TableCell className="text-right tabular-nums text-ink-dim">
                 {t.commission_percent}%
                 {t.ledger.some((e) => e.commission) ? (
@@ -196,6 +203,7 @@ function PaymentCards({ rows }: { rows: StaffTransaction[] }) {
           </div>
           <p className="mt-1 text-[12.5px] text-ink-mute">
             Commission {t.commission_percent}% · held now {t.held_display}
+            {t.fee_pesewas ? ` · + ${t.fee_display} Paystack fee (charged ${t.charged_display})` : ""}
           </p>
         </li>
       ))}

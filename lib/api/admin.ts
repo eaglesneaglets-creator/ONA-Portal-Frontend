@@ -71,7 +71,7 @@ export interface StaffTransaction {
   id: string;
   booking: { id: string; reference: string };
   customer: { id: string; name: string; email: string };
-  provider: "hubtel" | "manual";
+  provider: "paystack" | "manual" | "credit";
   provider_display: string;
   provider_ref: string | null;
   is_manual: boolean;
@@ -79,6 +79,11 @@ export interface StaffTransaction {
   method_display: string;
   amount_pesewas: number;
   amount_display: string;
+  /** Paystack's processing fee, charged on top and kept by Paystack — never held by ONA. */
+  fee_pesewas: number;
+  fee_display: string;
+  /** What the customer was charged: amount + fee. */
+  charged_display: string;
   status: "pending" | "succeeded" | "failed";
   status_display: string;
   failure_reason: string;
@@ -97,9 +102,21 @@ export interface HistoryEntry {
   metadata: Record<string, unknown>;
 }
 
+/** A cancelled booking's deposit kept as credit (ONA's terms: 30 days). */
+export interface DepositCredit {
+  booking: string;
+  reference: string;
+  amount_pesewas: number;
+  amount_display: string;
+  /** ISO date: the new session must be completed by then. */
+  until: string;
+}
+
 export interface StaffBookingDetail extends StaffBooking {
   transactions: StaffTransaction[];
   history: HistoryEntry[];
+  /** The customer's unexpired credit this booking could take. */
+  available_credits: DepositCredit[];
 }
 
 export interface StaffCustomer {
@@ -313,8 +330,14 @@ export const adminApi = {
   bookings: (q: { when?: "upcoming" | "past" | "today"; status?: string; search?: string; customer?: string; page?: number }) =>
     api.get<Page<StaffBooking>>(`/admin/bookings/${qs({ ...q, page_size: PAGE_SIZE })}`),
   booking: (id: string) => api.get<StaffBookingDetail>(`/admin/bookings/${id}/`),
-  transition: (id: string, action: BookingAction, reason?: string) =>
-    api.post<StaffBookingDetail>(`/admin/bookings/${id}/${action}/`, reason ? { reason } : {}, { retries: 0 }),
+  transition: (id: string, action: BookingAction, reason?: string, keepAsCredit = false) =>
+    api.post<StaffBookingDetail>(
+      `/admin/bookings/${id}/${action}/`,
+      { ...(reason ? { reason } : {}), ...(keepAsCredit ? { keep_as_credit: true } : {}) },
+      { retries: 0 },
+    ),
+  applyCredit: (id: string, sourceBooking: string) =>
+    api.post<StaffBookingDetail>(`/admin/bookings/${id}/apply-credit/`, { source_booking: sourceBooking }, { retries: 0 }),
 
   customers: (q: { search?: string; page?: number }) =>
     api.get<Page<StaffCustomer>>(`/admin/customers/${qs({ ...q, page_size: PAGE_SIZE })}`),
