@@ -81,14 +81,14 @@ test("admin finds a booking, opens its record, confirms it, then cancels it", as
 
   // Overview: real numbers, and the new booking waits for confirmation.
   await expect(page.getByRole("heading", { level: 1, name: "Control room" })).toBeVisible();
-  await expect(page.getByTestId("stat-Awaiting confirmation")).not.toHaveText("0");
+  await expect(page.getByTestId("stat-Awaiting deposit")).not.toHaveText("0");
 
   // Bookings: search by the customer's surname.
   await page.goto("/admin/bookings?when=all");
   await page.getByRole("searchbox", { name: "Search bookings" }).fill(lastName);
   const row = page.getByTestId("admin-booking-row").filter({ hasText: reference });
   await expect(row).toHaveCount(1);
-  await expect(row).toContainText("Awaiting confirmation");
+  await expect(row).toContainText("Awaiting deposit");
 
   // The record: customer, money, no payments yet.
   await row.getByRole("button", { name: `Actions for ${reference}` }).click();

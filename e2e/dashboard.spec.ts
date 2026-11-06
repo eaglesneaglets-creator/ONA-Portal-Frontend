@@ -73,7 +73,7 @@ test("dashboard shows the booking; it can be rescheduled and cancelled", async (
   await page.goto("/customer");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Ama");
   await expect(page.getByTestId("stat-Upcoming sessions")).toHaveText("1");
-  await expect(page.getByTestId("stat-Awaiting confirmation")).toHaveText("1");
+  await expect(page.getByTestId("stat-Awaiting deposit")).toHaveText("1");
   await expect(page.getByTestId("stat-Hours booked ahead")).toHaveText("2");
   await expect(page.getByRole("region", { name: "Next session" })).toContainText(ref);
 
@@ -81,7 +81,7 @@ test("dashboard shows the booking; it can be rescheduled and cancelled", async (
   await page.getByRole("link", { name: /manage bookings/i }).click();
   await expect(page).toHaveURL(/\/customer\/bookings$/);
   const row = page.getByTestId("booking-row").filter({ hasText: ref });
-  await expect(row).toContainText("Awaiting confirmation");
+  await expect(row).toContainText("Awaiting deposit");
   await expect(row).toContainText("10:00");
 
   // Row actions live in a menu. Invoice downloads as a PDF; no receipt

@@ -90,7 +90,7 @@ export default function CustomerHome() {
         />
         <StatCard
           icon={Hourglass}
-          label="Awaiting confirmation"
+          label="Awaiting deposit"
           value={stat(summary?.pending_count)}
           hint={summary?.pending_count ? "ONA will confirm these with you" : "All confirmed"}
         />

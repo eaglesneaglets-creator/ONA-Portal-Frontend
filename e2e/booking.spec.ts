@@ -135,7 +135,8 @@ test("customer books a session and gets a reference; summary maths is right", as
   const ref = page.getByTestId("booking-reference");
   await expect(ref).toBeVisible();
   await expect(ref).toHaveText(/^ONA-[0-9A-F]{6}$/);
-  await expect(page.getByText(/GHS 400\.00/)).toBeVisible();
+  // .first(): with online payment on, the "Pay in full" breakdown repeats it.
+  await expect(page.getByText(/GHS 400\.00/).first()).toBeVisible();
 });
 
 test("a per-song service is priced by the songs, not the studio time", async ({ page }) => {

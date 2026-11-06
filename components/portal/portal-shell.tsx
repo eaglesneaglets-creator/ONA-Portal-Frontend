@@ -179,6 +179,22 @@ export function PortalShell({
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const { isMobile, setOpenMobile } = useSidebar();
   const Icon = item.icon;
+  if (item.pending) {
+    // Not built yet (found in the 2026-11-06 walkthrough: these were live
+    // links to the 404 page). Shown so the roadmap is visible, but inert.
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton aria-disabled="true" tooltip={`${item.label} — coming soon`}
+          className="h-11 cursor-default text-ink-mute hover:bg-transparent hover:text-ink-mute md:h-8">
+          {Icon ? <Icon aria-hidden="true" /> : null}
+          <span>{item.label}</span>
+        </SidebarMenuButton>
+        <SidebarMenuBadge className="bg-surface-sunk text-[10px] font-bold uppercase tracking-wide text-ink-mute">
+          Soon
+        </SidebarMenuBadge>
+      </SidebarMenuItem>
+    );
+  }
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -189,7 +205,6 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       >
         <Link
           href={item.href}
-          prefetch={item.pending ? false : undefined}
           aria-current={active ? "page" : undefined}
           onClick={() => isMobile && setOpenMobile(false)}
         >

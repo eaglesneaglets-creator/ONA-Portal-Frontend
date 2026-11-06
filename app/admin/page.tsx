@@ -68,7 +68,7 @@ export default function AdminHome() {
           />
           <StatCard
             icon={Hourglass}
-            label="Awaiting confirmation"
+            label="Awaiting deposit"
             value={v("pending_count")}
             hint={data ? (data.pending_count ? "Confirm or call the customer" : "All caught up") : undefined}
           />

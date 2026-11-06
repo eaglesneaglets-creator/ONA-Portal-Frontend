@@ -6,7 +6,7 @@ import type { BookingStatus } from "@/lib/api/bookings";
  * colour is never the only signal.
  */
 const STYLES: Record<BookingStatus, { label: string; className: string }> = {
-  pending: { label: "Awaiting confirmation", className: "bg-warn-bg text-warn" },
+  pending: { label: "Awaiting deposit", className: "bg-warn-bg text-warn" },
   confirmed: { label: "Confirmed", className: "bg-ok-bg text-ok" },
   cancelled: { label: "Cancelled", className: "bg-surface-sunk text-ink-mute" },
   completed: { label: "Completed", className: "bg-info-bg text-info" },

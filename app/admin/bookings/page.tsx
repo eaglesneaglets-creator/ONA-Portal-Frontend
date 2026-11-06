@@ -30,7 +30,7 @@ const WHENS: { value: When; label: string }[] = [
 ];
 const STATUSES = [
   { value: "any", label: "Any status" },
-  { value: "pending", label: "Awaiting confirmation" },
+  { value: "pending", label: "Awaiting deposit" },
   { value: "confirmed", label: "Confirmed" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },

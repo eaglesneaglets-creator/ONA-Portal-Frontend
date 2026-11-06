@@ -95,7 +95,9 @@ export function PayButton({ booking, className, compact }: { booking: Payable; c
       className={cn("font-bold", compact ? "h-11 md:h-8" : "h-11 px-6", className)}
     >
       {busy ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <CreditCard aria-hidden="true" />}
-      {busy ? "Opening checkout…" : `${labelFor(first)} ${first.charge_display}`}
+      {/* The amount owed, not the charge: "Pay balance GHS 1,019.89" read as a
+          balance of GHS 1,019.89 (walkthrough, 2026-11-06). */}
+      {busy ? "Opening checkout…" : `${labelFor(first)} ${first.amount_display}${first.fee_pesewas ? " + fee" : ""}`}
     </Button>
   );
 }
