@@ -13,3 +13,29 @@ import { afterEach } from "vitest";
 afterEach(() => {
   cleanup();
 });
+
+/**
+ * jsdom has no matchMedia. The shadcn sidebar asks it whether the viewport is
+ * a phone (hooks/use-mobile.ts). Default: desktop. A test can emulate a phone
+ * with `setViewportMobile(true)` before rendering.
+ */
+let mobile = false;
+export function setViewportMobile(value: boolean): void {
+  mobile = value;
+}
+afterEach(() => {
+  mobile = false;
+});
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: (query: string) => ({
+    matches: query.includes("max-width") ? mobile : false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }),
+});

@@ -149,7 +149,7 @@ export function LoadingScreen({ label = "Loading" }: { label?: string }) {
  * user is, so there is no portal chrome to show — a full-bleed brand surface
  * is more honest than a half-rendered shell.
  */
-export function SessionSplash() {
+function SessionSplash() {
   return (
     <div className="bg-ona-gradient flex min-h-screen flex-col items-center justify-center gap-6">
       <Equaliser label="Checking your session" size="lg" onDark />

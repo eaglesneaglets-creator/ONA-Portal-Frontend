@@ -1,180 +1,356 @@
+import {
+  ArrowRight,
+  BellRing,
+  CalendarCheck2,
+  CalendarClock,
+  Headphones,
+  Lock,
+  ReceiptText,
+  ShieldCheck,
+  Smartphone,
+  Users,
+} from "lucide-react";
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+
+import { HeroBookingCard } from "@/components/landing/hero-booking-card";
+import { LandingFaq } from "@/components/landing/faq";
+import { SiteFooter } from "@/components/public/site-footer";
+import { BOOK_HREF, SiteHeader } from "@/components/public/site-header";
+import { Button } from "@/components/ui/button";
+import { fetchFaqs } from "@/lib/api/content";
+import { fetchCatalogue, type Room } from "@/lib/api/studio";
+
 /**
- * Token smoke page.
+ * Homepage — UI v2 (docs/design/ui-v2.md, landing §1–9).
  *
- * Task 11's verification is "a page renders in ONA tokens, not Tailwind
- * defaults". A page that merely looks plausible does not prove that — a
- * missing token silently falls back to something reasonable.
+ * Keeps the ONA identity exactly: the blue→red gradient over the hero
+ * photograph, the logo, Lato, the token palette. What changed is the
+ * composition the references agree on — the product itself as the hero
+ * visual, a promise strip of facts, a bento of guarantees, the booking
+ * steps, live rooms and prices, and real-policy answers.
  *
- * So this page names every token and shows it. If `bg-ona-blue` renders
- * grey, or a radius is square, it is visible immediately rather than
- * discovered three screens later.
+ * No social proof: ONA has no testimonials, logos or statistics yet, and
+ * PRODUCT.md forbids inventing them. Rooms and prices come from the API
+ * (ISR, 60s) and the page fails soft without it.
  *
- * This is scaffolding. It is replaced by the real homepage in Task 14.
+ * hero.jpg is a generated placeholder (docs/design/assets/HERO-IMAGE.md);
+ * swap the file, keep the path.
  */
 
-const BRAND = [
-  { name: "ona-blue", hex: "#00108F", className: "bg-ona-blue" },
-  { name: "ona-secondary", hex: "#310C6D", className: "bg-ona-secondary" },
-  { name: "ona-median", hex: "#64084B", className: "bg-ona-median" },
-  { name: "ona-tertiary", hex: "#970429", className: "bg-ona-tertiary" },
-  { name: "ona-red", hex: "#C90007", className: "bg-ona-red" },
+export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: { absolute: "ONA Records — Book studio time in Accra" },
+  description:
+    "Book a recording room and engineer at ONA Records in Accra. Clear hourly prices, Mobile Money, and a slot that is genuinely yours.",
+};
+
+const SECTION = "py-[clamp(72px,10vw,128px)]";
+const WRAP = "mx-auto w-full max-w-6xl px-4 sm:px-6";
+
+const PROMISES = [
+  { icon: Headphones, label: "Engineer included" },
+  { icon: Smartphone, label: "Mobile Money or bank transfer" },
+  { icon: ShieldCheck, label: "Payment held by ONA" },
+  { icon: Lock, label: "Prices fixed before you confirm" },
 ];
 
-const SIGNALS = [
-  { name: "ok", ratio: "5.3:1", fg: "text-ok", bg: "bg-ok-bg" },
-  { name: "warn", ratio: "5.6:1", fg: "text-warn", bg: "bg-warn-bg" },
-  { name: "err", ratio: "6.4:1", fg: "text-err", bg: "bg-err-bg" },
-  { name: "info", ratio: "14.2:1", fg: "text-info", bg: "bg-info-bg" },
+const STEPS = [
+  { title: "Pick a room, engineer and time", body: "Live availability. A slot shown as free is free." },
+  { title: "Confirm and pay ONA", body: "See the total first. Secure it with a 50% deposit by Mobile Money; the balance is due on the day." },
+  { title: "ONA confirms it", body: "You get a reference and an invoice by email, and a reminder the day before." },
+  { title: "Record", body: "Turn up, plug in, make the thing. Your payment was with ONA the whole time." },
 ];
 
-const RADII = [
-  { name: "sm", className: "rounded-sm" },
-  { name: "md", className: "rounded-md" },
-  { name: "lg", className: "rounded-lg" },
-  { name: "xl", className: "rounded-xl" },
-  { name: "pill", className: "rounded-pill" },
-];
+const roomHref = (r: Room) => `/register?next=${encodeURIComponent(`/customer/book?room=${r.id}`)}`;
 
-export default function TokenCheck() {
+export default async function Home() {
+  const [{ rooms, services, unavailable }, faqs] = await Promise.all([fetchCatalogue(), fetchFaqs()]);
+  const featured = rooms.slice(0, 3);
+  // ONA prices by service: a room shows where prices start, not a rate of its own.
+  const cheapest = [...services].sort((a, b) => a.base_price_pesewas - b.base_price_pesewas)[0];
+
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-16">
-      <header className="mb-12">
-        <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-ink-mute">
-          Task 11 · token check
-        </p>
-        <h1 className="mb-3 text-5xl font-black tracking-tight text-ink">
-          Design tokens are live
-        </h1>
-        <p className="max-w-prose text-lg leading-relaxed text-ink-dim">
-          Every swatch below is a Tailwind utility generated from{" "}
-          <code className="rounded-sm bg-surface-sunk px-1.5 py-0.5 font-mono text-base">
-            @theme
-          </code>
-          . If any renders as a default grey, that token did not port.
-        </p>
-      </header>
+    <>
+      <SiteHeader />
+      <main>
+        {/* 2 · Hero — the brand gradient over the photograph, product card beside the pitch */}
+        <section className="relative isolate overflow-hidden text-white">
+          <Image src="/hero.jpg" alt="" fill priority sizes="100vw" className="-z-20 object-cover" />
+          <div aria-hidden="true" className="bg-ona-gradient absolute inset-0 -z-10 mix-blend-multiply" />
+          <div aria-hidden="true" className="absolute inset-0 -z-10 bg-black/25" />
 
-      {/* Gradient — the one token that is not a colour utility. */}
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Brand gradient
-        </h2>
-        <div className="bg-ona-gradient flex min-h-44 flex-col justify-end rounded-xl p-8 shadow-pop">
-          <p className="text-3xl font-black tracking-tight text-white">
-            Book the room. Hire the talent.
-          </p>
-          <p className="mt-1 text-white/80">
-            152° · blue → secondary → median → red
-          </p>
-        </div>
-      </section>
-
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Brand colours
-        </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {BRAND.map((c) => (
-            <div key={c.name}>
-              <div
-                className={`${c.className} mb-2 h-20 rounded-md shadow-card`}
-              />
-              <p className="text-sm font-bold text-ink">{c.name}</p>
-              <p className="font-mono text-xs text-ink-mute">{c.hex}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Ink and signals carry their measured contrast, because two of these
-          were fixed after failing WCAG AA. Showing the number keeps the
-          reason visible. */}
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Ink · contrast on white
-        </h2>
-        <div className="space-y-1 rounded-lg border border-border-default bg-surface p-6 shadow-card">
-          <p className="text-lg text-ink">ink — 16.1:1 — body copy</p>
-          <p className="text-lg text-ink-dim">ink-dim — 7.4:1 — secondary</p>
-          <p className="text-lg text-ink-mute">
-            ink-mute — 5.1:1 — meta (was 3.1:1, which failed AA)
-          </p>
-        </div>
-      </section>
-
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Signals
-        </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {SIGNALS.map((s) => (
-            <div key={s.name} className={`${s.bg} rounded-md p-4`}>
-              <p className={`${s.fg} font-bold`}>{s.name}</p>
-              <p className={`${s.fg} font-mono text-xs opacity-80`}>
-                {s.ratio}
+          <div className={`${WRAP} grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-14 lg:py-20`}>
+            <div>
+              <p className="mb-5 inline-flex items-center gap-2 rounded-pill bg-white/12 px-3 py-1.5 text-[12.5px] font-bold tracking-wide text-white ring-1 ring-white/25">
+                <span aria-hidden="true" className="size-1.5 rounded-pill bg-white" />
+                Recording studio · Accra
               </p>
+              <h1 className="mb-5 max-w-[15ch] text-[clamp(36px,5.6vw,60px)] font-black leading-[1.03] tracking-tight">
+                Book the room. Keep your money safe.
+              </h1>
+              <p className="mb-8 max-w-[46ch] text-[17px] leading-relaxed text-white/85 sm:text-[18px]">
+                Pick a room and an engineer, see the price before you commit, and pay ONA — who
+                holds it until your session.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button asChild className="h-12 bg-white px-6 text-[15px] font-bold text-ona-red hover:bg-white/90">
+                  <Link href={BOOK_HREF}>
+                    Book studio time <ArrowRight aria-hidden="true" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-12 border-white/50 bg-transparent px-6 text-[15px] font-bold text-white hover:border-white hover:bg-white/10 hover:text-white"
+                >
+                  <Link href="/studio">See rooms &amp; prices</Link>
+                </Button>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
 
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Radii
-        </h2>
-        {/* Bordered, not filled: at 64px a 6px and a 10px corner are almost
-            indistinguishable as solid blocks. An outline makes the curve
-            readable, which is the entire point of showing them. */}
-        <div className="flex flex-wrap items-end gap-4">
-          {RADII.map((r) => (
-            <div key={r.name} className="text-center">
-              <div
-                className={`${r.className} mb-2 h-20 w-20 border-2 border-ona-blue bg-surface-alt`}
+            <div className="mx-auto w-full max-w-md lg:mr-0">
+              <HeroBookingCard room={rooms[0] ?? null} />
+            </div>
+          </div>
+        </section>
+
+        {/* 3 · Promise strip — facts, not social proof */}
+        <section aria-label="What every booking includes" className="border-b border-border-soft bg-surface">
+          <ul className={`${WRAP} grid grid-cols-2 gap-x-4 gap-y-5 py-7 lg:grid-cols-4`}>
+            {PROMISES.map(({ icon: Icon, label }) => (
+              <li key={label} className="flex items-center gap-3 text-[14.5px] font-bold text-ink">
+                <span aria-hidden="true" className="grid size-10 flex-none place-items-center rounded-lg bg-surface-alt text-ona-red">
+                  <Icon className="size-5" />
+                </span>
+                {label}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* 4 · Bento — the guarantees, the lead tile carries the escrow promise */}
+        <section aria-labelledby="why-h" className={`bg-surface-alt ${SECTION}`}>
+          <div className={WRAP}>
+            <SectionHead
+              id="why-h"
+              eyebrow="Why ONA"
+              title="A booking you can trust with your money"
+              body="The booking never lies. What you see as free is free, and what you confirm is held for you."
+            />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 lg:grid-rows-[auto_auto_auto]">
+              {/* Lead tile */}
+              <article className="bg-ona-gradient relative overflow-hidden rounded-xl p-6 text-white sm:p-8 md:col-span-2 lg:row-span-2">
+                <ShieldCheck aria-hidden="true" className="mb-5 size-9 text-white/90" />
+                <h3 className="mb-3 max-w-[18ch] text-[clamp(24px,3vw,32px)] font-black leading-tight tracking-tight">
+                  Your money is held, not forwarded
+                </h3>
+                <p className="mb-8 max-w-[44ch] text-[16px] leading-relaxed text-white/85">
+                  Every payment goes to ONA first and stays there until your session happens.
+                  Nobody is paid directly, so nobody can disappear with it.
+                </p>
+                <ol aria-label="Where your money goes" className="grid gap-2 sm:grid-cols-4">
+                  {["You pay ONA", "ONA holds it", "You record", "ONA settles"].map((s, i) => (
+                    <li key={s} className="flex items-center gap-2 rounded-lg bg-white/12 px-3 py-2.5 text-[13.5px] font-bold ring-1 ring-white/20">
+                      <span className="grid size-6 flex-none place-items-center rounded-pill bg-white text-[12px] font-black text-ona-red">
+                        {i + 1}
+                      </span>
+                      {s}
+                    </li>
+                  ))}
+                </ol>
+              </article>
+
+              <Tile icon={CalendarCheck2} title="A free slot is really free">
+                Two bookings can never hold the same room or engineer at once. The database refuses
+                it, not just the form.
+              </Tile>
+              <Tile icon={Lock} title="The price you see is the price">
+                Hourly rates are on the page. Your total is shown before you confirm and does not
+                change afterwards.
+              </Tile>
+              <Tile icon={CalendarClock} title="Move or cancel in a few taps">
+                Until your session starts, from your bookings page. The slot goes back for someone
+                else.
+              </Tile>
+              <Tile icon={ReceiptText} title="Paperwork, done">
+                A booking reference straight away, an invoice by email and a receipt once you have
+                paid.
+              </Tile>
+              <Tile icon={BellRing} title="A reminder the day before">
+                So the session never sneaks up on you — with the room, the time and your reference.
+              </Tile>
+            </div>
+          </div>
+        </section>
+
+        {/* 5 · How booking works */}
+        <section id="how" aria-labelledby="how-h" className={`scroll-mt-20 bg-surface ${SECTION}`}>
+          <div className={WRAP}>
+            <SectionHead id="how-h" eyebrow="How it works" title="From idea to session in four steps" />
+            <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {STEPS.map((s, i) => (
+                <li key={s.title} className="relative rounded-xl border border-border-default bg-surface p-5 sm:p-6">
+                  <span className="mb-5 grid size-10 place-items-center rounded-pill bg-ona-red text-[15px] font-black text-white">
+                    {i + 1}
+                  </span>
+                  <h3 className="mb-1.5 text-[17px] font-black tracking-tight text-ink">{s.title}</h3>
+                  <p className="text-[14.5px] leading-relaxed text-ink-dim">{s.body}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* 6 · Rooms & prices, live from the API */}
+        <section id="rooms" aria-labelledby="rooms-h" className={`scroll-mt-20 bg-ona-wash ${SECTION}`}>
+          <div className={WRAP}>
+            <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+              <SectionHead id="rooms-h" eyebrow="Rooms & prices" title="Pick your room" inline />
+              <Button asChild variant="outline" className="h-11 bg-surface font-bold">
+                <Link href="/studio">
+                  All rooms and services <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+            </div>
+
+            {unavailable || featured.length === 0 ? (
+              <p className="rounded-xl border border-border-default bg-surface px-6 py-10 text-center text-[15px] text-ink-dim">
+                Rooms and prices are taking a moment to load.{" "}
+                <Link href="/studio" className="font-bold text-ona-red underline-offset-2 hover:underline">
+                  See them on the studio page
+                </Link>
+                .
+              </p>
+            ) : (
+              <ul className="grid gap-4 md:grid-cols-3">
+                {featured.map((r) => (
+                  <li key={r.id} className="flex flex-col rounded-xl border border-border-default bg-surface p-6 shadow-card">
+                    <h3 className="mb-2 text-[19px] font-black tracking-tight text-ink">{r.name}</h3>
+                    {r.description ? (
+                      <p className="mb-4 line-clamp-3 text-[14.5px] leading-relaxed text-ink-dim">{r.description}</p>
+                    ) : null}
+                    <p className="mb-6 flex items-center gap-2 text-[13.5px] text-ink-mute">
+                      <Users aria-hidden="true" className="size-4" />
+                      Up to {r.capacity} {r.capacity === 1 ? "person" : "people"} · engineer included
+                    </p>
+                    <div className="mt-auto flex items-end justify-between gap-3 border-t border-border-soft pt-4">
+                      <p>
+                        {r.hourly_rate_pesewas ? (
+                          <>
+                            <span className="block text-[22px] font-black leading-none text-ink">{r.hourly_rate_display}</span>
+                            <span className="text-[13px] text-ink-mute">room hire per hour</span>
+                          </>
+                        ) : cheapest ? (
+                          <>
+                            <span className="block text-[13px] text-ink-mute">From</span>
+                            <span className="block text-[22px] font-black leading-none text-ink">{cheapest.base_price_display}</span>
+                            <span className="text-[13px] text-ink-mute">{cheapest.unit_label}</span>
+                          </>
+                        ) : null}
+                      </p>
+                      <Button asChild className="h-11 font-bold">
+                        <Link href={roomHref(r)} aria-label={`Book ${r.name}`}>
+                          Book
+                        </Link>
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+
+        {/* 7 · Questions — staff-edited; the section waits for real answers */}
+        {faqs && faqs.length ? (
+        <section id="faq" aria-labelledby="faq-h" className={`scroll-mt-20 bg-surface ${SECTION}`}>
+          <div className={`${WRAP} grid gap-10 lg:grid-cols-[1fr_1.6fr]`}>
+            <div>
+              <SectionHead
+                id="faq-h"
+                eyebrow="Questions"
+                title="Good to know before you book"
+                body="Anything else? Book a session and add a note — ONA reads every one."
+                inline
               />
-              <p className="text-xs text-ink-mute">{r.name}</p>
             </div>
-          ))}
-        </div>
-      </section>
+            <div>
+              <LandingFaq items={faqs.slice(0, 6)} />
+              {faqs.length > 6 ? (
+                <Link href="/faqs" className="mt-4 inline-flex min-h-11 items-center font-bold text-ona-red hover:underline">
+                  All {faqs.length} questions <ArrowRight aria-hidden="true" className="ml-1 size-4" />
+                </Link>
+              ) : null}
+            </div>
+          </div>
+        </section>
+        ) : null}
 
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Type — Lato, four weights
-        </h2>
-        <div className="space-y-2 rounded-lg border border-border-default p-6">
-          <p className="text-4xl font-black tracking-tight text-ink">
-            900 · display headings
-          </p>
-          <p className="text-2xl font-bold text-ink">700 · emphasis</p>
-          <p className="text-lg font-normal text-ink-dim">400 · body copy</p>
-          <p className="text-lg font-light text-ink-mute">300 · quiet meta</p>
-        </div>
-      </section>
+        {/* 8 · Closing call to action */}
+        <section className={`bg-surface pb-[clamp(72px,10vw,128px)]`}>
+          <div className={WRAP}>
+            <div className="bg-ona-gradient relative overflow-hidden rounded-xl px-6 py-12 text-center text-white sm:px-10 sm:py-16">
+              <Image src="/ona-icon.png" alt="" width={56} height={56} className="mx-auto mb-5 rounded-pill ring-4 ring-white/20" />
+              <h2 className="mb-3 text-[clamp(26px,4vw,40px)] font-black tracking-tight">Ready to make something real?</h2>
+              <p className="mx-auto mb-8 max-w-[44ch] text-[16px] leading-relaxed text-white/85">
+                Pick a room for this week. It takes about two minutes.
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button asChild className="h-12 bg-white px-7 text-[15px] font-bold text-ona-red hover:bg-white/90">
+                  <Link href={BOOK_HREF}>Book studio time</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-12 border-white/50 bg-transparent px-7 text-[15px] font-bold text-white hover:border-white hover:bg-white/10 hover:text-white"
+                >
+                  <Link href="/login">I already have an account</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+      <SiteFooter />
+    </>
+  );
+}
 
-      {/* Tap target and focus ring, both of which the audit had to correct. */}
-      <section>
-        <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-mute">
-          Controls
-        </h2>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            className="min-h-[var(--tap-min)] rounded-md bg-ona-red px-6 font-bold text-white transition-colors hover:bg-ona-tertiary"
-          >
-            Primary
-          </button>
-          <button
-            type="button"
-            className="min-h-[var(--tap-min)] rounded-md border border-border-default bg-surface px-6 font-bold text-ink transition-colors hover:border-ink-mute"
-          >
-            Secondary
-          </button>
-        </div>
-        <p className="mt-3 text-sm text-ink-mute">
-          Both are 44px tall — the minimum the audit held every control to. Tab
-          to them to see the focus ring.
-        </p>
-      </section>
-    </main>
+function SectionHead({
+  id,
+  eyebrow,
+  title,
+  body,
+  inline = false,
+}: {
+  id: string;
+  eyebrow: string;
+  title: string;
+  body?: string;
+  inline?: boolean;
+}) {
+  return (
+    <div className={inline ? "max-w-[40ch]" : "mb-10 max-w-[56ch]"}>
+      <p className="mb-2 text-[12.5px] font-bold uppercase tracking-[0.14em] text-ona-red">{eyebrow}</p>
+      <h2 id={id} className="text-[clamp(26px,3.6vw,38px)] font-black leading-tight tracking-tight text-ink">
+        {title}
+      </h2>
+      {body ? <p className="mt-3 text-[16px] leading-relaxed text-ink-dim">{body}</p> : null}
+    </div>
+  );
+}
+
+function Tile({ icon: Icon, title, children }: { icon: typeof ShieldCheck; title: string; children: React.ReactNode }) {
+  return (
+    <article className="rounded-xl border border-border-default bg-surface p-6">
+      <span aria-hidden="true" className="mb-4 grid size-10 place-items-center rounded-lg bg-surface-alt text-ona-blue">
+        <Icon className="size-5" />
+      </span>
+      <h3 className="mb-1.5 text-[17px] font-black tracking-tight text-ink">{title}</h3>
+      <p className="text-[14.5px] leading-relaxed text-ink-dim">{children}</p>
+    </article>
   );
 }
