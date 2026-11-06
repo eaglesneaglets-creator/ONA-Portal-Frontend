@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { dismissTours, passWelcome } from "./journey";
 
 /**
  * Task 17 — UAT edge cases and the 390px sweep (docs/qa/uat-v0.1.md).
@@ -25,6 +26,8 @@ test.beforeAll(async ({ request }) => {
     backendUp = false;
   }
 });
+test.beforeEach(async ({ page }) => dismissTours(page));
+
 test.beforeEach(() => test.skip(!backendUp, `Backend not reachable at ${API}`));
 
 async function register(page: Page): Promise<string> {
@@ -37,7 +40,7 @@ async function register(page: Page): Promise<string> {
   await page.getByLabel(/^password/i).fill(PASSWORD);
   await page.getByLabel(/confirm password/i).fill(PASSWORD);
   await page.getByRole("button", { name: /create|sign up|register/i }).click();
-  await expect(page).toHaveURL(/\/customer(\/|$)/);
+  await passWelcome(page);
   return email;
 }
 

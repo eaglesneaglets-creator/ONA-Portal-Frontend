@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { dismissTours, passWelcome } from "./journey";
 
 /**
  * CHECKPOINT B — a booking end to end through the UI, and a double-book
@@ -20,6 +21,8 @@ test.beforeAll(async ({ request }) => {
   }
 });
 
+test.beforeEach(async ({ page }) => dismissTours(page));
+
 test.beforeEach(() => {
   test.skip(!backendUp, `Backend not reachable at ${API}`);
 });
@@ -34,7 +37,7 @@ async function registerCustomer(page: Page) {
   await page.getByLabel(/^password/i).fill(PASSWORD);
   await page.getByLabel(/confirm password/i).fill(PASSWORD);
   await page.getByRole("button", { name: /create|sign up|register/i }).click();
-  await expect(page).toHaveURL(/\/customer(\/|$)/);
+  await passWelcome(page);
 }
 
 /**
@@ -165,6 +168,7 @@ test("the same slot cannot be booked twice — the second attempt is refused pol
   // Second customer, fresh session, sees that slot as booked.
   const ctx = await browser.newContext({ viewport: page.viewportSize() });
   const other = await ctx.newPage();
+  await dismissTours(other);
   await registerCustomer(other);
   await other.goto("/customer/book");
   await other.getByRole("button", { name: /Studio A/ }).click();

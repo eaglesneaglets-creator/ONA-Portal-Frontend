@@ -154,6 +154,15 @@ export function BookingLink({ id, reference }: { id: string; reference: string }
  * `compact` is for half-width panels (the overview): customer, time, status
  * and actions only — the full record is one click away in the sheet.
  */
+/** A customer's first ever booking: worth a warmer welcome on the day. */
+function FirstVisit() {
+  return (
+    <span className="inline-flex flex-none items-center rounded-full bg-ona-gradient px-2 py-0.5 text-[11px] font-black uppercase tracking-wider text-white">
+      First visit
+    </span>
+  );
+}
+
 export function BookingList({
   rows,
   showCustomer = true,
@@ -173,7 +182,10 @@ export function BookingList({
           <li key={b.id} data-testid="admin-booking-row" className="rounded-xl border border-border-default bg-surface p-4">
             <div className="flex items-start justify-between gap-2">
               <button type="button" onClick={() => view(b.id)} className="min-w-0 text-left">
-                <p className="font-bold text-ink">{showCustomer ? b.customer.name : b.room.name}</p>
+                <p className="flex flex-wrap items-center gap-2 font-bold text-ink">
+                  {showCustomer ? b.customer.name : b.room.name}
+                  {b.is_first_booking ? <FirstVisit /> : null}
+                </p>
                 <p className="text-[14px] text-ink">
                   {fmtShortDay(b.start_at)} · {fmtTime(b.start_at)}–{fmtTime(b.end_at)}
                 </p>
@@ -219,7 +231,10 @@ export function BookingList({
               {compact ? null : <TableCell className="pl-4 font-mono text-[13px] text-ink">{b.reference}</TableCell>}
               {showCustomer ? (
                 <TableCell className={compact ? "max-w-0 pl-4" : "max-w-64"}>
-                  <p className="truncate font-bold text-ink">{b.customer.name}</p>
+                  <p className="flex min-w-0 items-center gap-2 font-bold text-ink">
+                    <span className="truncate">{b.customer.name}</span>
+                    {b.is_first_booking ? <FirstVisit /> : null}
+                  </p>
                   <p className="truncate text-[13px] text-ink-mute">
                     {compact ? (
                       <>
@@ -523,6 +538,7 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
               <>
                 <span className="font-mono">{d.reference}</span>
                 <StatusPill status={d.status} />
+                {d.is_first_booking ? <FirstVisit /> : null}
               </>
             ) : (
               "Booking"
@@ -575,6 +591,12 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
 
             <Section title="Customer">
               <p className="font-bold text-ink">{d.customer.name}</p>
+              {d.is_first_booking || d.customer.intent_display ? (
+                <p className="text-[13.5px] text-ink-dim">
+                  {d.is_first_booking ? "First time at ONA" : "Returning customer"}
+                  {d.customer.intent_display ? ` · came for ${d.customer.intent_display.toLowerCase()}` : ""}
+                </p>
+              ) : null}
               <div className="mt-2 flex flex-wrap gap-2">
                 {/* max-w-full + truncate: a long address must not push the
                     sheet sideways on a phone. */}

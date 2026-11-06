@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { dismissTours, passWelcome } from "./journey";
 
 /**
  * Task 18 — the browser-side security controls, checked in a real browser.
@@ -86,7 +87,8 @@ test("walking the app raises no CSP violation", async ({ page }) => {
   await page.getByLabel(/^password/i).fill(PASSWORD);
   await page.getByLabel(/confirm password/i).fill(PASSWORD);
   await page.getByRole("button", { name: /create|sign up|register/i }).click();
-  await expect(page).toHaveURL(/\/customer/);
+  await dismissTours(page);
+  await passWelcome(page);
   // Let each load finish restoring the session before the next one: a full
   // reload mid-refresh loses the rotated token (UAT defect D8, logged).
   await page.goto("/customer/bookings");

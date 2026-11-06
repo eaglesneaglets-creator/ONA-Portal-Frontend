@@ -23,6 +23,40 @@ export interface CustomerBrief {
   name: string;
   email: string;
   phone: string;
+  /** What they said brought them to ONA, from the welcome flow ("" if not asked). */
+  intent_display: string;
+}
+
+/** Where a customer is on their journey (backend: apps/accounts/journey.py). */
+export type CustomerStage = "signed_up" | "booked" | "paid" | "came_in";
+
+export interface RecentCustomer {
+  id: string;
+  name: string;
+  email: string;
+  date_joined: string;
+  stage: CustomerStage;
+  stage_display: string;
+  intent_display: string;
+}
+
+/** "Launch ONA": the fixed checklist behind GET /admin/setup/. */
+export interface SetupItem {
+  key: string;
+  group: string;
+  title: string;
+  done: boolean;
+  level: "ok" | "warn" | "blocker";
+  body: string;
+  href: string | null;
+  where: string;
+}
+export interface Setup {
+  ready: boolean;
+  blockers: number;
+  done: number;
+  total: number;
+  items: SetupItem[];
 }
 
 export type BookingAction = "confirm" | "complete" | "cancel";
@@ -34,6 +68,8 @@ export interface StaffBooking extends Booking {
   /** Net of refunds. */
   paid_display: string;
   status_display: string;
+  /** No booking of this customer's came before it: their first visit. */
+  is_first_booking: boolean;
   allowed_actions: BookingAction[];
   updated_at: string;
   /** Staff view: the real name as well as the stage name. */
@@ -135,6 +171,11 @@ export interface StaffCustomer {
   last_session_at: string | null;
   paid_pesewas: number;
   paid_display: string;
+  /** Joined in the last two weeks. */
+  is_new: boolean;
+  stage: CustomerStage;
+  stage_display: string;
+  intent_display: string;
 }
 
 export interface Overview {
@@ -150,6 +191,10 @@ export interface Overview {
   commission_30d_display: string;
   needs_confirmation: StaffBooking[];
   today: StaffBooking[];
+  /** Joined in the last two weeks, newest first. */
+  new_customers: RecentCustomer[];
+  /** Joined in the last 30 days, by how far each got (cumulative). */
+  funnel: { joined_30d: number; stages: { key: CustomerStage; label: string; reached: number }[] };
 }
 
 export type PaymentMethod = "cash" | "mobile_money" | "bank_transfer" | "card_terminal" | "other";
@@ -326,6 +371,7 @@ export const PAGE_SIZE = 20;
 
 export const adminApi = {
   overview: () => api.get<Overview>("/admin/overview/"),
+  setup: () => api.get<Setup>("/admin/setup/"),
 
   bookings: (q: { when?: "upcoming" | "past" | "today"; status?: string; search?: string; customer?: string; page?: number }) =>
     api.get<Page<StaffBooking>>(`/admin/bookings/${qs({ ...q, page_size: PAGE_SIZE })}`),

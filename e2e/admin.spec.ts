@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { dismissTours } from "./journey";
 
 /**
  * Task 14 — the admin console: a staff member finds a customer's booking,
@@ -27,6 +28,8 @@ test.beforeAll(async ({ request }) => {
     backendUp = false;
   }
 });
+test.beforeEach(async ({ page }) => dismissTours(page));
+
 test.beforeEach(() => {
   test.skip(!backendUp, `Backend not reachable at ${API}`);
   test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "Set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD to run");

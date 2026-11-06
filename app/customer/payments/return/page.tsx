@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
+import { Celebrate } from "@/components/journey/celebrate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ApiError } from "@/lib/api/errors";
@@ -91,6 +92,7 @@ function PaymentReturn() {
 
   return (
     <div className="mx-auto max-w-xl py-6">
+      <Celebrate fire={view.tone === "ok"} />
       <Card className="text-center">
         <CardContent className="py-8" role="status" aria-live="polite">
           <span aria-hidden="true" className={`mx-auto mb-4 grid size-14 place-items-center rounded-pill ${iconTone}`}>

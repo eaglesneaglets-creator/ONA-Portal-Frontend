@@ -57,6 +57,7 @@ const HOME_FOR: Record<Role, string> = {
  */
 const PROTECTED: ReadonlyArray<{ prefix: string; roles: readonly Role[] }> = [
   { prefix: "/customer", roles: ["customer"] },
+  { prefix: "/welcome", roles: ["customer"] },
   { prefix: "/pro", roles: [] },
   { prefix: "/admin", roles: ["admin"] },
 ];

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Pager, SearchBox } from "@/components/dashboard/list-controls";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
+import { StageChip } from "@/components/journey/new-customers";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -72,6 +73,22 @@ export default function AdminCustomersPage() {
 
 const bookingsHref = (c: StaffCustomer) => `/admin/bookings?customer=${c.id}&when=all`;
 
+/** Name, a "New" flag for the first two weeks, and what they came for. */
+function Who({ c }: { c: StaffCustomer }) {
+  return (
+    <>
+      <p className="flex flex-wrap items-center gap-2 font-bold text-ink">
+        {c.name}
+        {c.is_new ? (
+          <span className="rounded-full bg-ona-gradient px-2 py-0.5 text-[11px] font-black uppercase tracking-wider text-white">New</span>
+        ) : null}
+      </p>
+      {c.intent_display ? <p className="text-[12.5px] text-ink-dim">Came for: {c.intent_display}</p> : null}
+      {c.is_email_verified ? null : <p className="text-[12.5px] text-ink-mute">Email not verified</p>}
+    </>
+  );
+}
+
 function CustomerTable({ rows }: { rows: StaffCustomer[] }) {
   return (
     <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
@@ -80,6 +97,7 @@ function CustomerTable({ rows }: { rows: StaffCustomer[] }) {
           <TableRow>
             <TableHead className="pl-4">Customer</TableHead>
             <TableHead>Contact</TableHead>
+            <TableHead>Journey</TableHead>
             <TableHead className="text-right">Bookings</TableHead>
             <TableHead>Last session</TableHead>
             <TableHead className="text-right">Paid</TableHead>
@@ -93,8 +111,7 @@ function CustomerTable({ rows }: { rows: StaffCustomer[] }) {
           {rows.map((c) => (
             <TableRow key={c.id} data-testid="admin-customer-row">
               <TableCell className="pl-4">
-                <p className="font-bold text-ink">{c.name}</p>
-                {c.is_email_verified ? null : <p className="text-[12.5px] text-ink-mute">Email not verified</p>}
+                <Who c={c} />
               </TableCell>
               <TableCell>
                 <a href={`mailto:${c.email}`} className="block text-[13.5px] text-info hover:underline">
@@ -105,6 +122,9 @@ function CustomerTable({ rows }: { rows: StaffCustomer[] }) {
                     {c.phone}
                   </a>
                 ) : null}
+              </TableCell>
+              <TableCell>
+                <StageChip stage={c.stage} label={c.stage_display} />
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 <p className="text-ink">{c.booking_count}</p>
@@ -133,8 +153,13 @@ function CustomerCards({ rows }: { rows: StaffCustomer[] }) {
     <ul className="space-y-3">
       {rows.map((c) => (
         <li key={c.id} data-testid="admin-customer-row" className="rounded-xl border border-border-default bg-surface p-4">
-          <p className="font-bold text-ink">{c.name}</p>
-          <p className="text-[13px] text-ink-mute">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <Who c={c} />
+            </div>
+            <StageChip stage={c.stage} label={c.stage_display} />
+          </div>
+          <p className="mt-1 text-[13px] text-ink-mute">
             {c.booking_count} {c.booking_count === 1 ? "booking" : "bookings"}
             {c.upcoming_count ? ` · ${c.upcoming_count} upcoming` : ""} · paid {c.paid_display}
           </p>

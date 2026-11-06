@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { passWelcome } from "./journey";
 
 /**
  * Register → login → correct portal, against the real Django API.
@@ -61,10 +62,10 @@ async function login(page: Page, email: string) {
   await page.getByRole("button", { name: /sign in|log in/i }).click();
 }
 
-test("customer: register lands in /customer, and so does a fresh login", async ({ page }) => {
+test("customer: register opens the welcome, then /customer; a fresh login lands in /customer", async ({ page }) => {
   const email = uniqueEmail("customer");
   await register(page, "customer", email);
-  await expect(page).toHaveURL(/\/customer(\/|$)/);
+  await passWelcome(page);
 
   await signOutEverywhere(page);
   await login(page, email);
@@ -89,7 +90,7 @@ test("professional: register lands on the holding page, never in /pro (ADR-015)"
 test("a customer cannot reach /admin — redirected to their own portal", async ({ page }) => {
   const email = uniqueEmail("customer");
   await register(page, "customer", email);
-  await expect(page).toHaveURL(/\/customer(\/|$)/);
+  await passWelcome(page);
 
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/customer(\/|$)/);

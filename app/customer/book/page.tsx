@@ -24,6 +24,7 @@ import { VerifyEmailBanner } from "@/components/auth/verify-email-banner";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState } from "@/components/dashboard/states";
 import { PayOptions } from "@/components/booking/pay-button";
+import { SpotlightTour, type TourStop } from "@/components/journey/spotlight-tour";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -31,6 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/lib/auth/store";
 import { ApiError } from "@/lib/api/errors";
+import { fetchJourney, updateJourney } from "@/lib/api/journey";
 import {
   createBooking,
   fetchCalendar,
@@ -120,6 +122,14 @@ function messageFrom(err: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
+/** A first booking gets a short tour of the page it is about to use. */
+const BOOKING_TOUR: TourStop[] = [
+  { target: "booking-steps", title: "Five quick steps", body: "Studio, engineer, what the session is for, a time, then a last check. Tap a finished step to go back to it." },
+  { target: "booking-choices", title: "Pick as you go", body: "Every room comes with an engineer. Prices are per hour, per song or per day, depending on the session." },
+  { target: "booking-summary", title: "Your total, live", body: "The price and the deposit update with each choice, so nothing is a surprise at the end." },
+  { target: "booking-hold", title: "Held while you pay", body: "Your slot is kept for an hour. Pay the deposit by Mobile Money and the session is yours." },
+];
+
 function BookFlow({ onAnother }: { onAnother: () => void }) {
   const params = useSearchParams();
 
@@ -146,6 +156,10 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
   // Booking needs a confirmed email when the API says so (Task 18).
   const mustVerify = useAuthStore((s) => Boolean(s.user?.must_verify_email));
   const [resumed, setResumed] = useState(false);
+  // From the welcome flow's "Book this": the service is already chosen, so
+  // after room and engineer the flow goes straight to the time.
+  const skipService = useRef(false);
+  const [tour, setTour] = useState(false);
 
   const stepRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -175,6 +189,12 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
           return;
         }
         clearDraft();
+        const svc = params.get("service");
+        const ps = svc ? c.services.find((s) => s.id === svc) : undefined;
+        if (ps) {
+          setService(ps);
+          skipService.current = true;
+        }
         const wanted = params.get("room");
         const pre = wanted ? c.rooms.find((r) => r.id === wanted) : undefined;
         if (pre) {
@@ -187,6 +207,21 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
       live = false;
     };
   }, [params]);
+
+  /* The tour, once per account, after the catalogue has drawn the page — and
+     never over a resumed draft, which already knows where it is going. */
+  useEffect(() => {
+    if (!catalogue || step > 1) return;
+    let live = true;
+    fetchJourney()
+      .then((j) => live && !j.tours_seen.includes("booking") && setTour(true))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+    // Only on the catalogue arriving; later steps must not reopen it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogue]);
 
   /* Calendar whenever room + engineer are both chosen. calendarKey bumps to
      force a reload (after a failed submit, or the customer pressing retry). */
@@ -260,6 +295,11 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
     if (e.id !== engineer?.id) {
       setEngineer(e);
       resetTime();
+    }
+    if (skipService.current && service) {
+      skipService.current = false;
+      setStep(3);
+      return;
     }
     setStep(2);
   }
@@ -340,7 +380,17 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
         description="Pick the studio, an engineer, what the session is for and a time. The engineer is included; times are Accra time."
       />
 
-      <Stepper step={step} onJump={(i) => i < step && setStep(i)} />
+      <SpotlightTour
+        stops={BOOKING_TOUR}
+        open={tour}
+        onDone={() => {
+          setTour(false);
+          updateJourney({ tour_seen: "booking" }).catch(() => undefined);
+        }}
+      />
+      <div data-tour="booking-steps">
+        <Stepper step={step} onJump={(i) => i < step && setStep(i)} />
+      </div>
       <p className="sr-only" aria-live="polite">
         Step {step + 1} of {STEPS.length}: {STEPS[step]}
       </p>
@@ -357,7 +407,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
-        <section className="min-w-0" ref={stepRef}>
+        <section className="min-w-0" ref={stepRef} data-tour="booking-choices">
           <Card>
             <CardContent className="pt-1">
               {!catalogue ? (
@@ -840,7 +890,7 @@ function Summary({
   deposit: string;
 }) {
   return (
-    <aside aria-label="Session summary" className="lg:sticky lg:top-20">
+    <aside aria-label="Session summary" className="lg:sticky lg:top-20" data-tour="booking-summary">
       <Card>
         <CardHeader>
           <CardTitle className="text-[17px] font-black">{service?.name ?? "Your session"}</CardTitle>
@@ -869,7 +919,7 @@ function Summary({
               <b className="tabular-nums text-ink" data-testid="summary-deposit">{deposit}</b>
             </p>
           ) : null}
-          <p className="mt-4 flex gap-2.5 rounded-lg bg-surface-alt px-3 py-2.5 text-[12.5px] leading-snug text-ink-dim">
+          <p className="mt-4 flex gap-2.5 rounded-lg bg-surface-alt px-3 py-2.5 text-[12.5px] leading-snug text-ink-dim" data-tour="booking-hold">
             <ShieldCheck aria-hidden="true" className="mt-px size-4 flex-none text-ona-blue" />
             <span>
               <b className="block text-ink">Held for one hour</b>

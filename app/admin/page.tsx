@@ -8,8 +8,21 @@ import { BookingConsole, BookingList } from "@/components/admin/booking-console"
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard, StatGrid } from "@/components/dashboard/stat-card";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
+import { LaunchGuide } from "@/components/journey/launch-guide";
+import { NewCustomersCard } from "@/components/journey/new-customers";
+import { SpotlightTour, type TourStop } from "@/components/journey/spotlight-tour";
 import { Button } from "@/components/ui/button";
 import { adminApi, type Overview } from "@/lib/api/admin";
+import { fetchJourney, updateJourney } from "@/lib/api/journey";
+
+/** First visit to the console: a short walk past what ONA will use daily. */
+const CONSOLE_TOUR: TourStop[] = [
+  { target: "launch-guide", title: "Launch checklist", body: "Everything that must be true before real customers book. It ticks itself as each part is set up." },
+  { target: "stats", title: "The day at a glance", body: "Sessions today, bookings still waiting on a deposit, the week ahead and the money in. Every number is live." },
+  { target: "needs-confirmation", title: "Needs confirmation", body: "Bookings held for a customer. Open one to confirm it, take a payment by hand or call them." },
+  { target: "new-customers", title: "New customers", body: "Who joined, what they came for and how far they got. Someone stuck at “Signed up” may just need a call." },
+  { target: "nav-admin-bookings", title: "Every booking", body: "Search, filter by status or day, and add a walk-in or phone booking." },
+];
 
 /**
  * Admin console home — /admin (Task 14).
@@ -33,6 +46,24 @@ export default function AdminHome() {
       live = false;
     };
   }, [reload]);
+
+  // The tour shows once per account (stored server-side, so a new laptop does
+  // not replay it), and only after the overview has rendered its targets.
+  const [tour, setTour] = useState(false);
+  useEffect(() => {
+    if (!data) return;
+    let live = true;
+    fetchJourney()
+      .then((j) => live && !j.tours_seen.includes("console") && setTour(true))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [data]);
+  const endTour = useCallback(() => {
+    setTour(false);
+    updateJourney({ tour_seen: "console" }).catch(() => undefined);
+  }, []);
 
   const v = <K extends keyof Overview>(k: K) => (data === null ? null : data?.[k]);
 
@@ -58,37 +89,44 @@ export default function AdminHome() {
           </div>
         ) : null}
 
-        <StatGrid label="Studio at a glance">
-          <StatCard
-            brand
-            icon={CalendarCheck2}
-            label="Sessions today"
-            value={v("today_count")}
-            hint={data ? (data.today_count ? "Listed below" : "Nothing booked today") : undefined}
-          />
-          <StatCard
-            icon={Hourglass}
-            label="Awaiting deposit"
-            value={v("pending_count")}
-            hint={data ? (data.pending_count ? "Confirm or call the customer" : "All caught up") : undefined}
-          />
-          <StatCard
-            icon={CalendarRange}
-            label="Next 7 days"
-            value={v("week_count")}
-            hint={data ? `${data.week_hours} studio hours booked` : undefined}
-          />
-          <StatCard
-            icon={Banknote}
-            label="Received, 30 days"
-            value={v("received_30d_display")}
-            hint={data ? `ONA commission ${data.commission_30d_display}` : undefined}
-          />
-        </StatGrid>
+        <LaunchGuide />
+
+        <div data-tour="stats">
+          <StatGrid label="Studio at a glance">
+            <StatCard
+              brand
+              icon={CalendarCheck2}
+              label="Sessions today"
+              value={v("today_count")}
+              hint={data ? (data.today_count ? "Listed below" : "Nothing booked today") : undefined}
+            />
+            <StatCard
+              icon={Hourglass}
+              label="Awaiting deposit"
+              value={v("pending_count")}
+              hint={data ? (data.pending_count ? "Confirm or call the customer" : "All caught up") : undefined}
+            />
+            <StatCard
+              icon={CalendarRange}
+              label="Next 7 days"
+              value={v("week_count")}
+              hint={data ? `${data.week_hours} studio hours booked` : undefined}
+            />
+            <StatCard
+              icon={Banknote}
+              label="Received, 30 days"
+              value={v("received_30d_display")}
+              hint={data ? `ONA commission ${data.commission_30d_display}` : undefined}
+            />
+          </StatGrid>
+        </div>
+
+        {data ? <NewCustomersCard data={data} /> : null}
 
         <div className="grid gap-6 xl:grid-cols-2">
           <Panel
             id="pending-h"
+            tour="needs-confirmation"
             title="Needs confirmation"
             more={data?.pending_count ? { href: "/admin/bookings?status=pending", label: `All ${data.pending_count}` } : undefined}
           >
@@ -112,23 +150,26 @@ export default function AdminHome() {
           </Panel>
         </div>
       </div>
+      <SpotlightTour stops={CONSOLE_TOUR} open={tour} onDone={endTour} />
     </BookingConsole>
   );
 }
 
 function Panel({
   id,
+  tour,
   title,
   more,
   children,
 }: {
   id: string;
+  tour?: string;
   title: string;
   more?: { href: string; label: string };
   children: React.ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className="min-w-0">
+    <section aria-labelledby={id} data-tour={tour} className="min-w-0">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 id={id} className="text-[17px] font-black tracking-tight text-ink">
           {title}

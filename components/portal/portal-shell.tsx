@@ -205,6 +205,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       >
         <Link
           href={item.href}
+          data-tour={`nav-${item.href.split("/").filter(Boolean).join("-")}`}
           aria-current={active ? "page" : undefined}
           onClick={() => isMobile && setOpenMobile(false)}
         >

@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { dismissTours, passWelcome } from "./journey";
 
 /**
  * Task 12 — the customer dashboard: summary, bookings list, reschedule,
@@ -21,6 +22,8 @@ test.beforeAll(async ({ request }) => {
     backendUp = false;
   }
 });
+test.beforeEach(async ({ page }) => dismissTours(page));
+
 test.beforeEach(() => test.skip(!backendUp, `Backend not reachable at ${API}`));
 
 function isoDay(daysAhead: number): string {
@@ -38,7 +41,7 @@ async function registerCustomer(page: Page): Promise<string> {
   await page.getByLabel(/^password/i).fill(PASSWORD);
   await page.getByLabel(/confirm password/i).fill(PASSWORD);
   await page.getByRole("button", { name: /create|sign up|register/i }).click();
-  await expect(page).toHaveURL(/\/customer(\/|$)/);
+  await passWelcome(page);
   return email;
 }
 

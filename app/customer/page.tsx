@@ -9,6 +9,8 @@ import { StatusPill } from "@/components/booking/status-pill";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard, StatGrid } from "@/components/dashboard/stat-card";
 import { EmptyState } from "@/components/dashboard/states";
+import { CustomerJourney } from "@/components/journey/customer-journey";
+import { SessionTracker } from "@/components/journey/session-tracker";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +23,7 @@ import {
   type Booking,
   type BookingSummary,
 } from "@/lib/api/bookings";
+import type { Journey } from "@/lib/api/journey";
 import { useAuthStore } from "@/lib/auth/store";
 
 /**
@@ -42,6 +45,7 @@ export default function CustomerHome() {
   const user = useAuthStore((s) => s.user);
   const [summary, setSummary] = useState<BookingSummary | null | undefined>(undefined);
   const [upcoming, setUpcoming] = useState<Booking[] | null | undefined>(undefined);
+  const [journey, setJourney] = useState<Journey | null | undefined>(undefined);
 
   useEffect(() => {
     let live = true;
@@ -68,7 +72,11 @@ export default function CustomerHome() {
         description="Your studio sessions at a glance."
       />
 
-      <VerifyEmailBanner />
+      <CustomerJourney onLoaded={setJourney} />
+
+      {/* The guide already has a "Confirm your email" step; the banner is for
+          when the guide is hidden or could not load. */}
+      {journey === null || journey?.dismissed ? <VerifyEmailBanner /> : null}
 
       {summary === null ? (
         <p role="alert" className="mb-6 rounded-md bg-warn-bg px-4 py-3 text-[14px] text-warn">
@@ -92,7 +100,7 @@ export default function CustomerHome() {
           icon={Hourglass}
           label="Awaiting deposit"
           value={stat(summary?.pending_count)}
-          hint={summary?.pending_count ? "ONA will confirm these with you" : "All confirmed"}
+          hint={summary?.pending_count ? "Pay the deposit to keep the slot" : "Nothing waiting on you"}
         />
         <StatCard
           icon={Clock3}
@@ -117,28 +125,31 @@ export default function CustomerHome() {
                   <Skeleton className="h-4 w-64" />
                 </div>
               ) : next ? (
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="mb-2 flex flex-wrap items-center gap-2">
-                      <b className="text-[19px] text-ink">{next.service.name}</b>
-                      <StatusPill status={next.status} />
-                    </p>
-                    <p className="flex items-center gap-2 text-[15px] text-ink">
-                      <CalendarClock aria-hidden="true" className="size-4 text-ona-blue" />
-                      {fmtDay(next.start_at)}, {fmtTime(next.start_at)}–{fmtTime(next.end_at)}
-                    </p>
-                    <p className="mt-1 text-[14px] text-ink-mute">
-                      {next.room.name} with {next.engineer.name} ·{" "}
-                      <span className="whitespace-nowrap font-mono">{next.reference}</span>
-                    </p>
-                    {next.professional ? (
-                      <p className="mt-1 text-[14px] font-bold text-ona-blue">With {next.professional.display_name}</p>
-                    ) : null}
+                <>
+                  <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="mb-2 flex flex-wrap items-center gap-2">
+                        <b className="text-[19px] text-ink">{next.service.name}</b>
+                        <StatusPill status={next.status} />
+                      </p>
+                      <p className="flex items-center gap-2 text-[15px] text-ink">
+                        <CalendarClock aria-hidden="true" className="size-4 text-ona-blue" />
+                        {fmtDay(next.start_at)}, {fmtTime(next.start_at)}–{fmtTime(next.end_at)}
+                      </p>
+                      <p className="mt-1 text-[14px] text-ink-mute">
+                        {next.room.name} with {next.engineer.name} ·{" "}
+                        <span className="whitespace-nowrap font-mono">{next.reference}</span>
+                      </p>
+                      {next.professional ? (
+                        <p className="mt-1 text-[14px] font-bold text-ona-blue">With {next.professional.display_name}</p>
+                      ) : null}
+                    </div>
+                    <Button asChild variant="outline" className="h-11">
+                      <Link href="/customer/bookings">Manage bookings</Link>
+                    </Button>
                   </div>
-                  <Button asChild variant="outline" className="h-11">
-                    <Link href="/customer/bookings">Manage bookings</Link>
-                  </Button>
-                </div>
+                  <SessionTracker booking={next} />
+                </>
               ) : (
                 <EmptyState
                   icon={CalendarPlus}

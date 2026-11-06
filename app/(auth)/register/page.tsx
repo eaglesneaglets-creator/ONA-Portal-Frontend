@@ -55,8 +55,9 @@ function RegisterForm() {
       });
       // Honour ?next= like the login page does. /studio's Book buttons
       // send visitors here with the room preselected; dropping `next`
-      // lost that choice on every sign-up.
-      router.replace(safeNext(params.get("next")) ?? homeFor(user.role));
+      // lost that choice on every sign-up. With no `next`, a new customer
+      // starts at the welcome flow rather than an empty dashboard.
+      router.replace(safeNext(params.get("next")) ?? (user.role === "customer" ? "/welcome" : homeFor(user.role)));
     });
   }
 
