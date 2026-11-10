@@ -98,7 +98,7 @@ interface Page<T> {
   results: T[];
 }
 
-export const STUDIO_TZ = "Africa/Accra";
+const STUDIO_TZ = "Africa/Accra";
 
 export async function fetchCalendar(params: {
   room: string;

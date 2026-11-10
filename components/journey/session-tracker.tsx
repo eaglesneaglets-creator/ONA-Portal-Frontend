@@ -72,7 +72,7 @@ export function SessionTracker({ booking: b }: { booking: Booking }) {
     const url = URL.createObjectURL(new Blob([icsFor(b)], { type: "text/calendar" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ONA-${b.reference}.ics`;
+    a.download = `${b.reference}.ics`;
     document.body.appendChild(a);
     a.click();
     a.remove();

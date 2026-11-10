@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { CustomerPicker } from "@/components/admin/customer-picker";
 import { FormError } from "@/components/auth/fields";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { TextField } from "@/components/dashboard/text-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,8 +43,7 @@ type Errors = Record<string, string>;
 
 function collect(err: unknown): { form: string | null; fields: Errors } {
   if (!(err instanceof ApiError)) return { form: "Something went wrong. Please try again.", fields: {} };
-  const fields: Errors = {};
-  for (const [k, v] of Object.entries(err.fieldErrors)) fields[k] = v[0];
+  const fields: Errors = err.firstFieldErrors;
   // DRF nests the new customer's errors one level down.
   const nested = (err.detail as Record<string, unknown> | null)?.new_customer;
   if (nested && typeof nested === "object" && !Array.isArray(nested)) {
@@ -326,30 +326,6 @@ export default function NewBookingPage() {
           </Card>
         </aside>
       </form>
-    </div>
-  );
-}
-
-function TextField({
-  id,
-  label,
-  value,
-  onChange,
-  error,
-  ...rest
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value" | "id">) {
-  return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${id}-err` : undefined} className="h-11 md:h-9" {...rest} />
-      {error ? <p id={`${id}-err`} className="text-[13px] text-err">{error}</p> : null}
     </div>
   );
 }

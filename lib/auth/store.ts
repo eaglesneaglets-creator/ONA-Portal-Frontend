@@ -64,7 +64,7 @@ interface LoginResponse {
  * never as "signed out" — otherwise every reload bounces the user to /login
  * for a moment before restoring them.
  */
-export type AuthStatus = "loading" | "authenticated" | "anonymous";
+type AuthStatus = "loading" | "authenticated" | "anonymous";
 
 interface AuthState {
   user: User | null;
@@ -79,7 +79,7 @@ interface AuthState {
   setUser: (user: User) => void;
 }
 
-export interface RegisterInput {
+interface RegisterInput {
   email: string;
   password: string;
   password_confirm: string;
@@ -184,9 +184,3 @@ onTokensCleared(() => {
     useAuthStore.setState({ user: null, status: "anonymous" });
   }
 });
-
-/** Test-only: reset the module-level initialise guard. */
-function __resetAuthStore(): void {
-  initialisePromise = null;
-  useAuthStore.setState({ user: null, status: "loading" });
-}

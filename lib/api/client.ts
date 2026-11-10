@@ -36,7 +36,7 @@ const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/
 /** Endpoints that must never trigger a refresh-and-retry. */
 const AUTH_ENDPOINTS = ["/auth/login/", "/auth/register/", "/auth/refresh/"];
 
-export interface RequestOptions extends Omit<RequestInit, "body"> {
+interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
   /** Skip the Authorization header. For public endpoints. */
   anonymous?: boolean;

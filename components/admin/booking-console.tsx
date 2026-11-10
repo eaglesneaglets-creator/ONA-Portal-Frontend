@@ -297,7 +297,7 @@ const ACTIONS: Record<BookingAction, { label: string; icon: LucideIcon }> = {
   cancel: { label: "Cancel booking", icon: XCircle },
 };
 
-export function RowActions({ booking: b }: { booking: StaffBooking }) {
+function RowActions({ booking: b }: { booking: StaffBooking }) {
   const { view, act } = useConsole();
   const positive = b.allowed_actions.filter((a) => a !== "cancel");
   return (

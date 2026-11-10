@@ -5,11 +5,12 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { FormError } from "@/components/auth/fields";
+import { EditorFooter } from "@/components/dashboard/editor-footer";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -284,7 +285,6 @@ function ItemForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [confirmRemove, setConfirmRemove] = useState(false);
 
   function payload(): Record<string, unknown> | null {
     const out: Record<string, unknown> = { is_active: active, sort_order: Number(sortOrder) || 100 };
@@ -320,8 +320,7 @@ function ItemForm({
       onDone(existing ? `${String(body.name)} saved.` : `${String(body.name)} added.`);
     } catch (err) {
       if (err instanceof ApiError) {
-        const fe: Record<string, string> = {};
-        for (const [k, v] of Object.entries(err.fieldErrors)) fe[k] = v[0];
+        const fe = err.firstFieldErrors;
         setErrors(fe);
         setFormError(Object.keys(fe).length ? null : err.formError);
       } else setFormError("Something went wrong. Please try again.");
@@ -389,25 +388,13 @@ function ItemForm({
         </div>
       </div>
       <FormError message={formError} />
-      <DialogFooter className="sm:justify-between">
-        {existing ? (
-          confirmRemove ? (
-            <Button type="button" className="h-11 bg-err text-white hover:bg-err/90" disabled={busy} onClick={() => void remove()}>
-              Yes, remove {existing.name}
-            </Button>
-          ) : (
-            <Button type="button" variant="ghost" className="h-11 text-err" disabled={busy} onClick={() => setConfirmRemove(true)}>
-              Remove
-            </Button>
-          )
-        ) : (
-          <span />
-        )}
-        <span className="flex gap-2">
-          <Button type="button" variant="outline" className="h-11" disabled={busy} onClick={onCancel}>Cancel</Button>
-          <Button type="submit" className="h-11" disabled={busy}>{busy ? "Saving…" : existing ? "Save" : `Add ${def.singular}`}</Button>
-        </span>
-      </DialogFooter>
+      <EditorFooter
+        busy={busy}
+        saveLabel={existing ? "Save" : `Add ${def.singular}`}
+        confirmLabel={`Yes, remove ${existing?.name ?? "it"}`}
+        onRemove={existing ? () => void remove() : undefined}
+        onCancel={onCancel}
+      />
     </form>
   );
 }

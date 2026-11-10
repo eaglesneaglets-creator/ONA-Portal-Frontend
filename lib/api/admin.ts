@@ -10,7 +10,7 @@
 import { api } from "@/lib/api/client";
 import type { Booking } from "@/lib/api/bookings";
 
-export interface Page<T> {
+interface Page<T> {
   count: number;
   next: string | null;
   previous: string | null;
@@ -220,42 +220,6 @@ export interface AdminRoom {
   sort_order: number;
 }
 
-export interface AdminService {
-  id: string;
-  name: string;
-  description: string;
-  base_price_pesewas: number;
-  base_price_display: string;
-  price_unit: "hour" | "day" | "song" | "track";
-  unit_label: string;
-  category: string;
-  duration_minutes: number;
-  is_active: boolean;
-  sort_order: number;
-}
-
-export interface AdminEngineer {
-  id: string;
-  name: string;
-  bio: string;
-  specialties: string[];
-  is_active: boolean;
-  sort_order: number;
-}
-
-export interface AdminPackage {
-  id: string;
-  name: string;
-  description: string;
-  hours: number;
-  price_pesewas: number;
-  price_display: string;
-  room: string | null;
-  includes: string[];
-  is_active: boolean;
-  sort_order: number;
-}
-
 export type CatalogueKind = "rooms" | "services" | "engineers" | "packages";
 
 export interface AdminFaq {
@@ -333,14 +297,14 @@ export type JobInput = Partial<
   Pick<Job, "customer" | "professional" | "title" | "brief" | "status" | "due_on" | "fee_pesewas" | "notes">
 >;
 
-export interface NewCustomer {
+interface NewCustomer {
   email: string;
   first_name: string;
   last_name?: string;
   phone?: string;
 }
 
-export interface StaffBookingInput {
+interface StaffBookingInput {
   customer?: string;
   new_customer?: NewCustomer;
   room: string;

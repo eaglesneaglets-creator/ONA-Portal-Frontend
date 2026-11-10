@@ -1,7 +1,7 @@
 "use client";
 
 import { Banknote } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { BookingConsole, BookingLink } from "@/components/admin/booking-console";
 import { Pager, SearchBox } from "@/components/dashboard/list-controls";
@@ -10,7 +10,8 @@ import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/sta
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { adminApi, PAGE_SIZE, type Page, type StaffTransaction } from "@/lib/api/admin";
+import { usePagedList } from "@/hooks/use-paged-list";
+import { adminApi, PAGE_SIZE, type StaffTransaction } from "@/lib/api/admin";
 import { fmtShortDay, fmtTime } from "@/lib/api/bookings";
 
 /**
@@ -29,28 +30,11 @@ const STATUS_STYLE: Record<StaffTransaction["status"], string> = {
 
 export default function AdminPaymentsPage() {
   const [status, setStatus] = useState("any");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [data, setData] = useState<Page<StaffTransaction> | null | undefined>(undefined);
-  const [reload, setReload] = useState(0);
-  const refresh = useCallback(() => setReload((n) => n + 1), []);
+  const { data, search, page, setPage, onSearch, refresh } = usePagedList(
+    (q) => adminApi.payments({ status: status === "any" ? undefined : status, ...q }),
+    [status],
+  );
   const isMobile = useIsMobile();
-
-  useEffect(() => {
-    let live = true;
-    adminApi
-      .payments({ status: status === "any" ? undefined : status, search: search || undefined, page })
-      .then((d) => live && setData(d))
-      .catch(() => live && setData(null));
-    return () => {
-      live = false;
-    };
-  }, [status, search, page, reload]);
-
-  const onSearch = useCallback((q: string) => {
-    setSearch(q);
-    setPage(1);
-  }, []);
 
   return (
     <BookingConsole onChanged={refresh}>

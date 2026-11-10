@@ -333,6 +333,27 @@ function useAction(onDone: (m: string) => void) {
   return { busy, error, setError, run };
 }
 
+/** The dialog both actions share: it will not close while a request is out. */
+function ActionDialog({
+  open,
+  busy,
+  className,
+  onDismiss,
+  children,
+}: {
+  open: boolean;
+  busy: boolean;
+  className: string;
+  onDismiss: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && !busy && onDismiss()}>
+      {open ? <DialogContent className={className}>{children}</DialogContent> : null}
+    </Dialog>
+  );
+}
+
 function CancelDialog({
   booking: b,
   onClose,
@@ -344,17 +365,9 @@ function CancelDialog({
 }) {
   const { busy, error, setError, run } = useAction(onDone);
   return (
-    <Dialog
-      open={b !== null}
-      onOpenChange={(open) => {
-        if (!open && !busy) {
-          setError(null);
-          onClose();
-        }
-      }}
-    >
+    <ActionDialog open={b !== null} busy={busy} className="sm:max-w-md" onDismiss={() => { setError(null); onClose(); }}>
       {b ? (
-        <DialogContent className="sm:max-w-md">
+        <>
           <DialogHeader>
             <DialogTitle className="text-[18px] font-black">Cancel {b.reference}?</DialogTitle>
             <DialogDescription>
@@ -384,9 +397,9 @@ function CancelDialog({
               {busy ? "One moment…" : "Yes, cancel it"}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </>
       ) : null}
-    </Dialog>
+    </ActionDialog>
   );
 }
 
@@ -401,17 +414,9 @@ function RescheduleDialog({
 }) {
   const { busy, error, setError, run } = useAction(onDone);
   return (
-    <Dialog
-      open={b !== null}
-      onOpenChange={(open) => {
-        if (!open && !busy) {
-          setError(null);
-          onClose();
-        }
-      }}
-    >
+    <ActionDialog open={b !== null} busy={busy} className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl [&>*]:min-w-0" onDismiss={() => { setError(null); onClose(); }}>
       {b ? (
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl [&>*]:min-w-0">
+        <>
           <DialogHeader>
             <DialogTitle className="text-[18px] font-black">Reschedule {b.reference}</DialogTitle>
             <DialogDescription>
@@ -433,8 +438,8 @@ function RescheduleDialog({
               )
             }
           />
-        </DialogContent>
+        </>
       ) : null}
-    </Dialog>
+    </ActionDialog>
   );
 }

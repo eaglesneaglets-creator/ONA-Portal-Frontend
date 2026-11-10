@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CustomerStage, Overview, RecentCustomer } from "@/lib/api/admin";
+import { initials } from "@/lib/initials";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,7 +12,7 @@ import { cn } from "@/lib/utils";
  * newest are, with what they came for. So ONA notices a new customer the day
  * they join, and sees who stalled at "signed up" and might need a call.
  */
-export const STAGE_TONE: Record<CustomerStage, string> = {
+const STAGE_TONE: Record<CustomerStage, string> = {
   signed_up: "bg-surface-sunk text-ink-dim",
   booked: "bg-info-bg text-info",
   paid: "bg-warn-bg text-warn",
@@ -28,10 +29,6 @@ function ago(iso: string): string {
   if (h < 24) return `${h} h ago`;
   const d = Math.round(h / 24);
   return d === 1 ? "yesterday" : `${d} days ago`;
-}
-
-function initials(name: string): string {
-  return name.split(/[\s@]/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
 }
 
 export function NewCustomersCard({ data }: { data: Overview }) {

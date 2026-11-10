@@ -124,13 +124,3 @@ export async function fetchCatalogue(): Promise<Catalogue> {
     return { rooms: [], engineers: [], services: [], packages: [], unavailable: true };
   }
 }
-
-/** "60" → "1 hr", "180" → "3 hrs", "90" → "1 hr 30 min". */
-export function formatDuration(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  const parts: string[] = [];
-  if (h) parts.push(`${h} ${h === 1 ? "hr" : "hrs"}`);
-  if (m) parts.push(`${m} min`);
-  return parts.join(" ") || "0 min";
-}

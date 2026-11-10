@@ -2,7 +2,7 @@
 
 import { CalendarSearch, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback } from "react";
 
 import { BookingConsole, BookingList } from "@/components/admin/booking-console";
 import { Pager, SearchBox } from "@/components/dashboard/list-controls";
@@ -11,7 +11,8 @@ import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/sta
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { adminApi, PAGE_SIZE, type Page, type StaffBooking } from "@/lib/api/admin";
+import { useLoaded } from "@/hooks/use-paged-list";
+import { adminApi, PAGE_SIZE } from "@/lib/api/admin";
 
 /**
  * /admin/bookings — every booking, for staff (Task 14).
@@ -56,9 +57,6 @@ function Bookings() {
   const search = params.get("q") ?? "";
   const page = Number(params.get("page") ?? "1") || 1;
 
-  const [data, setData] = useState<Page<StaffBooking> | null | undefined>(undefined);
-  const [reload, setReload] = useState(0);
-  const refresh = useCallback(() => setReload((n) => n + 1), []);
 
   const setParams = useCallback(
     (patch: Record<string, string | null>) => {
@@ -74,22 +72,17 @@ function Bookings() {
     [params, pathname, router],
   );
 
-  useEffect(() => {
-    let live = true;
-    adminApi
-      .bookings({
+  const { data, refresh } = useLoaded(
+    () =>
+      adminApi.bookings({
         when: when === "all" ? undefined : when,
         status: status === "any" ? undefined : status,
         customer: customer || undefined,
         search: search || undefined,
         page,
-      })
-      .then((d) => live && setData(d))
-      .catch(() => live && setData(null));
-    return () => {
-      live = false;
-    };
-  }, [when, status, customer, search, page, reload]);
+      }),
+    [when, status, customer, search, page],
+  );
 
   const onSearch = useCallback((q: string) => q !== search && setParams({ q }), [search, setParams]);
   const customerName = customer ? data?.results[0]?.customer.name : undefined;

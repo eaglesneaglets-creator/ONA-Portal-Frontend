@@ -2,7 +2,6 @@
 
 import { CalendarDays, Mail, Phone, UserSearch } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
 
 import { Pager, SearchBox } from "@/components/dashboard/list-controls";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -11,7 +10,8 @@ import { StageChip } from "@/components/journey/new-customers";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { adminApi, PAGE_SIZE, type Page, type StaffCustomer } from "@/lib/api/admin";
+import { usePagedList } from "@/hooks/use-paged-list";
+import { adminApi, PAGE_SIZE, type StaffCustomer } from "@/lib/api/admin";
 import { fmtShortDay } from "@/lib/api/bookings";
 
 /**
@@ -19,27 +19,8 @@ import { fmtShortDay } from "@/lib/api/bookings";
  * adding a walk-in or phone customer arrives with manual booking (Task 15).
  */
 export default function AdminCustomersPage() {
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [data, setData] = useState<Page<StaffCustomer> | null | undefined>(undefined);
-  const [reload, setReload] = useState(0);
+  const { data, search, page, setPage, onSearch, refresh } = usePagedList((q) => adminApi.customers(q));
   const isMobile = useIsMobile();
-
-  useEffect(() => {
-    let live = true;
-    adminApi
-      .customers({ search: search || undefined, page })
-      .then((d) => live && setData(d))
-      .catch(() => live && setData(null));
-    return () => {
-      live = false;
-    };
-  }, [search, page, reload]);
-
-  const onSearch = useCallback((q: string) => {
-    setSearch(q);
-    setPage(1);
-  }, []);
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -52,7 +33,7 @@ export default function AdminCustomersPage() {
       </div>
 
       {data === null ? (
-        <ErrorState message="Customers could not be loaded." onRetry={() => setReload((n) => n + 1)} />
+        <ErrorState message="Customers could not be loaded." onRetry={refresh} />
       ) : data === undefined ? (
         <RowsSkeleton rows={5} />
       ) : data.results.length === 0 ? (

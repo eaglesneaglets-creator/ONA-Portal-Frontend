@@ -1,27 +1,27 @@
 "use client";
 
 import { Plus, UserRoundCog } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { FormError } from "@/components/auth/fields";
 import { Pager, SearchBox } from "@/components/dashboard/list-controls";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { TextField } from "@/components/dashboard/text-field";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePagedList } from "@/hooks/use-paged-list";
 import {
   adminApi,
   PAGE_SIZE,
   RATE_TYPES,
-  type Page,
   type Professional,
   type ProfessionalInput,
   type RateType,
@@ -35,29 +35,9 @@ import { parseGhsToPesewas, pesewasToInput } from "@/lib/money";
  * and notes never leave this console; customers see a stage name and skills.
  */
 export default function AdminProfessionalsPage() {
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [data, setData] = useState<Page<Professional> | null | undefined>(undefined);
-  const [reload, setReload] = useState(0);
+  const { data, search, page, setPage, onSearch, refresh } = usePagedList((q) => adminApi.professionals(q));
   const [editing, setEditing] = useState<Professional | "new" | null>(null);
   const isMobile = useIsMobile();
-  const refresh = useCallback(() => setReload((n) => n + 1), []);
-
-  useEffect(() => {
-    let live = true;
-    adminApi
-      .professionals({ search: search || undefined, page })
-      .then((d) => live && setData(d))
-      .catch(() => live && setData(null));
-    return () => {
-      live = false;
-    };
-  }, [search, page, reload]);
-
-  const onSearch = useCallback((q: string) => {
-    setSearch(q);
-    setPage(1);
-  }, []);
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -270,10 +250,10 @@ function ProfessionalForm({
   return (
     <form onSubmit={(e) => void save(e)} noValidate className="grid gap-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <F id="pro-name" label="Name" value={f.name} onChange={(v) => set("name", v)} error={err("name")} />
-        <F id="pro-stage" label="Stage name (shown to customers)" placeholder="Empty = “ONA session professional”" value={f.stage_name} onChange={(v) => set("stage_name", v)} error={err("stage_name")} />
+        <TextField id="pro-name" label="Name" value={f.name} onChange={(v) => set("name", v)} error={err("name")} />
+        <TextField id="pro-stage" label="Stage name (shown to customers)" placeholder="Empty = “ONA session professional”" value={f.stage_name} onChange={(v) => set("stage_name", v)} error={err("stage_name")} />
       </div>
-      <F id="pro-skills" label="Skills, separated by commas" placeholder="session guitar, mixing" value={f.skills} onChange={(v) => set("skills", v)} error={err("skills")} />
+      <TextField id="pro-skills" label="Skills, separated by commas" placeholder="session guitar, mixing" value={f.skills} onChange={(v) => set("skills", v)} error={err("skills")} />
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label htmlFor="pro-rate-type">Rate</Label>
@@ -291,12 +271,12 @@ function ProfessionalForm({
           </Select>
         </div>
         {f.rate_type !== "negotiable" ? (
-          <F id="pro-rate" label="Amount (GHS)" inputMode="decimal" placeholder="e.g. 300" value={f.rate} onChange={(v) => set("rate", v)} error={err("rate_pesewas")} />
+          <TextField id="pro-rate" label="Amount (GHS)" inputMode="decimal" placeholder="e.g. 300" value={f.rate} onChange={(v) => set("rate", v)} error={err("rate_pesewas")} />
         ) : null}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <F id="pro-phone" label="Phone" type="tel" value={f.phone} onChange={(v) => set("phone", v)} error={err("phone")} />
-        <F id="pro-email" label="Email" type="email" value={f.email} onChange={(v) => set("email", v)} error={err("email")} />
+        <TextField id="pro-phone" label="Phone" type="tel" value={f.phone} onChange={(v) => set("phone", v)} error={err("phone")} />
+        <TextField id="pro-email" label="Email" type="email" value={f.email} onChange={(v) => set("email", v)} error={err("email")} />
       </div>
       <div className="grid gap-1.5">
         <Label htmlFor="pro-notes">Notes (staff only)</Label>
@@ -316,28 +296,5 @@ function ProfessionalForm({
         </Button>
       </DialogFooter>
     </form>
-  );
-}
-
-function F({
-  id,
-  label,
-  value,
-  onChange,
-  error,
-  ...rest
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value" | "id">) {
-  return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={Boolean(error)} className="h-11 md:h-9" {...rest} />
-      {error ? <p className="text-[13px] text-err">{error}</p> : null}
-    </div>
   );
 }

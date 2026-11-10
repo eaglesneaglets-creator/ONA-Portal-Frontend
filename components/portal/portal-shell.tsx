@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/sidebar";
 import type { Role } from "@/lib/auth/roles";
 import { useAuthStore } from "@/lib/auth/store";
+import { initials } from "@/lib/initials";
 
 export interface NavItem {
   href: string;
@@ -221,15 +222,6 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       ) : null}
     </SidebarMenuItem>
   );
-}
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join("") || "·";
 }
 
 function UserMenu({ role }: { role: Role }) {

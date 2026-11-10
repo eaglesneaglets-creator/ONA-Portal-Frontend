@@ -33,9 +33,9 @@ export function isRole(value: unknown): value is Role {
  * This is a scope decision, not a permission one. Nothing here is security:
  * DRF still authorises every endpoint against the database.
  */
-export const DEFERRED_ROLES: readonly Role[] = ["professional"] as const;
+const DEFERRED_ROLES: readonly Role[] = ["professional"] as const;
 
-export function isDeferredRole(role: Role): boolean {
+function isDeferredRole(role: Role): boolean {
   return DEFERRED_ROLES.includes(role);
 }
 

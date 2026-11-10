@@ -1,7 +1,7 @@
 "use client";
 
 import { Briefcase, Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CustomerPicker } from "@/components/admin/customer-picker";
@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePagedList } from "@/hooks/use-paged-list";
 import {
   adminApi,
   JOB_STATUSES,
@@ -24,7 +25,6 @@ import {
   type Job,
   type JobInput,
   type JobStatus,
-  type Page,
   type Professional,
   type StaffCustomer,
 } from "@/lib/api/admin";
@@ -56,34 +56,12 @@ function StatusChip({ job }: { job: Job }) {
 
 export default function AdminJobsPage() {
   const [status, setStatus] = useState("open");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [data, setData] = useState<Page<Job> | null | undefined>(undefined);
-  const [reload, setReload] = useState(0);
+  const { data, search, page, setPage, onSearch, refresh } = usePagedList(
+    (q) => adminApi.jobs({ status: status === "open" || status === "any" ? undefined : status, open: status === "open", ...q }),
+    [status],
+  );
   const [editing, setEditing] = useState<Job | "new" | null>(null);
   const isMobile = useIsMobile();
-  const refresh = useCallback(() => setReload((n) => n + 1), []);
-
-  useEffect(() => {
-    let live = true;
-    adminApi
-      .jobs({
-        status: status === "open" || status === "any" ? undefined : status,
-        open: status === "open",
-        search: search || undefined,
-        page,
-      })
-      .then((d) => live && setData(d))
-      .catch(() => live && setData(null));
-    return () => {
-      live = false;
-    };
-  }, [status, search, page, reload]);
-
-  const onSearch = useCallback((q: string) => {
-    setSearch(q);
-    setPage(1);
-  }, []);
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -287,8 +265,7 @@ function JobForm({
       onSaved(saved, !existing);
     } catch (err) {
       if (err instanceof ApiError) {
-        const fe: Record<string, string> = {};
-        for (const [k, v] of Object.entries(err.fieldErrors)) fe[k] = v[0];
+        const fe = err.firstFieldErrors;
         setFieldErrors(fe);
         setError(Object.keys(fe).length ? null : err.formError);
       } else setError("Something went wrong. Please try again.");

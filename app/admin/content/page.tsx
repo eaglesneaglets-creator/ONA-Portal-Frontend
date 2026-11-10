@@ -6,11 +6,12 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { FormError } from "@/components/auth/fields";
+import { EditorFooter } from "@/components/dashboard/editor-footer";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -117,7 +118,6 @@ function FaqForm({ existing, onCancel, onDone }: { existing: AdminFaq | null; on
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [confirmRemove, setConfirmRemove] = useState(false);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -130,8 +130,7 @@ function FaqForm({ existing, onCancel, onDone }: { existing: AdminFaq | null; on
       onDone(published ? "Saved. Visitors see it within a minute or so." : "Saved as a draft.");
     } catch (err) {
       if (err instanceof ApiError) {
-        const fe: Record<string, string> = {};
-        for (const [k, v] of Object.entries(err.fieldErrors)) fe[k] = v[0];
+        const fe = err.firstFieldErrors;
         setErrors(fe);
         setFormError(Object.keys(fe).length ? null : err.formError);
       } else setFormError("Something went wrong. Please try again.");
@@ -174,19 +173,7 @@ function FaqForm({ existing, onCancel, onDone }: { existing: AdminFaq | null; on
         </div>
       </div>
       <FormError message={formError} />
-      <DialogFooter className="sm:justify-between">
-        {existing ? (
-          confirmRemove ? (
-            <Button type="button" className="h-11 bg-err text-white hover:bg-err/90" disabled={busy} onClick={() => void remove()}>Yes, remove it</Button>
-          ) : (
-            <Button type="button" variant="ghost" className="h-11 text-err" disabled={busy} onClick={() => setConfirmRemove(true)}>Remove</Button>
-          )
-        ) : <span />}
-        <span className="flex gap-2">
-          <Button type="button" variant="outline" className="h-11" disabled={busy} onClick={onCancel}>Cancel</Button>
-          <Button type="submit" className="h-11" disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
-        </span>
-      </DialogFooter>
+      <EditorFooter busy={busy} confirmLabel="Yes, remove it" onRemove={existing ? () => void remove() : undefined} onCancel={onCancel} />
     </form>
   );
 }
