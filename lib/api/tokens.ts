@@ -20,10 +20,9 @@
  * That is why storage sits behind RefreshTokenStore rather than being called
  * directly: the swap becomes one new implementation and one line in
  * `refreshStore`, with no change to the client or to any calling code.
- * `clearLegacyLocalStorage()` exists to clean up after the cutover.
+ * The cutover must also remove the old localStorage key, or a token issued
+ * before it stays there: still valid, still stealable, used for nothing.
  */
-
-const ACCESS_LISTENERS = new Set<(token: string | null) => void>();
 
 /** In memory only. Never written to disk. */
 let accessToken: string | null = null;
@@ -34,13 +33,6 @@ export function getAccessToken(): string | null {
 
 export function setAccessToken(token: string | null): void {
   accessToken = token;
-  for (const listener of ACCESS_LISTENERS) listener(token);
-}
-
-/** Notified whenever the access token changes, so the auth store can react. */
-export function onAccessTokenChange(fn: (token: string | null) => void): () => void {
-  ACCESS_LISTENERS.add(fn);
-  return () => ACCESS_LISTENERS.delete(fn);
 }
 
 /** The seam the httpOnly migration swaps out. */
@@ -98,7 +90,7 @@ export function getRefreshToken(): string | null {
   return refreshStore.get();
 }
 
-export function setRefreshToken(token: string | null): void {
+function setRefreshToken(token: string | null): void {
   refreshStore.set(token);
 }
 
@@ -109,25 +101,35 @@ export function setTokens(tokens: { access: string; refresh: string }): void {
 }
 
 /** Sign-out, or a refresh that failed. Wipes both. */
+const CLEARED_LISTENERS = new Set<() => void>();
+
+/**
+ * Called when the session ends for any reason — sign-out, a rejected
+ * refresh, or another tab signing out. The auth store subscribes, so the UI
+ * stops looking signed in the moment the tokens are gone (before, a dead
+ * session left the portal rendered with only an error banner).
+ */
+export function onTokensCleared(fn: () => void): () => void {
+  CLEARED_LISTENERS.add(fn);
+  return () => CLEARED_LISTENERS.delete(fn);
+}
+
 export function clearTokens(): void {
   setAccessToken(null);
   setRefreshToken(null);
+  for (const fn of CLEARED_LISTENERS) fn();
 }
 
-/**
- * Remove the localStorage token after migrating to httpOnly cookies.
- *
- * Call once on boot after the cutover. Without it, a token issued before
- * the change sits in localStorage indefinitely — still valid, still
- * stealable, and no longer used for anything.
- */
-export function clearLegacyLocalStorage(): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // Nothing to do; the token expires on its own.
-  }
+// Another tab signed out (or its refresh was rejected and it cleared the
+// shared refresh token): end this tab's session too, rather than letting it
+// fail on its next request.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key === STORAGE_KEY && event.newValue === null) {
+      setAccessToken(null);
+      for (const fn of CLEARED_LISTENERS) fn();
+    }
+  });
 }
 
 /**

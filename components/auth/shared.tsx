@@ -27,12 +27,15 @@ import { navigateWithTransition } from "@/lib/ui/view-transition";
  * tab" all keep working, and the transition is a progressive enhancement on
  * top. Replacing them with buttons would have broken all three.
  */
-export function ModeSwitch({ active }: { active: "login" | "register" }) {
+export function ModeSwitch({ active, query = "" }: { active: "login" | "register"; query?: string }) {
   const router = useRouter();
+  // Carry ?next= across the switch, or a visitor who arrived to book a
+  // specific room loses it by choosing "Sign in" instead.
+  const qs = query ? `?${query}` : "";
 
   const tabs = [
-    { key: "login" as const, href: "/login", label: "Sign in" },
-    { key: "register" as const, href: "/register", label: "Create account" },
+    { key: "login" as const, href: `/login${qs}`, label: "Sign in" },
+    { key: "register" as const, href: `/register${qs}`, label: "Create account" },
   ];
 
   return (
@@ -80,17 +83,12 @@ export function ModeSwitch({ active }: { active: "login" | "register" }) {
 
 export function LegalNote() {
   return (
-    <p className="mt-3 text-[10.5px] leading-snug text-ink-mute">
-      {/* prefetch={false} on both: neither page exists yet, so Next would
-          fetch two 404s on every load of login and register — the two pages
-          every visitor sees. Remove when the legal pages ship. */}
-      By continuing you agree to our{" "}
-      <Link href="/legal/terms" prefetch={false} className="text-ink-dim underline">
-        Terms
-      </Link>{" "}
-      and{" "}
-      <Link href="/legal/privacy" prefetch={false} className="text-ink-dim underline">
-        Privacy Policy
+    <p className="mt-3 text-[12px] leading-snug text-ink-mute">
+      {/* The privacy policy is still to come from ONA (docs/launch/content-from-ona.md);
+          no link until the page exists. */}
+      By continuing you agree to ONA&rsquo;s{" "}
+      <Link href="/legal/terms" className="text-ink-dim underline">
+        booking terms
       </Link>
       .
     </p>

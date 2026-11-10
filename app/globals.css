@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
 
 /* ===========================================================================
    ONA Records — design tokens
@@ -87,11 +90,51 @@
   /* Minimum touch target. 44px is the figure the audit held every control
      to after several were found at 32px and 38px. */
   --tap-min: 44px;
+
+  /*
+   * shadcn/ui semantic tokens, mapped onto the ONA palette (@theme above).
+   * shadcn components read these names; they point at the brand tokens so
+   * the identity guide stays the single source. Never put a raw colour here.
+   */
+  --radius: 0.625rem;                                   /* = 10px, ONA radius-md */
+  --background: var(--color-surface);
+  --foreground: var(--color-ink);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-ona-red);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-surface-sunk);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-surface-alt);
+  --muted-foreground: var(--color-ink-mute);
+  --accent: var(--color-surface-sunk);
+  --accent-foreground: var(--color-ink);
+  --destructive: var(--color-err);
+  --border: var(--color-border-default);
+  --input: var(--color-border-default);
+  --ring: var(--color-ona-blue);
+  /* Charts walk the brand gradient, blue to red. */
+  --chart-1: var(--color-ona-blue);
+  --chart-2: var(--color-ona-secondary);
+  --chart-3: var(--color-ona-median);
+  --chart-4: var(--color-ona-tertiary);
+  --chart-5: var(--color-ona-red);
+  --sidebar: var(--color-surface);
+  --sidebar-foreground: var(--color-ink-dim);
+  --sidebar-primary: var(--color-ona-red);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--color-surface-sunk);
+  --sidebar-accent-foreground: var(--color-ink);
+  --sidebar-border: var(--color-border-soft);
+  --sidebar-ring: var(--color-ona-blue);
 }
 
 @layer base {
   html {
     height: 100%;
+    @apply font-sans;
   }
 
   body {
@@ -99,6 +142,7 @@
     color: var(--color-ink);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    @apply bg-background text-foreground;
   }
 
   /* Every interactive element gets a visible focus ring in brand red.
@@ -108,12 +152,28 @@
     outline: 2px solid var(--color-ona-red);
     outline-offset: 2px;
   }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 @layer utilities {
   /* The brand gradient, as a utility. */
   .bg-ona-gradient {
     background: var(--ona-gradient);
+  }
+
+  /* The brand gradient as a faint wash behind the landing hero: blue from
+     the top left, red from the top right, both mixed down from the brand
+     tokens so the hero reads as ONA without a raw colour in sight. */
+  .bg-ona-wash {
+    background:
+      radial-gradient(55% 70% at 12% 0%, color-mix(in srgb, var(--color-ona-blue) 11%, transparent), transparent 70%),
+      radial-gradient(50% 65% at 92% 8%, color-mix(in srgb, var(--color-ona-red) 10%, transparent), transparent 70%),
+      var(--color-surface-alt);
   }
 
   /* ---- Loading equaliser -------------------------------------------------
@@ -301,20 +361,26 @@
 
    Only on coarse pointers: a mouse is precise, and an invisible 44px box
    around a 38px button would swallow clicks meant for its neighbours. */
-@media (pointer: coarse) {
-  .ona-tap-44 {
-    position: relative;
-  }
-  .ona-tap-44::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    min-width: 44px;
-    min-height: 44px;
-    width: 100%;
-    height: 100%;
-    transform: translate(-50%, -50%);
+/* In the components layer, BELOW utilities. Unlayered, this `position:
+   relative` beat every Tailwind utility on touch screens — including the
+   `absolute` that pins the password field's Show button inside its input,
+   which then fell out under the field on every phone. */
+@layer components {
+  @media (pointer: coarse) {
+    .ona-tap-44 {
+      position: relative;
+    }
+    .ona-tap-44::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 44px;
+      min-height: 44px;
+      width: 100%;
+      height: 100%;
+      transform: translate(-50%, -50%);
+    }
   }
 }
 
@@ -330,4 +396,133 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+@theme inline {
+  /* Lato is the brand face (identity guide), not the preset's Geist. */
+  --font-heading: var(--font-lato), system-ui, sans-serif;
+  --font-sans: var(--font-lato), system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+}
+
+/* ── Customer & staff journey (components/journey) ─────────────────────── */
+/* A done step's tick lands with a small pop; a lit meter bar settles in;
+   welcome-flow steps slide in. All three stand still for reduced motion. */
+@keyframes ona-pop {
+  0% { transform: scale(0.4); }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes ona-meter {
+  from { transform: scaleY(0.3); }
+  to { transform: scaleY(1); }
+}
+@keyframes ona-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.ona-pop { animation: ona-pop 420ms cubic-bezier(0.25, 1, 0.5, 1) both; }
+.ona-meter-lit { transform-origin: bottom; animation: ona-meter 500ms ease-out both; }
+.ona-rise { animation: ona-rise 420ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .ona-pop, .ona-meter-lit, .ona-rise { animation: none; }
+}
+
+/* ── Public pages: scrolling, the hero, reveals ────────────────────────── */
+/* In-page links glide to their section (each section's own scroll-mt keeps
+   it clear of the sticky bar). <html data-scroll-behavior="smooth"> tells
+   Next to switch this off while it changes route, so a new page still opens
+   at the top at once. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* The landing hero: the brand gradient taken deep enough for white text,
+   lit by its own two ends — blue top left, red lower right. Every colour is
+   mixed from the brand tokens. */
+.bg-ona-hero {
+  background:
+    radial-gradient(60% 75% at 8% 0%, color-mix(in srgb, var(--color-ona-blue) 85%, transparent), transparent 72%),
+    radial-gradient(55% 80% at 96% 78%, color-mix(in srgb, var(--color-ona-red) 62%, transparent), transparent 70%),
+    linear-gradient(
+      152deg,
+      color-mix(in srgb, var(--color-ona-blue) 62%, black) 0%,
+      color-mix(in srgb, var(--color-ona-secondary) 70%, black) 36%,
+      color-mix(in srgb, var(--color-ona-median) 66%, black) 66%,
+      color-mix(in srgb, var(--color-ona-tertiary) 74%, black) 100%
+    );
+}
+
+/* Over the hero photograph: dark where the words sit (left, and along the
+   foot for the promises), clear where the subject is. On a phone the words
+   run the full width, so the whole frame is held darker. */
+.ona-hero-scrim {
+  background:
+    linear-gradient(to top, color-mix(in srgb, var(--color-ona-blue) 22%, black) 0%, transparent 46%),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, color-mix(in srgb, var(--color-ona-blue) 30%, black) 88%, transparent) 0%,
+      color-mix(in srgb, color-mix(in srgb, var(--color-ona-blue) 30%, black) 72%, transparent) 55%,
+      color-mix(in srgb, color-mix(in srgb, var(--color-ona-median) 30%, black) 45%, transparent) 100%
+    );
+}
+@media (min-width: 64rem) {
+  .ona-hero-scrim {
+    background:
+      linear-gradient(to top, color-mix(in srgb, var(--color-ona-blue) 22%, black) 0%, transparent 42%),
+      linear-gradient(
+        to right,
+        color-mix(in srgb, color-mix(in srgb, var(--color-ona-blue) 30%, black) 86%, transparent) 0%,
+        color-mix(in srgb, color-mix(in srgb, var(--color-ona-blue) 30%, black) 55%, transparent) 42%,
+        transparent 74%
+      );
+  }
+}
+/* One cell of the promise bar: the bar's own tint shows through the 1px
+   gaps as hairlines. */
+.ona-hero-cell {
+  background: color-mix(in srgb, color-mix(in srgb, var(--color-ona-blue) 35%, black) 55%, transparent);
+}
+
+/* Sections rise into place as they scroll into view. Only where the browser
+   can tie an animation to scroll position; everywhere else, and for anyone
+   who asked for less motion, the page is simply there. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ona-reveal {
+      animation: ona-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
 }

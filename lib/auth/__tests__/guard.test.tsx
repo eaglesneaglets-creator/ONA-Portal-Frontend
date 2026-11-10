@@ -130,8 +130,27 @@ describe("RequireAuth", () => {
       </RequireAuth>,
     );
 
-    expect(replace).toHaveBeenCalledWith("/pro");
+    // "/coming-soon", not "/pro": ADR-015 deferred the professional portal to
+    // v0.2, so a professional's home is the holding page for now.
+    expect(replace).toHaveBeenCalledWith("/coming-soon");
     expect(screen.queryByText("Customer dashboard")).toBeNull();
+  });
+
+  it("does not render the deferred professional portal", () => {
+    // The portal exists in app/pro/ but its features ship in v0.2/v0.3. A
+    // professional who types the URL must be moved on, and must not see the
+    // shell even for a frame.
+    pathname = "/pro";
+    useAuthStore.setState({ user: userWith("professional"), status: "authenticated" });
+
+    render(
+      <RequireAuth>
+        <p>Pro dashboard</p>
+      </RequireAuth>,
+    );
+
+    expect(replace).toHaveBeenCalledWith("/coming-soon");
+    expect(screen.queryByText("Pro dashboard")).toBeNull();
   });
 });
 

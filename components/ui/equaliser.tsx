@@ -141,21 +141,3 @@ export function LoadingScreen({ label = "Loading" }: { label?: string }) {
     </div>
   );
 }
-
-/**
- * The splash shown while the session is being restored on first paint.
- *
- * Uses the brand gradient because at this moment we do not yet know who the
- * user is, so there is no portal chrome to show — a full-bleed brand surface
- * is more honest than a half-rendered shell.
- */
-export function SessionSplash() {
-  return (
-    <div className="bg-ona-gradient flex min-h-screen flex-col items-center justify-center gap-6">
-      <Equaliser label="Checking your session" size="lg" onDark />
-      <p className="text-[13.5px] text-white/75" aria-hidden="true">
-        One moment…
-      </p>
-    </div>
-  );
-}
