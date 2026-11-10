@@ -14,7 +14,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import { HeroBookingCard } from "@/components/landing/hero-booking-card";
 import { LandingFaq } from "@/components/landing/faq";
 import { SiteFooter } from "@/components/public/site-footer";
 import { BOOK_HREF, SiteHeader } from "@/components/public/site-header";
@@ -26,17 +25,21 @@ import { fetchCatalogue, type Room } from "@/lib/api/studio";
  * Homepage — UI v2 (docs/design/ui-v2.md, landing §1–9).
  *
  * Keeps the ONA identity exactly: the blue→red gradient over the hero
- * photograph, the logo, Lato, the token palette. What changed is the
- * composition the references agree on — the product itself as the hero
- * visual, a promise strip of facts, a bento of guarantees, the booking
- * steps, live rooms and prices, and real-policy answers.
+ * photograph, the logo, Lato, the token palette. The page runs: a hero that
+ * states the offer and carries the four promises, a bento of guarantees,
+ * the booking steps, live rooms and prices, and real-policy answers.
  *
  * No social proof: ONA has no testimonials, logos or statistics yet, and
  * PRODUCT.md forbids inventing them. Rooms and prices come from the API
  * (ISR, 60s) and the page fails soft without it.
  *
- * hero.jpg is a generated placeholder (docs/design/assets/HERO-IMAGE.md);
- * swap the file, keep the path.
+ * hero-studio.jpg is a stock photograph, not ONA's own room: "Silver and black
+ * studio microphone condenser" by Jonathan Velasquez, CC0 (public domain),
+ * from Wikimedia Commons. It shows equipment and no people, so it sets a
+ * mood without passing another studio off as ONA's. Replace it with ONA's
+ * photograph when there is one, under a new file name (the image optimiser
+ * and browsers cache by name, so a same-name swap shows the old picture),
+ * and check the subject still sits right of centre (object-position).
  */
 
 export const revalidate = 60;
@@ -76,27 +79,39 @@ export default async function Home() {
     <>
       <SiteHeader />
       <main>
-        {/* 2 · Hero — the brand gradient over the photograph, product card beside the pitch */}
-        <section className="relative isolate overflow-hidden text-white">
-          <Image src="/hero.jpg" alt="" fill priority sizes="100vw" className="-z-20 object-cover" />
-          <div aria-hidden="true" className="bg-ona-gradient absolute inset-0 -z-10 mix-blend-multiply" />
-          <div aria-hidden="true" className="absolute inset-0 -z-10 bg-black/25" />
+        {/* 2 · Hero — a studio photograph in the brand's colours, the pitch on
+            its dark side, and the four promises along its foot. */}
+        <section className="bg-ona-hero relative isolate overflow-hidden text-white">
+          <Image
+            src="/hero-studio.jpg"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="-z-30 object-cover object-[78%_center] sm:object-[70%_center]"
+          />
+          {/* Hue from the brand gradient, light from the photograph. */}
+          <div aria-hidden="true" className="bg-ona-gradient absolute inset-0 -z-20 opacity-80 mix-blend-color" />
+          {/* Darkness where the words are; the subject stays lit. */}
+          <div aria-hidden="true" className="ona-hero-scrim absolute inset-0 -z-10" />
 
-          <div className={`${WRAP} grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-14 lg:py-20`}>
-            <div>
-              <p className="mb-5 inline-flex items-center gap-2 rounded-pill bg-white/12 px-3 py-1.5 text-[12.5px] font-bold tracking-wide text-white ring-1 ring-white/25">
-                <span aria-hidden="true" className="size-1.5 rounded-pill bg-white" />
+          <div className={`${WRAP} flex min-h-[min(88svh,760px)] flex-col justify-center pb-10 pt-16 sm:pt-24 lg:pt-28`}>
+            <div className="max-w-[620px]">
+              <p className="ona-rise mb-6 inline-flex items-center gap-2 rounded-pill bg-white/10 px-3 py-1.5 text-[12.5px] font-bold tracking-wide text-white ring-1 ring-white/25 backdrop-blur-sm">
+                <span aria-hidden="true" className="size-1.5 rounded-pill bg-ona-red ring-2 ring-white/40" />
                 Recording studio · Accra
               </p>
-              <h1 className="mb-5 max-w-[15ch] text-[clamp(36px,5.6vw,60px)] font-black leading-[1.03] tracking-tight">
-                Book the room. Keep your money safe.
+              <h1 className="ona-rise mb-6 text-[clamp(40px,6.4vw,72px)] font-black leading-[1.0] tracking-[-0.025em] [animation-delay:70ms]">
+                Book the room.
+                <br />
+                Keep your money safe.
               </h1>
-              <p className="mb-8 max-w-[46ch] text-[17px] leading-relaxed text-white/85 sm:text-[18px]">
+              <p className="ona-rise mb-9 max-w-[44ch] text-[17px] leading-relaxed text-white/90 [animation-delay:140ms] sm:text-[19px]">
                 Pick a room and an engineer, see the price before you commit, and pay ONA — who
                 holds it until your session.
               </p>
-              <div className="flex flex-wrap gap-3">
-                <Button asChild className="h-12 bg-white px-6 text-[15px] font-bold text-ona-red hover:bg-white/90">
+              <div className="ona-rise flex flex-wrap gap-3 [animation-delay:210ms]">
+                <Button asChild className="h-13 bg-white px-7 text-[15.5px] font-bold text-ona-red shadow-pop hover:bg-white/90">
                   <Link href={BOOK_HREF}>
                     Book studio time <ArrowRight aria-hidden="true" />
                   </Link>
@@ -104,31 +119,26 @@ export default async function Home() {
                 <Button
                   asChild
                   variant="outline"
-                  className="h-12 border-white/50 bg-transparent px-6 text-[15px] font-bold text-white hover:border-white hover:bg-white/10 hover:text-white"
+                  className="h-13 border-white/45 bg-white/5 px-7 text-[15.5px] font-bold text-white backdrop-blur-sm hover:border-white hover:bg-white/15 hover:text-white"
                 >
                   <Link href="/studio">See rooms &amp; prices</Link>
                 </Button>
               </div>
             </div>
 
-            <div className="mx-auto w-full max-w-md lg:mr-0">
-              <HeroBookingCard room={rooms[0] ?? null} />
-            </div>
+            {/* 3 · What every booking includes — facts, not social proof */}
+            <ul
+              aria-label="What every booking includes"
+              className="ona-rise mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-white/15 ring-1 ring-white/20 backdrop-blur-md [animation-delay:300ms] lg:mt-20 lg:grid-cols-4"
+            >
+              {PROMISES.map(({ icon: Icon, label }) => (
+                <li key={label} className="ona-hero-cell flex items-center gap-3 px-4 py-4 text-[13.5px] font-bold leading-snug sm:px-5 sm:py-5 sm:text-[14.5px]">
+                  <Icon aria-hidden="true" className="size-5 flex-none text-white/85" />
+                  {label}
+                </li>
+              ))}
+            </ul>
           </div>
-        </section>
-
-        {/* 3 · Promise strip — facts, not social proof */}
-        <section aria-label="What every booking includes" className="border-b border-border-soft bg-surface">
-          <ul className={`${WRAP} grid grid-cols-2 gap-x-4 gap-y-5 py-7 lg:grid-cols-4`}>
-            {PROMISES.map(({ icon: Icon, label }) => (
-              <li key={label} className="flex items-center gap-3 text-[14.5px] font-bold text-ink">
-                <span aria-hidden="true" className="grid size-10 flex-none place-items-center rounded-lg bg-surface-alt text-ona-red">
-                  <Icon className="size-5" />
-                </span>
-                {label}
-              </li>
-            ))}
-          </ul>
         </section>
 
         {/* 4 · Bento — the guarantees, the lead tile carries the escrow promise */}
@@ -140,7 +150,7 @@ export default async function Home() {
               title="A booking you can trust with your money"
               body="The booking never lies. What you see as free is free, and what you confirm is held for you."
             />
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 lg:grid-rows-[auto_auto_auto]">
+            <div className="ona-reveal grid gap-4 md:grid-cols-2 lg:grid-cols-3 lg:grid-rows-[auto_auto_auto]">
               {/* Lead tile */}
               <article className="bg-ona-gradient relative overflow-hidden rounded-xl p-6 text-white sm:p-8 md:col-span-2 lg:row-span-2">
                 <ShieldCheck aria-hidden="true" className="mb-5 size-9 text-white/90" />
@@ -190,14 +200,24 @@ export default async function Home() {
         <section id="how" aria-labelledby="how-h" className={`scroll-mt-20 bg-surface ${SECTION}`}>
           <div className={WRAP}>
             <SectionHead id="how-h" eyebrow="How it works" title="From idea to session in four steps" />
-            <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* One path, not four boxes: a rail joins the numbers — down the
+                side on a phone, across the top on a wide screen. */}
+            <ol className="ona-reveal grid lg:grid-cols-4 lg:gap-6">
               {STEPS.map((s, i) => (
-                <li key={s.title} className="relative rounded-xl border border-border-default bg-surface p-5 sm:p-6">
-                  <span className="mb-5 grid size-10 place-items-center rounded-pill bg-ona-red text-[15px] font-black text-white">
+                <li key={s.title} className="relative flex gap-4 pb-9 last:pb-0 lg:block lg:pb-0">
+                  {i < STEPS.length - 1 ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-1 left-5 top-11 w-px -translate-x-1/2 bg-border-default lg:bottom-auto lg:left-13 lg:top-5 lg:h-px lg:w-[calc(100%-2.5rem)] lg:translate-x-0"
+                    />
+                  ) : null}
+                  <span className="relative grid size-10 flex-none place-items-center rounded-pill bg-ona-red text-[15px] font-black text-white">
                     {i + 1}
                   </span>
-                  <h3 className="mb-1.5 text-[17px] font-black tracking-tight text-ink">{s.title}</h3>
-                  <p className="text-[14.5px] leading-relaxed text-ink-dim">{s.body}</p>
+                  <div className="lg:mt-5 lg:pr-4">
+                    <h3 className="mb-1.5 text-[17px] font-black tracking-tight text-ink">{s.title}</h3>
+                    <p className="text-[14.5px] leading-relaxed text-ink-dim">{s.body}</p>
+                  </div>
                 </li>
               ))}
             </ol>
@@ -225,7 +245,7 @@ export default async function Home() {
                 .
               </p>
             ) : (
-              <ul className="grid gap-4 md:grid-cols-3">
+              <ul className="ona-reveal grid gap-4 md:grid-cols-3">
                 {featured.map((r) => (
                   <li key={r.id} className="flex flex-col rounded-xl border border-border-default bg-surface p-6 shadow-card">
                     <h3 className="mb-2 text-[19px] font-black tracking-tight text-ink">{r.name}</h3>
@@ -292,8 +312,8 @@ export default async function Home() {
         {/* 8 · Closing call to action */}
         <section className={`bg-surface pb-[clamp(72px,10vw,128px)]`}>
           <div className={WRAP}>
-            <div className="bg-ona-gradient relative overflow-hidden rounded-xl px-6 py-12 text-center text-white sm:px-10 sm:py-16">
-              <Image src="/ona-icon.png" alt="" width={56} height={56} className="mx-auto mb-5 rounded-pill ring-4 ring-white/20" />
+            <div className="ona-reveal bg-ona-gradient relative overflow-hidden rounded-xl px-6 py-12 text-center text-white sm:px-10 sm:py-16">
+              <Image src="/ona-icon.png" alt="" width={56} height={56} className="mx-auto mb-5 rounded-pill bg-white p-1.5 ring-4 ring-white/20" />
               <h2 className="mb-3 text-[clamp(26px,4vw,40px)] font-black tracking-tight">Ready to make something real?</h2>
               <p className="mx-auto mb-8 max-w-[44ch] text-[16px] leading-relaxed text-white/85">
                 Pick a room for this week. It takes about two minutes.

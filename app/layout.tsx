@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: "%s — ONA Records",
   },
   description:
-    "Book a studio. Hire a vetted creative professional. Every payment is held by ONA until you approve the work.",
+    "Book a recording room and engineer at ONA Records in Accra. Clear prices, Mobile Money, and payment held by ONA until your session.",
 };
 
 export default async function RootLayout({
@@ -46,7 +46,7 @@ export default async function RootLayout({
   // fetch's own revalidate.
   await connection();
   return (
-    <html lang="en" className={cn("h-full", "antialiased", lato.variable, "font-sans")}>
+    <html lang="en" data-scroll-behavior="smooth" className={cn("h-full", "antialiased", lato.variable, "font-sans")}>
       <body className="min-h-full flex flex-col">
         {/* Restores the session once, on boot. Public pages need this too —
             the homepage shows "Sign in" or the user's name depending on it. */}

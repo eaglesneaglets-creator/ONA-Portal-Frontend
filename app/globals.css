@@ -457,3 +457,72 @@
 @media (prefers-reduced-motion: reduce) {
   .ona-pop, .ona-meter-lit, .ona-rise { animation: none; }
 }
+
+/* ── Public pages: scrolling, the hero, reveals ────────────────────────── */
+/* In-page links glide to their section (each section's own scroll-mt keeps
+   it clear of the sticky bar). <html data-scroll-behavior="smooth"> tells
+   Next to switch this off while it changes route, so a new page still opens
+   at the top at once. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* The landing hero: the brand gradient taken deep enough for white text,
+   lit by its own two ends — blue top left, red lower right. Every colour is
+   mixed from the brand tokens. */
+.bg-ona-hero {
+  background:
+    radial-gradient(60% 75% at 8% 0%, color-mix(in srgb, var(--color-ona-blue) 85%, transparent), transparent 72%),
+    radial-gradient(55% 80% at 96% 78%, color-mix(in srgb, var(--color-ona-red) 62%, transparent), transparent 70%),
+    linear-gradient(
+      152deg,
+      color-mix(in srgb, var(--color-ona-blue) 62%, black) 0%,
+      color-mix(in srgb, var(--color-ona-secondary) 70%, black) 36%,
+      color-mix(in srgb, var(--color-ona-median) 66%, black) 66%,
+      color-mix(in srgb, var(--color-ona-tertiary) 74%, black) 100%
+    );
+}
+
+/* Over the hero photograph: dark where the words sit (left, and along the
+   foot for the promises), clear where the subject is. On a phone the words
+   run the full width, so the whole frame is held darker. */
+.ona-hero-scrim {
+  background:
+    linear-gradient(to top, color-mix(in srgb, var(--color-ona-blue) 22%, black) 0%, transparent 46%),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, color-mix(in srgb, var(--color-ona-blue) 30%, black) 88%, transparent) 0%,
+      color-mix(in srgb, color-mix(in srgb, var(--color-ona-blue) 30%, black) 72%, transparent) 55%,
+      color-mix(in srgb, color-mix(in srgb, var(--color-ona-median) 30%, black) 45%, transparent) 100%
+    );
+}
+@media (min-width: 64rem) {
+  .ona-hero-scrim {
+    background:
+      linear-gradient(to top, color-mix(in srgb, var(--color-ona-blue) 22%, black) 0%, transparent 42%),
+      linear-gradient(
+        to right,
+        color-mix(in srgb, color-mix(in srgb, var(--color-ona-blue) 30%, black) 86%, transparent) 0%,
+        color-mix(in srgb, color-mix(in srgb, var(--color-ona-blue) 30%, black) 55%, transparent) 42%,
+        transparent 74%
+      );
+  }
+}
+/* One cell of the promise bar: the bar's own tint shows through the 1px
+   gaps as hairlines. */
+.ona-hero-cell {
+  background: color-mix(in srgb, color-mix(in srgb, var(--color-ona-blue) 35%, black) 55%, transparent);
+}
+
+/* Sections rise into place as they scroll into view. Only where the browser
+   can tie an animation to scroll position; everywhere else, and for anyone
+   who asked for less motion, the page is simply there. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ona-reveal {
+      animation: ona-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}

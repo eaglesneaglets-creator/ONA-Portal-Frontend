@@ -39,3 +39,18 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => false,
   }),
 });
+
+/*
+ * jsdom has no IntersectionObserver. The public header uses one to mark the
+ * section on screen; in a test nothing scrolls, so an observer that never
+ * reports is the honest stand-in.
+ */
+class QuietIntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+Object.defineProperty(window, "IntersectionObserver", { writable: true, value: QuietIntersectionObserver });
