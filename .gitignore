@@ -52,3 +52,6 @@ next-env.d.ts
 /graft/
 
 # Graft codebase graph — local, regenerable cache
+
+# Claude Code project folder (local tooling, never committed)
+/.claude/
