@@ -54,3 +54,14 @@ class QuietIntersectionObserver {
   }
 }
 Object.defineProperty(window, "IntersectionObserver", { writable: true, value: QuietIntersectionObserver });
+
+/*
+ * Nor ResizeObserver, which Radix's radio group uses to measure itself.
+ * Nothing resizes in a test, so one that never reports is accurate.
+ */
+class QuietResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+Object.defineProperty(window, "ResizeObserver", { writable: true, value: QuietResizeObserver });

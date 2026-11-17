@@ -52,4 +52,3 @@ next-env.d.ts
 /graft/
 
 # Graft codebase graph — local, regenerable cache
-graft/

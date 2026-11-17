@@ -10,6 +10,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   MessageCircleQuestion,
+  ShieldCheck,
   Store,
   Star,
   UserRoundCog,
@@ -45,6 +46,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/professionals", label: "Professionals", icon: UserRoundCog },
       { href: "/admin/customers", label: "Customers", icon: Users },
+      { href: "/admin/kyc", label: "Identity checks", icon: ShieldCheck },
       { href: "/admin/reviews", label: "Reviews", icon: Star, pending: true },
     ],
   },
