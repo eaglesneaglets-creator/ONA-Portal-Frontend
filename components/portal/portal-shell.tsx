@@ -13,7 +13,7 @@
 
 "use client";
 
-import { ChevronsUpDown, LogOut, ShieldCheck, type LucideIcon } from "lucide-react";
+import { ChevronsUpDown, LogOut, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -252,6 +252,17 @@ function UserMenu({ role }: { role: Role }) {
               <span className="block text-xs text-ink-mute">{ROLE_LABEL[role]}</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {role === "customer" || role === "admin" ? (
+              <>
+                <DropdownMenuItem asChild className="min-h-11 md:min-h-8">
+                  <Link href={role === "admin" ? "/admin/settings" : "/customer/settings"}>
+                    <Settings aria-hidden="true" />
+                    {role === "admin" ? "Your account" : "Settings"}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
             <DropdownMenuItem onSelect={() => void logout()} className="min-h-11 md:min-h-8">
               <LogOut aria-hidden="true" />
               Sign out

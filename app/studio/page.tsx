@@ -15,6 +15,7 @@ import {
   type Room,
   type Service,
 } from "@/lib/api/studio";
+import { fetchRules } from "@/lib/api/business";
 
 /**
  * Public studio catalogue — /studio.
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
 };
 
 export default async function StudioCataloguePage() {
-  const { rooms, engineers, services, packages, unavailable } = await fetchCatalogue();
+  const [{ rooms, engineers, services, packages, unavailable }, rules] = await Promise.all([fetchCatalogue(), fetchRules()]);
 
   return (
     <>
@@ -54,7 +55,7 @@ export default async function StudioCataloguePage() {
           </h1>
           <p className="max-w-[56ch] text-[17px] leading-relaxed text-ink-dim">
             Every service is priced up front, with the engineer included. Pick what your
-            session is for and a time, secure it with a 50% deposit by Mobile Money, and pay
+            session is for and a time, secure it with a {rules.booking_deposit_percent}% deposit by Mobile Money, and pay
             the balance on the day. Open around the clock, by booking only.
           </p>
         </div>

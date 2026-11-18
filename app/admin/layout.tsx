@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   MessageCircleQuestion,
   Settings,
+  SlidersHorizontal,
   ShieldCheck,
   Store,
   Star,
@@ -58,6 +59,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/catalogue", label: "Studio & prices", icon: Store },
       { href: "/admin/content", label: "Questions & contact", icon: MessageCircleQuestion },
+      { href: "/admin/business", label: "Business settings", icon: SlidersHorizontal },
     ],
   },
   {

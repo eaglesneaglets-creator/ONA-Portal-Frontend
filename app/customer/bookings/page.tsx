@@ -41,6 +41,7 @@ import {
   rescheduleBooking,
   type Booking,
 } from "@/lib/api/bookings";
+import { useRules } from "@/hooks/use-rules";
 
 /**
  * /customer/bookings — every booking, with cancel and reschedule.
@@ -249,6 +250,7 @@ function ProfessionalLine({ booking: b }: { booking: Booking }) {
 /* ── Row actions ────────────────────────────────────────────────────────── */
 
 function RowActions({ booking: b, onAct }: { booking: Booking; onAct: (p: Pending) => void }) {
+  const rules = useRules();
   // Read once per mount: "is it still ahead?" only gates a hint in the menu.
   const [now] = useState(() => Date.now());
   async function download(kind: "invoice" | "receipt") {
@@ -302,9 +304,9 @@ function RowActions({ booking: b, onAct }: { booking: Booking; onAct: (p: Pendin
         ) : (b.status === "pending" || b.status === "confirmed") && new Date(b.start_at).getTime() > now ? (
           <>
             <DropdownMenuSeparator />
-            {/* ONA's terms: a paid booking changes only with 48 hours' notice. */}
+            {/* ONA's terms: a paid booking changes only with enough notice (Business settings). */}
             <DropdownMenuItem disabled className="min-h-11 whitespace-normal md:min-h-8">
-              Less than 48 hours to go — contact ONA to change it
+              Less than {rules.free_cancellation_hours} hours to go — contact ONA to change it
             </DropdownMenuItem>
           </>
         ) : null}
@@ -363,6 +365,7 @@ function CancelDialog({
   onClose: () => void;
   onDone: (m: string) => void;
 }) {
+  const rules = useRules();
   const { busy, error, setError, run } = useAction(onDone);
   return (
     <ActionDialog open={b !== null} busy={busy} className="sm:max-w-md" onDismiss={() => { setError(null); onClose(); }}>
@@ -380,8 +383,8 @@ function CancelDialog({
             <p role="note" className="rounded-md bg-warn-bg px-3 py-2.5 text-[14px] text-warn">
               You have paid <b>{b.paid_display}</b>. Under ONA&rsquo;s{" "}
               <Link href="/legal/terms" className="font-bold underline">booking terms</Link> deposits are not
-              refunded — because you are cancelling at least 48 hours ahead, it is kept as credit towards a new
-              session booked and completed within 30 days.
+              refunded — because you are cancelling at least {rules.free_cancellation_hours} hours ahead, it is kept as credit towards a new
+              session booked and completed within {rules.deposit_credit_days} days.
             </p>
           ) : null}
           {error ? <FormError message={error} /> : null}

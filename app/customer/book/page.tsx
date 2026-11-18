@@ -50,7 +50,6 @@ import { type Engineer, type Room, type Service } from "@/lib/api/studio";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/booking-draft";
 import {
   DAY_HOURS,
-  DEPOSIT_PERCENT,
   MAX_QUANTITY,
   depositPesewas,
   isDay,
@@ -59,6 +58,8 @@ import {
   unitNoun,
 } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+import { useRules } from "@/hooks/use-rules";
+import { holdText } from "@/lib/api/business";
 
 /**
  * Booking flow — /customer/book
@@ -131,6 +132,7 @@ const BOOKING_TOUR: TourStop[] = [
 ];
 
 function BookFlow({ onAnother }: { onAnother: () => void }) {
+  const rules = useRules();
   const params = useSearchParams();
 
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
@@ -543,7 +545,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
           hours={hours}
           quantity={quantity}
           total={previewGhs(totalPesewas)}
-          deposit={previewGhs(depositPesewas(totalPesewas))}
+          deposit={previewGhs(depositPesewas(totalPesewas, rules.booking_deposit_percent))}
         />
       </div>
     </div>
@@ -840,11 +842,12 @@ function DateTime({
 }
 
 function Review({ notes, onNotes }: { notes: string; onNotes: (v: string) => void }) {
+  const rules = useRules();
   return (
     <div>
       <StepHeading>Review and confirm</StepHeading>
       <p className="mb-5 text-[14.5px] text-ink-dim">
-        After you confirm, the slot is held for you for one hour. Pay the {DEPOSIT_PERCENT}% deposit in that time to
+        After you confirm, the slot is held for you for {holdText(rules.unpaid_hold_minutes)}. Pay the {rules.booking_deposit_percent}% deposit in that time to
         secure it; the balance is due before or on the day.{" "}
         <Link href="/legal/terms" className="font-bold text-ona-red hover:underline">
           Booking terms
@@ -889,6 +892,7 @@ function Summary({
   total: string;
   deposit: string;
 }) {
+  const rules = useRules();
   return (
     <aside aria-label="Session summary" className="lg:sticky lg:top-20" data-tour="booking-summary">
       <Card>
@@ -915,14 +919,14 @@ function Summary({
           </p>
           {room && service ? (
             <p className="flex items-baseline justify-between text-[13.5px]">
-              <span className="text-ink-dim">{DEPOSIT_PERCENT}% deposit to secure it</span>
+              <span className="text-ink-dim">{rules.booking_deposit_percent}% deposit to secure it</span>
               <b className="tabular-nums text-ink" data-testid="summary-deposit">{deposit}</b>
             </p>
           ) : null}
           <p className="mt-4 flex gap-2.5 rounded-lg bg-surface-alt px-3 py-2.5 text-[12.5px] leading-snug text-ink-dim" data-tour="booking-hold">
             <ShieldCheck aria-hidden="true" className="mt-px size-4 flex-none text-ona-blue" />
             <span>
-              <b className="block text-ink">Held for one hour</b>
+              <b className="block text-ink">Held for {holdText(rules.unpaid_hold_minutes)}</b>
               Pay the deposit by Mobile Money to confirm. A small Paystack processing fee is added and shown before you pay.
             </span>
           </p>
@@ -942,6 +946,7 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 function Confirmed({ booking, onAnother }: { booking: Booking; onAnother: () => void }) {
+  const rules = useRules();
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus(), []);
   return (
@@ -963,7 +968,7 @@ function Confirmed({ booking, onAnother }: { booking: Booking; onAnother: () => 
             {booking.room.name} with {booking.engineer.name}, {fmtDay(booking.start_at)} from {fmtTime(booking.start_at)} to{" "}
             {fmtTime(booking.end_at)}. Total {booking.total_display}.{" "}
             {booking.can_pay_online
-              ? `The slot is held for one hour — pay the ${booking.deposit_display} deposit to secure it.`
+              ? `The slot is held for ${holdText(rules.unpaid_hold_minutes)} — pay the ${booking.deposit_display} deposit to secure it.`
               : "It is held as pending — ONA will confirm it with you, and no payment has been taken."}
           </p>
           <PayOptions booking={booking} className="mb-4" />

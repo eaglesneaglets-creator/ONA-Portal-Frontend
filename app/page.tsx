@@ -20,6 +20,7 @@ import { BOOK_HREF, SiteHeader } from "@/components/public/site-header";
 import { Button } from "@/components/ui/button";
 import { fetchFaqs } from "@/lib/api/content";
 import { fetchCatalogue, type Room } from "@/lib/api/studio";
+import { fetchRules, type PublicRules } from "@/lib/api/business";
 
 /**
  * Homepage — UI v2 (docs/design/ui-v2.md, landing §1–9).
@@ -60,9 +61,9 @@ const PROMISES = [
   { icon: Lock, label: "Prices fixed before you confirm" },
 ];
 
-const STEPS = [
+const steps = (r: PublicRules) => [
   { title: "Pick a room, engineer and time", body: "Live availability. A slot shown as free is free." },
-  { title: "Confirm and pay ONA", body: "See the total first. Secure it with a 50% deposit by Mobile Money; the balance is due on the day." },
+  { title: "Confirm and pay ONA", body: `See the total first. Secure it with a ${r.booking_deposit_percent}% deposit by Mobile Money; the balance is due on the day.` },
   { title: "ONA confirms it", body: "You get a reference and an invoice by email, and a reminder the day before." },
   { title: "Record", body: "Turn up, plug in, make the thing. Your payment was with ONA the whole time." },
 ];
@@ -70,7 +71,8 @@ const STEPS = [
 const roomHref = (r: Room) => `/register?next=${encodeURIComponent(`/customer/book?room=${r.id}`)}`;
 
 export default async function Home() {
-  const [{ rooms, services, unavailable }, faqs] = await Promise.all([fetchCatalogue(), fetchFaqs()]);
+  const [{ rooms, services, unavailable }, faqs, rules] = await Promise.all([fetchCatalogue(), fetchFaqs(), fetchRules()]);
+  const STEPS = steps(rules);
   const featured = rooms.slice(0, 3);
   // ONA prices by service: a room shows where prices start, not a rate of its own.
   const cheapest = [...services].sort((a, b) => a.base_price_pesewas - b.base_price_pesewas)[0];

@@ -21,6 +21,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type MouseEvent } from "react";
 
+import { HeaderAccount, SheetAccount, SheetPrimary } from "@/components/public/account-menu";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -144,12 +145,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-1.5">
-          <Button asChild variant="ghost" className="hidden h-10 px-3 text-[14px] font-bold text-ink-dim sm:inline-flex">
-            <Link href="/login">Sign in</Link>
-          </Button>
-          <Button asChild className="h-11 px-4 text-[14px] font-bold md:h-10">
-            <Link href={BOOK_HREF}>Book a session</Link>
-          </Button>
+          <HeaderAccount bookHref={BOOK_HREF} />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="size-11 md:hidden" aria-label="Open menu">
@@ -176,20 +172,10 @@ export function SiteHeader() {
                     {l.label}
                   </Link>
                 ))}
-                <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  className="flex min-h-[var(--tap-min)] items-center rounded-md px-3 text-[15px] font-bold text-ink hover:bg-surface-sunk"
-                >
-                  Sign in
-                </Link>
+                <SheetAccount onNavigate={() => setOpen(false)} />
               </nav>
               <div className="mt-auto border-t border-border-soft p-5">
-                <Button asChild className="h-11 w-full font-bold">
-                  <Link href={BOOK_HREF} onClick={() => setOpen(false)}>
-                    Book a session
-                  </Link>
-                </Button>
+                <SheetPrimary bookHref={BOOK_HREF} onNavigate={() => setOpen(false)} />
               </div>
             </SheetContent>
           </Sheet>

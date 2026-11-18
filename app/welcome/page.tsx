@@ -27,6 +27,8 @@ import type { Service } from "@/lib/api/studio";
 import { RequireAuth } from "@/lib/auth/guard";
 import { useAuthStore } from "@/lib/auth/store";
 import { cn } from "@/lib/utils";
+import { useRules } from "@/hooks/use-rules";
+import { holdText, type PublicRules } from "@/lib/api/business";
 
 /**
  * /welcome — the first thing a new customer sees after signing up.
@@ -52,11 +54,11 @@ const INTENTS: { key: Intent; label: string; hint: string; icon: typeof Mic; mat
   { key: "browse", label: "Just looking", hint: "Show me around", icon: Compass, match: [] },
 ];
 
-const HOW = [
+const how = (r: PublicRules) => [
   { icon: CalendarCheck2, title: "Book in a minute", body: "Pick the service and a time. The price is shown up front, engineer included." },
-  { icon: Hourglass, title: "Your slot is held for an hour", body: "Nobody else can take it while you pay." },
-  { icon: Wallet, title: "Pay a 50% deposit", body: "By Mobile Money on Paystack. A small processing fee is shown before you pay." },
-  { icon: Music4, title: "Come in and make it", body: "Pay the balance on the day. Need to move it? Give 48 hours and your deposit carries over." },
+  { icon: Hourglass, title: `Your slot is held for ${holdText(r.unpaid_hold_minutes)}`, body: "Nobody else can take it while you pay." },
+  { icon: Wallet, title: `Pay a ${r.booking_deposit_percent}% deposit`, body: "By Mobile Money on Paystack. A small processing fee is shown before you pay." },
+  { icon: Music4, title: "Come in and make it", body: `Pay the balance on the day. Need to move it? Give ${r.free_cancellation_hours} hours and your deposit carries over.` },
 ];
 
 export default function WelcomePage() {
@@ -68,6 +70,7 @@ export default function WelcomePage() {
 }
 
 function Welcome() {
+  const rules = useRules();
   const router = useRouter();
   const firstName = useAuthStore((s) => s.user?.first_name);
   const [step, setStep] = useState(0);
@@ -184,7 +187,7 @@ function Welcome() {
               <h2 className="text-[clamp(24px,3vw,34px)] font-black tracking-tight text-ink">How a session works</h2>
               <p className="mt-1 text-[15.5px] text-ink-dim">Four moments, from booking to the studio.</p>
               <ol className="relative mt-8 grid gap-6 border-l-2 border-dashed border-border-default pl-8">
-                {HOW.map(({ icon: Icon, title, body }, i) => (
+                {how(rules).map(({ icon: Icon, title, body }, i) => (
                   <li key={title} className="ona-rise relative" style={{ animationDelay: `${i * 90}ms` }}>
                     <span className="absolute -left-[53px] grid size-11 place-items-center rounded-full bg-ona-gradient text-white ring-4 ring-surface">
                       <Icon aria-hidden="true" className="size-5" />
