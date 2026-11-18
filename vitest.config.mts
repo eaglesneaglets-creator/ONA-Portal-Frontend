@@ -23,5 +23,14 @@ export default defineConfig({
     globals: true,
 
     setupFiles: ["./vitest.setup.ts"],
+
+    // The pre-push hook runs while the dev server, backends and Docker are
+    // busy. With one worker per core (11 on a 12-thread machine) workers
+    // missed their start-up deadline ("Timeout waiting for worker to
+    // respond") and slow renders hit the 5 s test limit, blocking pushes
+    // with no real failure. Fewer workers and a roomier limit keep the
+    // suite honest without being flaky; CI machines are smaller anyway.
+    maxWorkers: 4,
+    testTimeout: 15_000,
   },
 });
