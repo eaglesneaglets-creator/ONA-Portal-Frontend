@@ -27,11 +27,14 @@ import { cn } from "@/lib/utils";
 
 export const BOOK_HREF = "/register?next=%2Fcustomer%2Fbook";
 
-/** In the order the sections come on the homepage. */
-const LINKS = [
+/**
+ * In the order the sections come on the homepage. A link with a `section`
+ * scrolls to it on the homepage; one without is a plain link to its page.
+ */
+const LINKS: { section: string | null; page: string; label: string }[] = [
   { section: "how", page: "/#how", label: "How it works" },
   { section: "rooms", page: "/studio", label: "Rooms & prices" },
-  { section: "faq", page: "/faqs", label: "Questions" },
+  { section: null, page: "/contact", label: "Contact" },
 ];
 
 /** The sheet's close animation; scrolling waits for it to release the page. */
@@ -58,7 +61,8 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const router = useRouter();
-  const onHome = usePathname() === "/";
+  const pathname = usePathname();
+  const onHome = pathname === "/";
   const scrolled = useSyncExternalStore(onScroll, () => window.scrollY > 8, () => false);
 
   // Which section is on screen: the one crossing a line just above the middle.
@@ -77,7 +81,7 @@ export function SiteHeader() {
       { rootMargin: "-40% 0px -55% 0px" },
     );
     for (const l of LINKS) {
-      const el = document.getElementById(l.section);
+      const el = l.section ? document.getElementById(l.section) : null;
       if (el) seen.observe(el);
     }
     return () => seen.disconnect();
@@ -86,17 +90,20 @@ export function SiteHeader() {
   /** On the homepage, scroll to the section; if it is not on the page, go to its page. */
   function go(e: MouseEvent, l: (typeof LINKS)[number], fromSheet = false) {
     if (fromSheet) setOpen(false);
-    if (!onHome) return;
+    const section = l.section;
+    if (!onHome || !section) return;
     e.preventDefault();
     const move = () => {
-      if (!scrollToSection(l.section)) router.push(l.page);
+      if (!scrollToSection(section)) router.push(l.page);
     };
     if (fromSheet) window.setTimeout(move, SHEET_CLOSE_MS);
     else move();
   }
 
-  const hrefFor = (l: (typeof LINKS)[number]) => (onHome ? `#${l.section}` : l.page);
+  const hrefFor = (l: (typeof LINKS)[number]) => (onHome && l.section ? `#${l.section}` : l.page);
   const current = onHome ? active : null;
+  /** The section in view on the homepage, or the page you are on. */
+  const isOn = (l: (typeof LINKS)[number]) => (l.section ? current === l.section : pathname === l.page);
 
   return (
     <header
@@ -117,13 +124,13 @@ export function SiteHeader() {
 
         <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => {
-            const on = current === l.section;
+            const on = isOn(l);
             return (
               <Link
-                key={l.section}
+                key={l.page}
                 href={hrefFor(l)}
                 onClick={(e) => go(e, l)}
-                aria-current={on ? "location" : undefined}
+                aria-current={on ? (l.section ? "location" : "page") : undefined}
                 className={cn(
                   "relative rounded-md px-3 py-2 text-[14px] font-bold transition-colors hover:bg-surface-sunk hover:text-ink",
                   "after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:origin-left after:rounded-pill after:bg-ona-red after:transition-transform after:duration-300 motion-reduce:after:transition-none",
@@ -157,13 +164,13 @@ export function SiteHeader() {
               <nav aria-label="Mobile" className="flex flex-col p-3">
                 {LINKS.map((l) => (
                   <Link
-                    key={l.section}
+                    key={l.page}
                     href={hrefFor(l)}
                     onClick={(e) => go(e, l, true)}
-                    aria-current={current === l.section ? "location" : undefined}
+                    aria-current={isOn(l) ? (l.section ? "location" : "page") : undefined}
                     className={cn(
                       "flex min-h-[var(--tap-min)] items-center rounded-md px-3 text-[15px] font-bold hover:bg-surface-sunk",
-                      current === l.section ? "bg-surface-sunk text-ona-red" : "text-ink",
+                      isOn(l) ? "bg-surface-sunk text-ona-red" : "text-ink",
                     )}
                   >
                     {l.label}
