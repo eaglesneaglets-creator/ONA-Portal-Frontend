@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { ContactEditor } from "@/components/admin/contact-editor";
 import { FormError } from "@/components/auth/fields";
 import { EditorFooter } from "@/components/dashboard/editor-footer";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -19,7 +20,7 @@ import { adminApi, type AdminFaq } from "@/lib/api/admin";
 import { ApiError } from "@/lib/api/errors";
 
 /**
- * /admin/content — the public FAQ (Task 16). Answers are policy: they show
+ * /admin/content — ONA's contact details and the public FAQ (Task 16). Answers are policy: they show
  * on the homepage and /faqs within a minute or so of saving, and every change is
  * in the audit log with what it said before.
  */
@@ -43,14 +44,14 @@ export default function AdminContentPage() {
   return (
     <div className="mx-auto w-full max-w-4xl">
       <PageHeader
-        title="Questions (FAQ)"
-        description="The answers customers read on the homepage and the Questions page."
+        title="Questions & contact"
+        description="How customers reach ONA, and the answers they read on the homepage and the Questions page."
         actions={
           <>
             <Button asChild variant="outline" className="h-11 md:h-9">
               <Link href="/faqs" target="_blank">
                 <ExternalLink aria-hidden="true" />
-                View page
+                View questions page
               </Link>
             </Button>
             <Button className="h-11 md:h-9" onClick={() => setEditing("new")}>
@@ -60,6 +61,11 @@ export default function AdminContentPage() {
           </>
         }
       />
+
+      <div className="mb-8">
+        <ContactEditor />
+      </div>
+      <h2 className="mb-3 text-[18px] font-black tracking-tight text-ink">Questions (FAQ)</h2>
 
       {faqs === null ? (
         <ErrorState message="Questions could not be loaded." onRetry={refresh} />

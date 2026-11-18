@@ -10,9 +10,11 @@ import {
   FolderKanban,
   LayoutDashboard,
   MessageCircleQuestion,
+  Settings,
   ShieldCheck,
   Store,
   Star,
+  UserCog,
   UserRoundCog,
   Users,
 } from "lucide-react";
@@ -47,6 +49,7 @@ const GROUPS: NavGroup[] = [
       { href: "/admin/professionals", label: "Professionals", icon: UserRoundCog },
       { href: "/admin/customers", label: "Customers", icon: Users },
       { href: "/admin/kyc", label: "Identity checks", icon: ShieldCheck },
+      { href: "/admin/staff", label: "Staff accounts", icon: UserCog },
       { href: "/admin/reviews", label: "Reviews", icon: Star, pending: true },
     ],
   },
@@ -54,8 +57,12 @@ const GROUPS: NavGroup[] = [
     label: "Content",
     items: [
       { href: "/admin/catalogue", label: "Studio & prices", icon: Store },
-      { href: "/admin/content", label: "Questions (FAQ)", icon: MessageCircleQuestion },
+      { href: "/admin/content", label: "Questions & contact", icon: MessageCircleQuestion },
     ],
+  },
+  {
+    label: "You",
+    items: [{ href: "/admin/settings", label: "Your account", icon: Settings }],
   },
 ];
 

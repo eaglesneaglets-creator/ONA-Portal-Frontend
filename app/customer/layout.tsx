@@ -8,6 +8,7 @@ import {
   Inbox,
   LayoutDashboard,
   MessageSquare,
+  Settings,
   ShieldCheck,
   Star,
 } from "lucide-react";
@@ -32,13 +33,16 @@ const GROUPS: NavGroup[] = [
       { href: "/customer/requests", label: "Requests", icon: Inbox, pending: true },
       { href: "/customer/projects", label: "Projects", icon: FolderKanban, pending: true },
       { href: "/customer/messages", label: "Messages", icon: MessageSquare, pending: true },
-      { href: "/customer/payments", label: "Payments", icon: CreditCard, pending: true },
+      { href: "/customer/payments", label: "Payments", icon: CreditCard },
       { href: "/customer/reviews", label: "Reviews", icon: Star, pending: true },
     ],
   },
   {
     label: "Account",
-    items: [{ href: "/customer/verify", label: "Verify identity", icon: ShieldCheck }],
+    items: [
+      { href: "/customer/verify", label: "Verify identity", icon: ShieldCheck },
+      { href: "/customer/settings", label: "Settings", icon: Settings },
+    ],
   },
 ];
 

@@ -84,11 +84,13 @@ export function ModeSwitch({ active, query = "" }: { active: "login" | "register
 export function LegalNote() {
   return (
     <p className="mt-3 text-[12px] leading-snug text-ink-mute">
-      {/* The privacy policy is still to come from ONA (docs/launch/content-from-ona.md);
-          no link until the page exists. */}
       By continuing you agree to ONA&rsquo;s{" "}
       <Link href="/legal/terms" className="text-ink-dim underline">
         booking terms
+      </Link>{" "}
+      and confirm you have read the{" "}
+      <Link href="/legal/privacy" className="text-ink-dim underline">
+        privacy policy
       </Link>
       .
     </p>
