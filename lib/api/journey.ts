@@ -6,7 +6,14 @@
 
 import { api } from "@/lib/api/client";
 
-export type JourneyStepKey = "account" | "verify_email" | "phone" | "first_booking" | "deposit" | "first_session";
+export type JourneyStepKey =
+  | "account"
+  | "verify_email"
+  | "verify_identity"
+  | "phone"
+  | "first_booking"
+  | "deposit"
+  | "first_session";
 export type JourneyStage = "signed_up" | "booked" | "paid" | "came_in";
 
 export interface JourneyStep {

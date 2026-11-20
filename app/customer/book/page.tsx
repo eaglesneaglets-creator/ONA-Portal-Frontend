@@ -21,6 +21,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { FormError } from "@/components/auth/fields";
 import { VerifyEmailBanner } from "@/components/auth/verify-email-banner";
+import { VerifyIdentityBanner } from "@/components/kyc/verify-identity-banner";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState } from "@/components/dashboard/states";
 import { PayOptions } from "@/components/booking/pay-button";
@@ -157,6 +158,8 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
   const resumeStart = useRef<string | null>(null);
   // Booking needs a confirmed email when the API says so (Task 18).
   const mustVerify = useAuthStore((s) => Boolean(s.user?.must_verify_email));
+  // …and an identity check sent to ONA (BOOKING_REQUIRES_IDENTITY_CHECK).
+  const mustVerifyIdentity = useAuthStore((s) => Boolean(s.user?.must_verify_identity));
   const [resumed, setResumed] = useState(false);
   // From the welcome flow's "Book this": the service is already chosen, so
   // after room and engineer the flow goes straight to the time.
@@ -399,6 +402,7 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
 
       {loadError ? <FormError message={loadError} /> : null}
       <VerifyEmailBanner />
+      <VerifyIdentityBanner />
       {resumed ? (
         <p role="status" className="mb-4 rounded-lg bg-info-bg px-4 py-3 text-[14px] text-info">
           Welcome back — we kept your booking while you signed in again. Check it and confirm.
@@ -522,9 +526,15 @@ function BookFlow({ onAnother }: { onAnother: () => void }) {
                   <Button
                     type="button"
                     className="h-11 px-6 font-bold"
-                    disabled={pending || !start || mustVerify}
+                    disabled={pending || !start || mustVerify || mustVerifyIdentity}
                     aria-busy={pending}
-                    title={mustVerify ? "Confirm your email first" : undefined}
+                    title={
+                      mustVerify
+                        ? "Confirm your email first"
+                        : mustVerifyIdentity
+                          ? "Verify your identity first"
+                          : undefined
+                    }
                     onClick={() => void confirm()}
                   >
                     <CalendarCheck2 aria-hidden="true" />

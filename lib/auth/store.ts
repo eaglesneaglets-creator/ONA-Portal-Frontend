@@ -47,6 +47,8 @@ export interface User {
   date_joined: string;
   /** Booking is blocked until the email is confirmed (Task 18). Absent on older APIs. */
   must_verify_email?: boolean;
+  /** Booking is blocked until an identity check is sent (BOOKING_REQUIRES_IDENTITY_CHECK). Absent on older APIs. */
+  must_verify_identity?: boolean;
 }
 
 interface AuthTokens {
