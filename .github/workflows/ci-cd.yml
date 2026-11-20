@@ -11,7 +11,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20'
+  # Same major as Railway: Nixpacks reads package.json engines (24.x -> 24.10.0).
+  # Node 20 there was 20.18.1, below @sentry/nextjs 11's >=20.19 floor, and is EOL.
+  NODE_VERSION: '24'
 
 permissions:
   contents: read
