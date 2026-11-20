@@ -23,7 +23,7 @@ function ResetForm() {
   const uid = params.get("uid") ?? "";
   const token = params.get("token") ?? "";
   const welcome = params.get("welcome") === "1";
-  const { pending, formError, fieldErrors, submit } = useAuthSubmit();
+  const { pending, formError, fieldErrors, submit, formRef } = useAuthSubmit();
   const [done, setDone] = useState(false);
 
   if (!uid || !token) {
@@ -83,7 +83,7 @@ function ResetForm() {
           ? "ONA has set up your account. Choose a password to see and manage your bookings."
           : "Pick something you have not used here before."}
       </p>
-      <form onSubmit={onSubmit} noValidate>
+      <form ref={formRef} onSubmit={onSubmit} noValidate>
         <FormError message={tokenError ?? formError} />
         {tokenError ? (
           <p className="-mt-2 mb-4 text-[13px]">

@@ -5,8 +5,9 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth/guard";
+import { TITLE_TEMPLATE } from "@/lib/page-title";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { cn } from "@/lib/utils";
-
 
 /**
  * Lato is brand-mandated: "Use Lato Sans Font for all our communications"
@@ -27,12 +28,19 @@ const lato = Lato({
 });
 
 export const metadata: Metadata = {
+  // Turns every relative URL below (canonical links, preview images) into a
+  // full one on this deployment's domain (lib/site.ts).
+  metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
   title: {
-    default: "ONA Records",
-    template: "%s — ONA Records",
+    default: SITE_NAME,
+    template: TITLE_TEMPLATE,
   },
   description:
     "Book a recording room and engineer at ONA Records in Accra. Clear prices, Mobile Money, and payment held by ONA until your session.",
+  // Defaults for link previews; public pages set their own words (publicPage).
+  openGraph: { type: "website", siteName: SITE_NAME, locale: "en_GH" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default async function RootLayout({
@@ -48,6 +56,15 @@ export default async function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth" className={cn("h-full", "antialiased", lato.variable, "font-sans")}>
       <body className="min-h-full flex flex-col">
+        {/* First stop for keyboard users: jump past the header or sidebar
+            (WCAG 2.4.1). Hidden until focused. Every <main> has this id;
+            __tests__/page-landmarks.test.ts keeps it that way. */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-lg focus:bg-ona-blue focus:px-4 focus:text-[14px] focus:font-bold focus:text-white focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
         {/* Restores the session once, on boot. Public pages need this too —
             the homepage shows "Sign in" or the user's name depending on it. */}
         <TooltipProvider delayDuration={200}>

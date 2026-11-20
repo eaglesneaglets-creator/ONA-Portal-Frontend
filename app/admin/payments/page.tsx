@@ -8,7 +8,8 @@ import { Pager, SearchBox } from "@/components/dashboard/list-controls";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/dashboard/data-table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePagedList } from "@/hooks/use-paged-list";
 import { adminApi, PAGE_SIZE, type StaffTransaction } from "@/lib/api/admin";
@@ -97,73 +98,71 @@ function StatusChip({ t }: { t: StaffTransaction }) {
 
 function PaymentTable({ rows }: { rows: StaffTransaction[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-      <Table>
-        <TableHeader className="bg-surface-alt">
-          <TableRow>
-            <TableHead className="pl-4">Date</TableHead>
-            <TableHead>Booking</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Method</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead className="text-right">Commission</TableHead>
-            <TableHead className="pr-4 text-right">Held now</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((t) => (
-            <TableRow key={t.id} data-testid="admin-payment-row">
-              <TableCell className="pl-4">
-                <p className="text-ink">{fmtShortDay(t.created_at)}</p>
-                <p className="text-[12.5px] text-ink-mute">{fmtTime(t.created_at)}</p>
-              </TableCell>
-              <TableCell>
-                <BookingLink id={t.booking.id} reference={t.booking.reference} />
-              </TableCell>
-              <TableCell>
-                <p className="text-ink">{t.customer.name}</p>
-                <p className="text-[12.5px] text-ink-mute">{t.customer.email}</p>
-              </TableCell>
-              <TableCell>
-                {t.is_manual ? (
-                  <>
-                    <span className="inline-flex rounded-pill bg-info-bg px-2 py-0.5 text-[11.5px] font-bold text-ona-blue">
-                      Recorded by staff
-                    </span>
-                    <p className="text-ink">{t.method_display}</p>
-                  </>
-                ) : (
-                  <p className="text-ink">{t.provider_display}</p>
-                )}
-                {t.provider_ref ? <p className="font-mono text-[12px] text-ink-mute">{t.provider_ref}</p> : null}
-              </TableCell>
-              <TableCell>
-                <StatusChip t={t} />
-                {t.failure_reason ? <p className="mt-1 text-[12px] text-err">{t.failure_reason}</p> : null}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                <b className="text-ink">{t.amount_display}</b>
-                {t.fee_pesewas ? (
-                  <span className="block text-[12px] text-ink-mute" title={`Customer charged ${t.charged_display}; the fee is Paystack's`}>
-                    + {t.fee_display} fee
-                  </span>
-                ) : null}
-              </TableCell>
-              <TableCell className="text-right tabular-nums text-ink-dim">
-                {t.commission_percent}%
-                {t.ledger.some((e) => e.commission) ? (
-                  <span className="block text-[12.5px]">
-                    {t.ledger.filter((e) => e.commission).map((e) => e.commission!.amount_display).join(", ")}
-                  </span>
-                ) : null}
-              </TableCell>
-              <TableCell className="pr-4 text-right tabular-nums text-ink">{t.held_display}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      caption="Payments"
+      head={
+        <>
+          <TableHead className="pl-4">Date</TableHead>
+          <TableHead>Booking</TableHead>
+          <TableHead>Customer</TableHead>
+          <TableHead>Method</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Amount</TableHead>
+          <TableHead className="text-right">Commission</TableHead>
+          <TableHead className="pr-4 text-right">Held now</TableHead>
+        </>
+      }
+    >
+      {rows.map((t) => (
+        <TableRow key={t.id} data-testid="admin-payment-row">
+          <TableCell className="pl-4">
+            <p className="text-ink">{fmtShortDay(t.created_at)}</p>
+            <p className="text-[12.5px] text-ink-mute">{fmtTime(t.created_at)}</p>
+          </TableCell>
+          <TableCell>
+            <BookingLink id={t.booking.id} reference={t.booking.reference} />
+          </TableCell>
+          <TableCell>
+            <p className="text-ink">{t.customer.name}</p>
+            <p className="text-[12.5px] text-ink-mute">{t.customer.email}</p>
+          </TableCell>
+          <TableCell>
+            {t.is_manual ? (
+              <>
+                <span className="inline-flex rounded-pill bg-info-bg px-2 py-0.5 text-[11.5px] font-bold text-ona-blue">
+                  Recorded by staff
+                </span>
+                <p className="text-ink">{t.method_display}</p>
+              </>
+            ) : (
+              <p className="text-ink">{t.provider_display}</p>
+            )}
+            {t.provider_ref ? <p className="font-mono text-[12px] text-ink-mute">{t.provider_ref}</p> : null}
+          </TableCell>
+          <TableCell>
+            <StatusChip t={t} />
+            {t.failure_reason ? <p className="mt-1 text-[12px] text-err">{t.failure_reason}</p> : null}
+          </TableCell>
+          <TableCell className="text-right tabular-nums">
+            <b className="text-ink">{t.amount_display}</b>
+            {t.fee_pesewas ? (
+              <span className="block text-[12px] text-ink-mute" title={`Customer charged ${t.charged_display}; the fee is Paystack's`}>
+                + {t.fee_display} fee
+              </span>
+            ) : null}
+          </TableCell>
+          <TableCell className="text-right tabular-nums text-ink-dim">
+            {t.commission_percent}%
+            {t.ledger.some((e) => e.commission) ? (
+              <span className="block text-[12.5px]">
+                {t.ledger.filter((e) => e.commission).map((e) => e.commission!.amount_display).join(", ")}
+              </span>
+            ) : null}
+          </TableCell>
+          <TableCell className="pr-4 text-right tabular-nums text-ink">{t.held_display}</TableCell>
+        </TableRow>
+      ))}
+    </DataTable>
   );
 }
 

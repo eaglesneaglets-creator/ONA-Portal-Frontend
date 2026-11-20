@@ -1,9 +1,11 @@
 "use client";
 
 import { Briefcase, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
+import { useActiveProfessionals } from "@/hooks/use-active-professionals";
+import { useFields, useSaveState } from "@/hooks/use-save-state";
 import { CustomerPicker } from "@/components/admin/customer-picker";
 import { FormError } from "@/components/auth/fields";
 import { Pager, SearchBox } from "@/components/dashboard/list-controls";
@@ -14,7 +16,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/dashboard/data-table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePagedList } from "@/hooks/use-paged-list";
@@ -25,12 +28,11 @@ import {
   type Job,
   type JobInput,
   type JobStatus,
-  type Professional,
   type StaffCustomer,
 } from "@/lib/api/admin";
 import { fmtShortDay } from "@/lib/api/bookings";
-import { ApiError } from "@/lib/api/errors";
-import { parseGhsToPesewas, pesewasToInput } from "@/lib/money";
+import { type FieldMessages, optionalFee } from "@/lib/forms";
+import { pesewasToInput } from "@/lib/money";
 
 /**
  * /admin/jobs — brokered work that is not a studio session (Task 15): a
@@ -135,40 +137,38 @@ export default function AdminJobsPage() {
               ))}
             </ul>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-              <Table>
-                <TableHeader className="bg-surface-alt">
-                  <TableRow>
-                    <TableHead className="pl-4">Job</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Professional</TableHead>
-                    <TableHead>Due</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="pr-4 text-right">Fee</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.results.map((j) => (
-                    <TableRow key={j.id} data-testid="admin-job-row" className="cursor-pointer" onClick={() => setEditing(j)}>
-                      <TableCell className="pl-4">
-                        <p className="font-bold text-ink">{j.title}</p>
-                        <p className="font-mono text-[12.5px] text-ink-mute">{j.reference}</p>
-                      </TableCell>
-                      <TableCell>
-                        <p className="text-ink">{j.customer_brief.name}</p>
-                        <p className="text-[12.5px] text-ink-mute">{j.customer_brief.phone || j.customer_brief.email}</p>
-                      </TableCell>
-                      <TableCell className="text-ink">
-                        {j.professional_brief ? j.professional_brief.stage_name || j.professional_brief.name : <span className="text-ink-mute">Not assigned</span>}
-                      </TableCell>
-                      <TableCell className="text-ink-dim">{j.due_on ? fmtShortDay(j.due_on) : "—"}</TableCell>
-                      <TableCell><StatusChip job={j} /></TableCell>
-                      <TableCell className="pr-4 text-right font-bold tabular-nums text-ink">{j.fee_display}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <DataTable
+              caption="Jobs"
+              head={
+                <>
+                  <TableHead className="pl-4">Job</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Professional</TableHead>
+                  <TableHead>Due</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="pr-4 text-right">Fee</TableHead>
+                </>
+              }
+            >
+              {data.results.map((j) => (
+                <TableRow key={j.id} data-testid="admin-job-row" className="cursor-pointer" onClick={() => setEditing(j)}>
+                  <TableCell className="pl-4">
+                    <p className="font-bold text-ink">{j.title}</p>
+                    <p className="font-mono text-[12.5px] text-ink-mute">{j.reference}</p>
+                  </TableCell>
+                  <TableCell>
+                    <p className="text-ink">{j.customer_brief.name}</p>
+                    <p className="text-[12.5px] text-ink-mute">{j.customer_brief.phone || j.customer_brief.email}</p>
+                  </TableCell>
+                  <TableCell className="text-ink">
+                    {j.professional_brief ? j.professional_brief.stage_name || j.professional_brief.name : <span className="text-ink-mute">Not assigned</span>}
+                  </TableCell>
+                  <TableCell className="text-ink-dim">{j.due_on ? fmtShortDay(j.due_on) : "—"}</TableCell>
+                  <TableCell><StatusChip job={j} /></TableCell>
+                  <TableCell className="pr-4 text-right font-bold tabular-nums text-ink">{j.fee_display}</TableCell>
+                </TableRow>
+              ))}
+            </DataTable>
           )}
           <Pager page={page} pageSize={PAGE_SIZE} count={data.count} onPage={setPage} />
         </>
@@ -214,8 +214,8 @@ function JobForm({
   onSaved: (j: Job, created: boolean) => void;
 }) {
   const [customer, setCustomer] = useState<StaffCustomer | null>(null);
-  const [pros, setPros] = useState<Professional[]>([]);
-  const [f, setF] = useState({
+  const pros = useActiveProfessionals();
+  const [f, set] = useFields({
     title: existing?.title ?? "",
     brief: existing?.brief ?? "",
     status: (existing?.status ?? "requested") as JobStatus,
@@ -224,30 +224,17 @@ function JobForm({
     fee: existing?.fee_pesewas != null ? pesewasToInput(existing.fee_pesewas) : "",
     notes: existing?.notes ?? "",
   });
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF({ ...f, [k]: v });
-
-  useEffect(() => {
-    adminApi
-      .professionals({ is_active: true, page_size: 100 })
-      .then((p) => setPros(p.results))
-      .catch(() => setPros([]));
-  }, []);
+  const { busy, setBusy, errors: fieldErrors, formError: error, setFormError: setError, formRef, reject, fail } =
+    useSaveState();
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const local: Record<string, string> = {};
+    const local: FieldMessages = {};
     if (!existing && !customer) local.customer = "Find and choose the customer.";
-    let fee: number | null = null;
-    if (f.fee.trim()) {
-      fee = parseGhsToPesewas(f.fee);
-      if (fee === null) local.fee_pesewas = "Enter the fee in cedis, e.g. 500 or 500.50.";
-    }
-    setFieldErrors(local);
-    if (Object.keys(local).length) return;
+    const fee = optionalFee(f.fee, "500");
+    if (fee.error) local.fee_pesewas = fee.error;
+    if (reject(local)) return;
 
     const input: JobInput = {
       title: f.title.trim(),
@@ -255,7 +242,7 @@ function JobForm({
       status: f.status,
       professional: f.professional === "none" ? null : f.professional,
       due_on: f.due_on || null,
-      fee_pesewas: fee,
+      fee_pesewas: fee.pesewas,
       notes: f.notes,
       ...(existing ? {} : { customer: customer!.id }),
     };
@@ -264,17 +251,12 @@ function JobForm({
       const saved = existing ? await adminApi.updateJob(existing.id, input) : await adminApi.createJob(input);
       onSaved(saved, !existing);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const fe = err.firstFieldErrors;
-        setFieldErrors(fe);
-        setError(Object.keys(fe).length ? null : err.formError);
-      } else setError("Something went wrong. Please try again.");
-      setBusy(false);
+      fail(err);
     }
   }
 
   return (
-    <form onSubmit={(e) => void save(e)} noValidate className="grid gap-3">
+    <form ref={formRef} onSubmit={(e) => void save(e)} noValidate className="grid gap-3">
       {existing ? null : (
         <div className="grid gap-1.5">
           <span className="text-[14px] font-bold text-ink">Customer</span>

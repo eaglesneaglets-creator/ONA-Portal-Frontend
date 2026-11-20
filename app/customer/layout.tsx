@@ -1,68 +1,15 @@
-"use client";
+import type { Metadata } from "next";
 
-import {
-  CalendarDays,
-  CalendarPlus,
-  CreditCard,
-  FolderKanban,
-  Inbox,
-  LayoutDashboard,
-  MessageSquare,
-  Settings,
-  ShieldCheck,
-  Star,
-} from "lucide-react";
-import Link from "next/link";
+import { sectionTitle } from "@/lib/page-title";
+import { PRIVATE_PAGE } from "@/lib/site";
 
-import { Button } from "@/components/ui/button";
-import { PortalShell, type NavGroup } from "@/components/portal/portal-shell";
-import { RequireAuth } from "@/lib/auth/guard";
+import CustomerShell from "./customer-shell";
 
-// Mirrors the sidebar in docs/design/pages/dashboard-customer.html.
-//
-// `pending: true` marks a destination that has not been built yet, which
-// stops Next prefetching a route that 404s. Remove the flag when the page
-// ships — see NavItem.pending in components/portal/portal-shell.tsx.
-const GROUPS: NavGroup[] = [
-  {
-    label: "Workspace",
-    items: [
-      { href: "/customer", label: "Overview", icon: LayoutDashboard },
-      { href: "/customer/book", label: "Book a session", icon: CalendarPlus },
-      { href: "/customer/bookings", label: "Bookings", icon: CalendarDays },
-      { href: "/customer/requests", label: "Requests", icon: Inbox, pending: true },
-      { href: "/customer/projects", label: "Projects", icon: FolderKanban, pending: true },
-      { href: "/customer/messages", label: "Messages", icon: MessageSquare, pending: true },
-      { href: "/customer/payments", label: "Payments", icon: CreditCard },
-      { href: "/customer/reviews", label: "Reviews", icon: Star, pending: true },
-    ],
-  },
-  {
-    label: "Account",
-    items: [
-      { href: "/customer/verify", label: "Verify identity", icon: ShieldCheck },
-      { href: "/customer/settings", label: "Settings", icon: Settings },
-    ],
-  },
-];
+// A server file so the section can set a tab title; the sidebar shell itself
+// is a client component (it reads the signed-in user), which cannot export
+// metadata. Pages below set their own titles in their own layout.tsx.
+export const metadata: Metadata = { ...PRIVATE_PAGE, title: sectionTitle("Your dashboard") };
 
-export default function CustomerLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <RequireAuth>
-      <PortalShell
-        role="customer"
-        groups={GROUPS}
-        actions={
-          <Button asChild size="sm" className="h-11 md:h-8">
-            <Link href="/customer/book">
-              <CalendarPlus aria-hidden="true" />
-              <span className="max-sm:sr-only">Book a session</span>
-            </Link>
-          </Button>
-        }
-      >
-        {children}
-      </PortalShell>
-    </RequireAuth>
-  );
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <CustomerShell>{children}</CustomerShell>;
 }

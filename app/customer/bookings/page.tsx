@@ -27,7 +27,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, HiddenHead } from "@/components/dashboard/data-table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ApiError } from "@/lib/api/errors";
@@ -155,50 +156,46 @@ export default function BookingsPage() {
 
 function BookingTable({ rows, onAct }: { rows: Booking[]; onAct: (p: Pending) => void }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-      <Table>
-        <TableHeader className="bg-surface-alt">
-          <TableRow>
-            <TableHead className="pl-4">Session</TableHead>
-            <TableHead>When</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="w-12 pr-4">
-              <span className="sr-only">Actions</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((b) => (
-            <TableRow key={b.id} data-testid="booking-row">
-              <TableCell className="py-3 pl-4">
-                <p className="font-bold text-ink">{b.room.name}</p>
-                <p className="text-[13px] text-ink-mute">
-                  {b.service.name} with {b.engineer.name} · <span className="whitespace-nowrap font-mono">{b.reference}</span>
-                </p>
-                <ProfessionalLine booking={b} />
-              </TableCell>
-              <TableCell>
-                <p className="text-ink">{fmtShortDay(b.start_at)}</p>
-                <p className="text-[13px] text-ink-mute">
-                  {fmtTime(b.start_at)}–{fmtTime(b.end_at)} · {plural(hoursOf(b))}
-                </p>
-              </TableCell>
-              <TableCell>
-                <StatusPill status={b.status} />
-              </TableCell>
-              <TableCell className="text-right">
-                <p className="font-bold tabular-nums text-ink">{b.total_display}</p>
-                {b.can_pay_online ? <PayButton booking={b} compact className="mt-1.5" /> : null}
-              </TableCell>
-              <TableCell className="pr-4 text-right">
-                <RowActions booking={b} onAct={onAct} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      caption="Your bookings"
+      head={
+        <>
+          <TableHead className="pl-4">Session</TableHead>
+          <TableHead>When</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Total</TableHead>
+          <HiddenHead label="Actions" />
+        </>
+      }
+    >
+      {rows.map((b) => (
+        <TableRow key={b.id} data-testid="booking-row">
+          <TableCell className="py-3 pl-4">
+            <p className="font-bold text-ink">{b.room.name}</p>
+            <p className="text-[13px] text-ink-mute">
+              {b.service.name} with {b.engineer.name} · <span className="whitespace-nowrap font-mono">{b.reference}</span>
+            </p>
+            <ProfessionalLine booking={b} />
+          </TableCell>
+          <TableCell>
+            <p className="text-ink">{fmtShortDay(b.start_at)}</p>
+            <p className="text-[13px] text-ink-mute">
+              {fmtTime(b.start_at)}–{fmtTime(b.end_at)} · {plural(hoursOf(b))}
+            </p>
+          </TableCell>
+          <TableCell>
+            <StatusPill status={b.status} />
+          </TableCell>
+          <TableCell className="text-right">
+            <p className="font-bold tabular-nums text-ink">{b.total_display}</p>
+            {b.can_pay_online ? <PayButton booking={b} compact className="mt-1.5" /> : null}
+          </TableCell>
+          <TableCell className="pr-4 text-right">
+            <RowActions booking={b} onAct={onAct} />
+          </TableCell>
+        </TableRow>
+      ))}
+    </DataTable>
   );
 }
 

@@ -6,6 +6,9 @@ import { SiteFooter } from "@/components/public/site-footer";
 import { SiteHeader } from "@/components/public/site-header";
 import { dialable } from "@/lib/api/account";
 import { type ContactDetails, fetchContact } from "@/lib/api/content";
+import { publicPage } from "@/lib/site";
+import { JsonLd } from "@/components/seo/json-ld";
+import { businessJsonLd } from "@/lib/structured-data";
 
 /**
  * /contact — how to reach ONA (P10). Staff keep the details in the console
@@ -15,10 +18,12 @@ import { type ContactDetails, fetchContact } from "@/lib/api/content";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPage({
   title: "Contact",
-  description: "Call, WhatsApp, email or visit ONA Records in Accra.",
-};
+  description:
+    "Call, WhatsApp, email or visit ONA Records in Accra.",
+  path: "/contact",
+});
 
 interface Way {
   key: string;
@@ -51,8 +56,9 @@ export default async function ContactPage() {
   const list = contact ? ways(contact) : [];
   return (
     <>
+      <JsonLd data={businessJsonLd(contact)} />
       <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
+      <main id="main-content" className="mx-auto w-full max-w-3xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
         <section className="py-12 sm:py-16">
           <p className="mb-2 text-[12.5px] font-bold uppercase tracking-[0.14em] text-ona-red">Contact</p>
           <h1 className="mb-3 text-[clamp(30px,5vw,44px)] font-black leading-tight tracking-tight text-ink">

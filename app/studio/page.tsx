@@ -16,6 +16,9 @@ import {
   type Service,
 } from "@/lib/api/studio";
 import { fetchRules } from "@/lib/api/business";
+import { publicPage } from "@/lib/site";
+import { JsonLd } from "@/components/seo/json-ld";
+import { servicesJsonLd } from "@/lib/structured-data";
 
 /**
  * Public studio catalogue — /studio.
@@ -35,17 +38,20 @@ import { fetchRules } from "@/lib/api/business";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPage({
   title: "Studio time and services",
   description:
     "Clear prices for ONA Records studio rooms and services, before you commit. Engineer included.",
-};
+  path: "/studio",
+});
 
 export default async function StudioCataloguePage() {
   const [{ rooms, engineers, services, packages, unavailable }, rules] = await Promise.all([fetchCatalogue(), fetchRules()]);
 
+  const offers = servicesJsonLd(services);
   return (
     <>
+      {offers ? <JsonLd data={offers} /> : null}
       <SiteHeader />
       <section className="bg-ona-wash border-b border-border-soft">
         <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
@@ -60,7 +66,7 @@ export default async function StudioCataloguePage() {
           </p>
         </div>
       </section>
-      <main className="mx-auto w-full max-w-6xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
+      <main id="main-content" className="mx-auto w-full max-w-6xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
         {unavailable ? <div className="pt-8"><Unavailable /></div> : null}
 
         {byCategory(services).map(([category, items]) => (

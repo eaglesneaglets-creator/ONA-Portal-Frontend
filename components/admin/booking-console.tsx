@@ -58,7 +58,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, HiddenHead } from "@/components/dashboard/data-table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -210,72 +211,68 @@ export function BookingList({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-      <Table>
-        <TableHeader className="bg-surface-alt">
-          <TableRow>
-            {compact ? null : <TableHead className="pl-4">Reference</TableHead>}
-            {showCustomer ? <TableHead className={compact ? "w-[45%] pl-4" : ""}>Customer</TableHead> : null}
-            {compact ? null : <TableHead>Session</TableHead>}
-            <TableHead>When</TableHead>
-            <TableHead>Status</TableHead>
-            {compact ? null : <TableHead className="text-right">Total</TableHead>}
-            <TableHead className="w-12 pr-4">
-              <span className="sr-only">Actions</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((b) => (
-            <TableRow key={b.id} data-testid="admin-booking-row" className="cursor-pointer" onClick={() => view(b.id)}>
-              {compact ? null : <TableCell className="pl-4 font-mono text-[13px] text-ink">{b.reference}</TableCell>}
-              {showCustomer ? (
-                <TableCell className={compact ? "max-w-0 pl-4" : "max-w-64"}>
-                  <p className="flex min-w-0 items-center gap-2 font-bold text-ink">
-                    <span className="truncate">{b.customer.name}</span>
-                    {b.is_first_booking ? <FirstVisit /> : null}
-                  </p>
-                  <p className="truncate text-[13px] text-ink-mute">
-                    {compact ? (
-                      <>
-                        <span className="font-mono">{b.reference}</span> · {b.room.name}
-                      </>
-                    ) : (
-                      b.customer.phone || b.customer.email
-                    )}
-                  </p>
-                </TableCell>
-              ) : null}
-              {compact ? null : (
-                <TableCell>
-                  <p className="text-ink">{b.room.name}</p>
-                  <p className="text-[13px] text-ink-mute">{b.engineer.name}</p>
-                </TableCell>
-              )}
-              <TableCell>
-                <p className="text-ink">{fmtShortDay(b.start_at)}</p>
-                <p className="text-[13px] text-ink-mute">
-                  {fmtTime(b.start_at)}–{fmtTime(b.end_at)} · {plural(hours(b))}
-                </p>
-              </TableCell>
-              <TableCell>
-                <StatusPill status={b.status} />
-              </TableCell>
-              {compact ? null : (
-                <TableCell className="text-right">
-                  <p className="font-bold tabular-nums text-ink">{b.total_display}</p>
-                  <PaidNote booking={b} />
-                </TableCell>
-              )}
-              {/* The menu must not also open the sheet behind it. */}
-              <TableCell className="pr-4 text-right" onClick={(e) => e.stopPropagation()}>
-                <RowActions booking={b} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      caption="Bookings"
+      head={
+        <>
+          {compact ? null : <TableHead className="pl-4">Reference</TableHead>}
+          {showCustomer ? <TableHead className={compact ? "w-[45%] pl-4" : ""}>Customer</TableHead> : null}
+          {compact ? null : <TableHead>Session</TableHead>}
+          <TableHead>When</TableHead>
+          <TableHead>Status</TableHead>
+          {compact ? null : <TableHead className="text-right">Total</TableHead>}
+          <HiddenHead label="Actions" />
+        </>
+      }
+    >
+      {rows.map((b) => (
+        <TableRow key={b.id} data-testid="admin-booking-row" className="cursor-pointer" onClick={() => view(b.id)}>
+          {compact ? null : <TableCell className="pl-4 font-mono text-[13px] text-ink">{b.reference}</TableCell>}
+          {showCustomer ? (
+            <TableCell className={compact ? "max-w-0 pl-4" : "max-w-64"}>
+              <p className="flex min-w-0 items-center gap-2 font-bold text-ink">
+                <span className="truncate">{b.customer.name}</span>
+                {b.is_first_booking ? <FirstVisit /> : null}
+              </p>
+              <p className="truncate text-[13px] text-ink-mute">
+                {compact ? (
+                  <>
+                    <span className="font-mono">{b.reference}</span> · {b.room.name}
+                  </>
+                ) : (
+                  b.customer.phone || b.customer.email
+                )}
+              </p>
+            </TableCell>
+          ) : null}
+          {compact ? null : (
+            <TableCell>
+              <p className="text-ink">{b.room.name}</p>
+              <p className="text-[13px] text-ink-mute">{b.engineer.name}</p>
+            </TableCell>
+          )}
+          <TableCell>
+            <p className="text-ink">{fmtShortDay(b.start_at)}</p>
+            <p className="text-[13px] text-ink-mute">
+              {fmtTime(b.start_at)}–{fmtTime(b.end_at)} · {plural(hours(b))}
+            </p>
+          </TableCell>
+          <TableCell>
+            <StatusPill status={b.status} />
+          </TableCell>
+          {compact ? null : (
+            <TableCell className="text-right">
+              <p className="font-bold tabular-nums text-ink">{b.total_display}</p>
+              <PaidNote booking={b} />
+            </TableCell>
+          )}
+          {/* The menu must not also open the sheet behind it. */}
+          <TableCell className="pr-4 text-right" onClick={(e) => e.stopPropagation()}>
+            <RowActions booking={b} />
+          </TableCell>
+        </TableRow>
+      ))}
+    </DataTable>
   );
 }
 

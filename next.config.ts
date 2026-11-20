@@ -12,6 +12,13 @@ import type { NextConfig } from "next";
  *
  * HSTS is set by the hosting edge in production; sending it from a local
  * http dev server would pin localhost to https, so it is production-only.
+ * No `preload` yet, deliberately: the preload list takes only a registrable
+ * domain you own (not *.up.railway.app), pins every subdomain to https in
+ * browsers' built-in lists, and takes months to undo. Add it after the
+ * production domain cutover, once every subdomain is on https.
+ *
+ * COOP, CORP, CSP reporting and Trusted Types (report-only) are set per page
+ * in proxy.ts.
  */
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },

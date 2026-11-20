@@ -5,14 +5,16 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { useEditableForm } from "@/hooks/use-editable-form";
+import { useFocusFirstError } from "@/hooks/use-focus-first-error";
 import { TextField } from "@/components/dashboard/text-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { accountApi } from "@/lib/api/account";
-import { ApiError, type FieldErrors } from "@/lib/api/errors";
-import { omit } from "@/lib/utils";
+import type { FieldErrors } from "@/lib/api/errors";
+import { showSaveError } from "@/lib/forms";
 import { type User, useAuthStore } from "@/lib/auth/store";
 
 /**
@@ -37,22 +39,20 @@ function firstError(errors: FieldErrors, field: string): string | undefined {
 
 function ProfileCard({ user }: { user: User }) {
   const setUser = useAuthStore((s) => s.setUser);
-  const [form, setForm] = useState({ first_name: user.first_name, last_name: user.last_name, phone: user.phone });
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [busy, setBusy] = useState(false);
+  const { form, setForm, errors, setErrors, busy, setBusy, edit, formRef, focusFirstError } = useEditableForm({
+    first_name: user.first_name,
+    last_name: user.last_name,
+    phone: user.phone,
+  });
 
   const dirty =
     form.first_name !== user.first_name || form.last_name !== user.last_name || form.phone !== user.phone;
-
-  function edit(field: keyof typeof form, value: string) {
-    setForm((f) => ({ ...f, [field]: value }));
-    setErrors((prev) => omit(prev, field));
-  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!form.first_name.trim()) {
       setErrors({ first_name: ["Enter your first name."] });
+      focusFirstError();
       return;
     }
     setBusy(true);
@@ -62,8 +62,7 @@ function ProfileCard({ user }: { user: User }) {
       setForm({ first_name: updated.first_name, last_name: updated.last_name, phone: updated.phone });
       toast.success("Your details are saved.");
     } catch (err) {
-      if (err instanceof ApiError && Object.keys(err.fieldErrors).length) setErrors(err.fieldErrors);
-      else toast.error(err instanceof Error ? err.message : "Could not save. Please try again.");
+      showSaveError(err, setErrors, focusFirstError, "Could not save. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -71,7 +70,7 @@ function ProfileCard({ user }: { user: User }) {
 
   return (
     <Card>
-      <form onSubmit={save} noValidate>
+      <form ref={formRef} onSubmit={save} noValidate>
         <CardHeader>
           <CardTitle className="text-[18px] font-black">Your details</CardTitle>
           <CardDescription>The name and number ONA uses for your bookings and receipts.</CardDescription>
@@ -117,6 +116,7 @@ function PasswordCard() {
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
+  const { formRef, focusFirstError } = useFocusFirstError();
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -126,6 +126,7 @@ function PasswordCard() {
     else if (next !== confirm) local.confirm = ["The two new passwords do not match."];
     if (Object.keys(local).length) {
       setErrors(local);
+      focusFirstError();
       return;
     }
     setBusy(true);
@@ -137,8 +138,7 @@ function PasswordCard() {
       setErrors({});
       toast.success(detail);
     } catch (err) {
-      if (err instanceof ApiError && Object.keys(err.fieldErrors).length) setErrors(err.fieldErrors);
-      else toast.error(err instanceof Error ? err.message : "Could not change your password. Please try again.");
+      showSaveError(err, setErrors, focusFirstError, "Could not change your password. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -147,7 +147,7 @@ function PasswordCard() {
   const type = show ? "text" : "password";
   return (
     <Card>
-      <form onSubmit={save} noValidate>
+      <form ref={formRef} onSubmit={save} noValidate>
         <CardHeader>
           <CardTitle className="text-[18px] font-black">Password</CardTitle>
           <CardDescription>Changing it signs you out on every other phone or computer.</CardDescription>

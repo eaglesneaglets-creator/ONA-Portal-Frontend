@@ -4,6 +4,7 @@ import { Plus, Store } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { useSaveState } from "@/hooks/use-save-state";
 import { FormError } from "@/components/auth/fields";
 import { EditorFooter } from "@/components/dashboard/editor-footer";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -14,12 +15,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/dashboard/data-table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { adminApi, type AdminRoom, type CatalogueKind } from "@/lib/api/admin";
-import { ApiError } from "@/lib/api/errors";
 import { parseGhsToPesewas, pesewasToInput } from "@/lib/money";
 
 /**
@@ -191,33 +192,31 @@ export default function AdminCataloguePage() {
           ))}
         </ul>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-          <Table>
-            <TableHeader className="bg-surface-alt">
-              <TableRow>
-                <TableHead className="pl-4">Name</TableHead>
-                {def.columns.map((c) => (
-                  <TableHead key={c.label} className={c.align === "right" ? "text-right" : ""}>{c.label}</TableHead>
-                ))}
-                <TableHead className="pr-4">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.id} data-testid="catalogue-row" className="cursor-pointer" onClick={() => setEditing(r)}>
-                  <TableCell className="pl-4">
-                    <p className="font-bold text-ink">{r.name}</p>
-                    {r.description ? <p className="line-clamp-1 max-w-md text-[13px] text-ink-mute">{String(r.description)}</p> : null}
-                  </TableCell>
-                  {def.columns.map((c) => (
-                    <TableCell key={c.label} className={`tabular-nums text-ink ${c.align === "right" ? "text-right" : ""}`}>{c.value(r)}</TableCell>
-                  ))}
-                  <TableCell className="pr-4"><StatusBadge active={r.is_active} /></TableCell>
-                </TableRow>
+        <DataTable
+          caption={def.title}
+          head={
+            <>
+              <TableHead className="pl-4">Name</TableHead>
+              {def.columns.map((c) => (
+                <TableHead key={c.label} className={c.align === "right" ? "text-right" : ""}>{c.label}</TableHead>
               ))}
-            </TableBody>
-          </Table>
-        </div>
+              <TableHead className="pr-4">Status</TableHead>
+            </>
+          }
+        >
+          {rows.map((r) => (
+            <TableRow key={r.id} data-testid="catalogue-row" className="cursor-pointer" onClick={() => setEditing(r)}>
+              <TableCell className="pl-4">
+                <p className="font-bold text-ink">{r.name}</p>
+                {r.description ? <p className="line-clamp-1 max-w-md text-[13px] text-ink-mute">{String(r.description)}</p> : null}
+              </TableCell>
+              {def.columns.map((c) => (
+                <TableCell key={c.label} className={`tabular-nums text-ink ${c.align === "right" ? "text-right" : ""}`}>{c.value(r)}</TableCell>
+              ))}
+              <TableCell className="pr-4"><StatusBadge active={r.is_active} /></TableCell>
+            </TableRow>
+          ))}
+        </DataTable>
       )}
 
       <Dialog open={editing !== null} onOpenChange={(o) => !o && setEditing(null)}>
@@ -282,9 +281,7 @@ function ItemForm({
   );
   const [active, setActive] = useState(existing?.is_active ?? true);
   const [sortOrder, setSortOrder] = useState(String(existing?.sort_order ?? 100));
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { busy, setBusy, errors, formError, setFormError, formRef, reject, fail } = useSaveState();
 
   function payload(): Record<string, unknown> | null {
     const out: Record<string, unknown> = { is_active: active, sort_order: Number(sortOrder) || 100 };
@@ -304,8 +301,7 @@ function ItemForm({
       else if (f.kind === "room") out[f.key] = raw === "any" ? null : raw;
       else out[f.key] = raw.trim();
     }
-    setErrors(errs);
-    return Object.keys(errs).length ? null : out;
+    return reject(errs) ? null : out;
   }
 
   async function save(e: React.FormEvent) {
@@ -319,12 +315,7 @@ function ItemForm({
       else await adminApi.createCatalogue(kind, body);
       onDone(existing ? `${String(body.name)} saved.` : `${String(body.name)} added.`);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const fe = err.firstFieldErrors;
-        setErrors(fe);
-        setFormError(Object.keys(fe).length ? null : err.formError);
-      } else setFormError("Something went wrong. Please try again.");
-      setBusy(false);
+      fail(err);
     }
   }
 
@@ -335,13 +326,12 @@ function ItemForm({
       await adminApi.removeCatalogue(kind, existing.id);
       onDone(`${existing.name} removed.`);
     } catch (err) {
-      setFormError(err instanceof ApiError ? err.formError : "Could not remove it.");
-      setBusy(false);
+      fail(err, "Could not remove it.");
     }
   }
 
   return (
-    <form onSubmit={(e) => void save(e)} noValidate className="grid gap-3">
+    <form ref={formRef} onSubmit={(e) => void save(e)} noValidate className="grid gap-3">
       {def.fields.map((f) => {
         const id = `cat-${f.key}`;
         const err = errors[f.key];

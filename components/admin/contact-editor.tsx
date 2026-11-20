@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { useEditableForm } from "@/hooks/use-editable-form";
 import { TextField } from "@/components/dashboard/text-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type Contact, contactApi } from "@/lib/api/account";
-import { ApiError, type FieldErrors } from "@/lib/api/errors";
-import { omit } from "@/lib/utils";
+import { showSaveError } from "@/lib/forms";
 
 const EMPTY: Contact = { phone: "", whatsapp: "", email: "", address: "", directions_url: "" };
 
@@ -27,9 +27,7 @@ const fields = (c: Contact): Contact => ({
  */
 export function ContactEditor() {
   const [saved, setSaved] = useState<Contact | null | undefined>(undefined);
-  const [form, setForm] = useState<Contact>(EMPTY);
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [busy, setBusy] = useState(false);
+  const { form, setForm, errors, setErrors, busy, setBusy, edit, formRef, focusFirstError } = useEditableForm<Contact>(EMPTY);
 
   useEffect(() => {
     let live = true;
@@ -45,14 +43,9 @@ export function ContactEditor() {
     return () => {
       live = false;
     };
-  }, []);
+  }, [setForm]);
 
   const dirty = saved ? (Object.keys(EMPTY) as (keyof Contact)[]).some((k) => form[k] !== saved[k]) : false;
-
-  function edit(field: keyof Contact, value: string) {
-    setForm((f) => ({ ...f, [field]: value }));
-    setErrors((prev) => omit(prev, field));
-  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -63,8 +56,7 @@ export function ContactEditor() {
       setForm(c);
       toast.success("Contact details saved. The site shows them within a minute.");
     } catch (err) {
-      if (err instanceof ApiError && Object.keys(err.fieldErrors).length) setErrors(err.fieldErrors);
-      else toast.error(err instanceof Error ? err.message : "Could not save. Please try again.");
+      showSaveError(err, setErrors, focusFirstError, "Could not save. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -74,7 +66,7 @@ export function ContactEditor() {
 
   return (
     <Card>
-      <form onSubmit={save} noValidate>
+      <form ref={formRef} onSubmit={save} noValidate>
         <CardHeader>
           <CardTitle className="text-[18px] font-black">Contact details</CardTitle>
           <CardDescription>

@@ -3,20 +3,13 @@
  * payment history, ONA's contact details, and the staff list.
  */
 
-import { api } from "@/lib/api/client";
+import { api, type Page } from "@/lib/api/client";
 import { setTokens } from "@/lib/api/tokens";
 import type { User } from "@/lib/auth/store";
 
-export interface Page<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
-
 /* ── Account settings (/auth/me/, /auth/password/) ─────────────────────── */
 
-export type ProfileInput = Pick<User, "first_name" | "last_name" | "phone">;
+type ProfileInput = Pick<User, "first_name" | "last_name" | "phone">;
 
 export const accountApi = {
   update: (body: Partial<ProfileInput>) => api.patch<User>("/auth/me/", body),

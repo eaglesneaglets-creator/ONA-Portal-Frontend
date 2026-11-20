@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { SiteFooter } from "@/components/public/site-footer";
-import { SiteHeader } from "@/components/public/site-header";
+import { LegalPage, type LegalSection } from "@/components/public/legal-page";
+import { publicPage } from "@/lib/site";
 
 /**
  * /legal/privacy — what ONA collects, why, who else sees it, and for how long.
@@ -20,17 +20,17 @@ import { SiteHeader } from "@/components/public/site-header";
  *   - files stored in a bucket in the United States (Railway, region iad)
  */
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPage({
   title: "Privacy policy",
-  description: "What ONA Records collects, why, who else sees it and how long it is kept.",
-};
+  description:
+    "What ONA Records collects, why, who else sees it and how long it is kept.",
+  path: "/legal/privacy",
+});
 
 const UPDATED = "18 November 2026";
 const KYC_RETENTION_DAYS = 90;
 
-type Block = { title: string; intro?: string; points: React.ReactNode[] };
-
-const SECTIONS: Block[] = [
+const SECTIONS: LegalSection[] = [
   {
     title: "1. Who we are",
     points: [
@@ -121,38 +121,6 @@ const SECTIONS: Block[] = [
 
 export default function PrivacyPage() {
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
-        <section className="py-12 sm:py-16">
-          <p className="mb-2 text-[12.5px] font-bold uppercase tracking-[0.14em] text-ona-red">Privacy</p>
-          <h1 className="mb-3 text-[clamp(30px,5vw,44px)] font-black leading-tight tracking-tight text-ink">
-            How ONA Records handles your information
-          </h1>
-          <p className="text-[15px] text-ink-mute">Last updated {UPDATED}</p>
-        </section>
-
-        <div className="space-y-8">
-          {SECTIONS.map((s) => (
-            <section key={s.title} aria-labelledby={slug(s.title)}>
-              <h2 id={slug(s.title)} className="mb-3 text-[20px] font-black tracking-tight text-ink">
-                {s.title}
-              </h2>
-              {s.intro ? <p className="mb-2 text-[16px] leading-relaxed text-ink-dim">{s.intro}</p> : null}
-              <ul className="list-disc space-y-2 pl-5 text-[16px] leading-relaxed text-ink-dim marker:text-ona-red">
-                {s.points.map((p, i) => (
-                  <li key={i}>{p}</li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
-      </main>
-      <SiteFooter />
-    </>
+    <LegalPage eyebrow="Privacy" title="How ONA Records handles your information" updated={UPDATED} sections={SECTIONS} />
   );
-}
-
-function slug(t: string): string {
-  return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }

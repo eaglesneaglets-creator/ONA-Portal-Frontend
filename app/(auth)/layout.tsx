@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
+
 import { AuthShell } from "@/components/auth/auth-shell";
 import { RequireGuest } from "@/lib/auth/guard";
+import { PRIVATE_PAGE } from "@/lib/site";
 
 /**
  * Shared shell for /login and /register.
@@ -14,6 +17,10 @@ import { RequireGuest } from "@/lib/auth/guard";
  * on either page should be bounced to their portal, and the rule belongs in
  * one place rather than repeated per page.
  */
+// Sign-in and account pages stay out of search results (robots.txt lets
+// crawlers fetch them so they can see this).
+export const metadata: Metadata = PRIVATE_PAGE;
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <RequireGuest>

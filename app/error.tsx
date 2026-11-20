@@ -28,7 +28,7 @@ export default function ErrorBoundary({
   }, [error]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-16 text-center">
+    <main id="main-content" className="flex min-h-screen flex-col items-center justify-center px-6 py-16 text-center">
       <ErrorMark />
 
       <p className="mb-3 text-[10.5px] font-bold uppercase tracking-[0.16em] text-ink-mute">

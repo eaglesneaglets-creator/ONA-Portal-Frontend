@@ -4,6 +4,7 @@ import { MailPlus, MoreHorizontal, UserCog, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { useEditableForm } from "@/hooks/use-editable-form";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
 import { TextField } from "@/components/dashboard/text-field";
@@ -24,14 +25,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/dashboard/data-table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLoaded } from "@/hooks/use-paged-list";
 import { type StaffMember, staffApi } from "@/lib/api/account";
 import { fmtShortDay } from "@/lib/api/bookings";
 import { ApiError, type FieldErrors } from "@/lib/api/errors";
 import { initials } from "@/lib/initials";
-import { cn, omit } from "@/lib/utils";
+import { showSaveError } from "@/lib/forms";
+import { cn } from "@/lib/utils";
 
 /**
  * /admin/staff — who can sign in to this console. Adding someone emails
@@ -75,30 +78,28 @@ export default function AdminStaffPage() {
           ))}
         </ul>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last signed in</TableHead>
-                <TableHead>Added</TableHead>
-                <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((m) => (
-                <TableRow key={m.id} data-testid="staff-row" className={cn(!m.is_active && "opacity-70")}>
-                  <TableCell><Person m={m} withStatus={false} /></TableCell>
-                  <TableCell><Status m={m} /></TableCell>
-                  <TableCell className="tabular-nums text-ink-dim">{m.last_login ? fmtShortDay(m.last_login) : "Never"}</TableCell>
-                  <TableCell className="tabular-nums text-ink-dim">{fmtShortDay(m.date_joined)}</TableCell>
-                  <TableCell className="text-right"><Actions m={m} onChanged={refresh} onDeactivate={setConfirm} /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <DataTable
+          caption="Staff accounts"
+          head={
+            <>
+              <TableHead>Name</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Last signed in</TableHead>
+              <TableHead>Added</TableHead>
+              <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
+            </>
+          }
+        >
+          {data.map((m) => (
+            <TableRow key={m.id} data-testid="staff-row" className={cn(!m.is_active && "opacity-70")}>
+              <TableCell><Person m={m} withStatus={false} /></TableCell>
+              <TableCell><Status m={m} /></TableCell>
+              <TableCell className="tabular-nums text-ink-dim">{m.last_login ? fmtShortDay(m.last_login) : "Never"}</TableCell>
+              <TableCell className="tabular-nums text-ink-dim">{fmtShortDay(m.date_joined)}</TableCell>
+              <TableCell className="text-right"><Actions m={m} onChanged={refresh} onDeactivate={setConfirm} /></TableCell>
+            </TableRow>
+          ))}
+        </DataTable>
       )}
 
       <AddStaffDialog open={adding} onOpenChange={setAdding} onAdded={refresh} />
@@ -193,14 +194,11 @@ function AddStaffDialog({ open, onOpenChange, onAdded }: {
   onOpenChange: (o: boolean) => void;
   onAdded: () => void;
 }) {
-  const [form, setForm] = useState({ email: "", first_name: "", last_name: "" });
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [busy, setBusy] = useState(false);
-
-  function edit(k: keyof typeof form, v: string) {
-    setForm((f) => ({ ...f, [k]: v }));
-    setErrors((prev) => omit(prev, k));
-  }
+  const { form, setForm, errors, setErrors, busy, setBusy, edit, formRef, focusFirstError } = useEditableForm({
+    email: "",
+    first_name: "",
+    last_name: "",
+  });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -209,6 +207,7 @@ function AddStaffDialog({ open, onOpenChange, onAdded }: {
     if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) local.email = ["Enter an email address."];
     if (Object.keys(local).length) {
       setErrors(local);
+      focusFirstError();
       return;
     }
     setBusy(true);
@@ -219,8 +218,7 @@ function AddStaffDialog({ open, onOpenChange, onAdded }: {
       onOpenChange(false);
       onAdded();
     } catch (err) {
-      if (err instanceof ApiError && Object.keys(err.fieldErrors).length) setErrors(err.fieldErrors);
-      else toast.error(err instanceof Error ? err.message : "Could not add them. Please try again.");
+      showSaveError(err, setErrors, focusFirstError, "Could not add them. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -229,7 +227,7 @@ function AddStaffDialog({ open, onOpenChange, onAdded }: {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) setErrors({}); onOpenChange(o); }}>
       <DialogContent>
-        <form onSubmit={submit} noValidate className="grid gap-4">
+        <form ref={formRef} onSubmit={submit} noValidate className="grid gap-4">
           <DialogHeader>
             <DialogTitle>Add a staff member</DialogTitle>
             <DialogDescription>

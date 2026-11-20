@@ -45,7 +45,7 @@ function Verify() {
   }, [state, status, setUser]);
 
   return (
-    <main className="bg-ona-wash flex min-h-screen items-center justify-center px-4 py-12">
+    <main id="main-content" className="bg-ona-wash flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md rounded-xl bg-surface p-7 text-center shadow-card">
         <Image src="/ona-icon.png" alt="" width={48} height={48} className="mx-auto mb-5 rounded-pill" />
         {state === "working" ? (

@@ -91,13 +91,15 @@ export function PayButton({ booking, className, compact }: { booking: Payable; c
       disabled={busy !== null}
       aria-busy={busy !== null}
       size={compact ? "sm" : "default"}
-      title={first.fee_pesewas ? `${first.amount_display} + ${first.fee_display} Paystack fee` : undefined}
       className={cn("font-bold", compact ? "h-11 md:h-8" : "h-11 px-6", className)}
     >
       {busy ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <CreditCard aria-hidden="true" />}
       {/* The amount owed, not the charge: "Pay balance GHS 1,019.89" read as a
-          balance of GHS 1,019.89 (walkthrough, 2026-11-06). */}
-      {busy ? "Opening checkout…" : `${labelFor(first)} ${first.amount_display}${first.fee_pesewas ? " + fee" : ""}`}
+          balance of GHS 1,019.89 (walkthrough, 2026-11-06). The fee is on the
+          button itself: it used to sit in a title tooltip, which keyboard and
+          touch users never see (Modern Web Guidance: exact amounts on pay
+          buttons). */}
+      {busy ? "Opening checkout…" : `${labelFor(first)} ${first.amount_display}${first.fee_pesewas ? ` + ${first.fee_display} fee` : ""}`}
     </Button>
   );
 }

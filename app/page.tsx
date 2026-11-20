@@ -18,9 +18,12 @@ import { LandingFaq } from "@/components/landing/faq";
 import { SiteFooter } from "@/components/public/site-footer";
 import { BOOK_HREF, SiteHeader } from "@/components/public/site-header";
 import { Button } from "@/components/ui/button";
-import { fetchFaqs } from "@/lib/api/content";
+import { fetchContact, fetchFaqs } from "@/lib/api/content";
 import { fetchCatalogue, type Room } from "@/lib/api/studio";
 import { fetchRules, type PublicRules } from "@/lib/api/business";
+import { publicPage } from "@/lib/site";
+import { JsonLd } from "@/components/seo/json-ld";
+import { businessJsonLd } from "@/lib/structured-data";
 
 /**
  * Homepage — UI v2 (docs/design/ui-v2.md, landing §1–9).
@@ -45,11 +48,12 @@ import { fetchRules, type PublicRules } from "@/lib/api/business";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPage({
   title: { absolute: "ONA Records — Book studio time in Accra" },
   description:
     "Book a recording room and engineer at ONA Records in Accra. Clear hourly prices, Mobile Money, and a slot that is genuinely yours.",
-};
+  path: "/",
+});
 
 const SECTION = "py-[clamp(72px,10vw,128px)]";
 const WRAP = "mx-auto w-full max-w-6xl px-4 sm:px-6";
@@ -71,7 +75,12 @@ const steps = (r: PublicRules) => [
 const roomHref = (r: Room) => `/register?next=${encodeURIComponent(`/customer/book?room=${r.id}`)}`;
 
 export default async function Home() {
-  const [{ rooms, services, unavailable }, faqs, rules] = await Promise.all([fetchCatalogue(), fetchFaqs(), fetchRules()]);
+  const [{ rooms, services, unavailable }, faqs, rules, contact] = await Promise.all([
+    fetchCatalogue(),
+    fetchFaqs(),
+    fetchRules(),
+    fetchContact(),
+  ]);
   const STEPS = steps(rules);
   const featured = rooms.slice(0, 3);
   // ONA prices by service: a room shows where prices start, not a rate of its own.
@@ -79,8 +88,9 @@ export default async function Home() {
 
   return (
     <>
+      <JsonLd data={businessJsonLd(contact)} />
       <SiteHeader />
-      <main>
+      <main id="main-content">
         {/* 2 · Hero — a studio photograph in the brand's colours, the pitch on
             its dark side, and the four promises along its foot. */}
         <section className="bg-ona-hero relative isolate overflow-hidden text-white">
