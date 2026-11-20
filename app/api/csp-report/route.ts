@@ -2,12 +2,10 @@
  * Where browsers send Content-Security-Policy violation reports (proxy.ts
  * names this URL in `report-uri` and in the `csp` Reporting-Endpoints entry).
  *
- * Two kinds arrive:
- *  - "enforce": something the live CSP blocked. Usually a browser extension;
- *    a burst from real pages after a deploy means the policy broke something.
- *  - "report": Trusted Types, which runs in report-only mode. These show
- *    which code writes HTML strings into the DOM; when they are understood
- *    (or there are none), Trusted Types can be enforced.
+ * Each one is something the live CSP blocked. Usually a browser extension
+ * injecting its own fonts or scripts; a burst from real pages right after a
+ * deploy means the policy broke something of ONA's. (A report-only policy
+ * would arrive here too, marked "report"; none is set at present.)
  *
  * They go to the server log (Railway), one line each, URLs without query
  * strings. Anyone can POST here, so the body is capped and logging is

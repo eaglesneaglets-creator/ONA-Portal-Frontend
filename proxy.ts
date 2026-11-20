@@ -27,11 +27,15 @@ import { NextResponse, type NextRequest } from "next/server";
  *  - Violations go to /api/csp-report: `report-to csp` for browsers with the
  *    Reporting API, `report-uri` for the rest. 'report-sample' adds the first
  *    40 characters of what was blocked, so a report can be recognised.
- *  - Trusted Types runs REPORT-ONLY. Enforcing it blocks every HTML string
- *    written into the DOM unless it passes a named policy; React and Next
- *    must be confirmed clean first. Watch the "[csp] report
- *    require-trusted-types-for" log lines; when there are none from real
- *    pages, move the directive into the enforced policy.
+ *  - No Trusted Types (`require-trusted-types-for 'script'`). It ran in
+ *    report-only mode on staging and answered the question (2026-11-20):
+ *    Next 16's own runtime is not ready for it. Turbopack's chunk loader
+ *    assigns <script src> on every client-side navigation (TrustedScriptURL)
+ *    and a framework chunk writes HTML on /login (TrustedHTML), so enforcing
+ *    it would break navigation, and report-only filled every visitor's
+ *    console and our logs with Next's own lines. Revisit when Next ships a
+ *    Trusted Types policy for its bundler; until then the nonce +
+ *    'strict-dynamic' policy above is what stops injected script.
  *  - Cross-Origin-Opener-Policy: same-origin-allow-popups cuts the link to a
  *    cross-site window that opened this page (no tab-nabbing, no XS-leaks
  *    through window references). Paystack checkout is a full navigation, not
@@ -69,7 +73,6 @@ export function proxy(request: NextRequest) {
     ...(API_ORIGIN.startsWith("https:") ? ["upgrade-insecure-requests"] : []),
     ...report,
   ].join("; ");
-  const reportOnly = ["require-trusted-types-for 'script'", ...report].join("; ");
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
@@ -77,7 +80,6 @@ export function proxy(request: NextRequest) {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
-  response.headers.set("Content-Security-Policy-Report-Only", reportOnly);
   response.headers.set("Reporting-Endpoints", 'csp="/api/csp-report"');
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   response.headers.set("Cross-Origin-Resource-Policy", "same-origin");

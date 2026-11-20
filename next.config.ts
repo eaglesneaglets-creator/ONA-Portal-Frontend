@@ -17,8 +17,7 @@ import type { NextConfig } from "next";
  * browsers' built-in lists, and takes months to undo. Add it after the
  * production domain cutover, once every subdomain is on https.
  *
- * COOP, CORP, CSP reporting and Trusted Types (report-only) are set per page
- * in proxy.ts.
+ * COOP, CORP and CSP reporting are set per page in proxy.ts.
  */
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
