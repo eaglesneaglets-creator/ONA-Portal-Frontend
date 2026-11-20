@@ -89,7 +89,10 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     {
-      source: "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)",
+      // monitoring / sentry-tunnel: the Sentry tunnel (next.config.ts). It
+      // returns no page, so it needs no nonce or CSP.
+      source:
+        "/((?!api|monitoring|sentry-tunnel|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

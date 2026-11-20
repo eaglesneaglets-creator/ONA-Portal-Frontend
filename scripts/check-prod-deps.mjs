@@ -52,7 +52,24 @@ function postcssPlugins() {
   return [...names];
 }
 
-const required = postcssPlugins();
+/**
+ * Packages next.config.ts imports (withSentryConfig, for one) are loaded by
+ * `next build` before anything compiles. Type-only imports are erased and
+ * do not count; "next" itself is always a dependency.
+ */
+function nextConfigImports() {
+  const source = read("next.config.ts");
+  const names = new Set();
+  for (const [, typeOnly, spec] of source.matchAll(/^import\s+(type\s+)?[^;]*?from\s+["']([^"']+)["']/gm)) {
+    if (typeOnly || spec.startsWith(".") || spec.startsWith("@/") || spec.startsWith("node:")) continue;
+    // "@scope/pkg/sub" -> "@scope/pkg"; "pkg/sub" -> "pkg"
+    const parts = spec.split("/");
+    names.add(spec.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0]);
+  }
+  return [...names];
+}
+
+const required = [...new Set([...postcssPlugins(), ...nextConfigImports()])];
 const misplaced = required.filter((name) => !deps[name] && devDeps[name]);
 const missing = required.filter((name) => !deps[name] && !devDeps[name]);
 
@@ -67,7 +84,7 @@ if (misplaced.length === 0 && missing.length === 0) {
 for (const name of misplaced) {
   console.error(
     `prodcheck: "${name}" is a devDependency but is required at BUILD time.\n` +
-      `  postcss.config.mjs loads it during \`next build\`, and Railway installs\n` +
+      `  postcss.config.mjs or next.config.ts loads it during \`next build\`, and Railway installs\n` +
       `  with NODE_ENV=production, which omits devDependencies.\n` +
       `  Move it to "dependencies".`,
   );
@@ -75,7 +92,7 @@ for (const name of misplaced) {
 
 for (const name of missing) {
   console.error(
-    `prodcheck: "${name}" is named in postcss.config.mjs but is not declared\n` +
+    `prodcheck: "${name}" is needed by postcss.config.mjs or next.config.ts but is not declared\n` +
       `  in package.json at all. The build will fail wherever it is not\n` +
       `  already present by accident.`,
   );
