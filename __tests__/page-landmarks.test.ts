@@ -39,7 +39,8 @@ const read = (path: string) => {
 
 const declaresTitle = (source: string) =>
   /export\s+async\s+function\s+generateMetadata/.test(source) ||
-  /export\s+const\s+metadata[^=]*=\s*\{[\s\S]*?\btitle\s*:/.test(source);
+  // `= { title: … }`, or through a helper: `= publicPage({ title: … })`.
+  /export\s+const\s+metadata[^=]*=\s*(?:\w+\()?\{[\s\S]*?\btitle\s*:/.test(source);
 
 describe("every page has its own tab title", () => {
   const files = walk(join(ROOT, "app"));

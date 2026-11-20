@@ -6,6 +6,9 @@ import { SiteFooter } from "@/components/public/site-footer";
 import { BOOK_HREF, SiteHeader } from "@/components/public/site-header";
 import { Button } from "@/components/ui/button";
 import { fetchFaqs } from "@/lib/api/content";
+import { publicPage } from "@/lib/site";
+import { JsonLd } from "@/components/seo/json-ld";
+import { faqJsonLd } from "@/lib/structured-data";
 
 /**
  * /faqs — every published answer (Task 16). Staff edit them in the console;
@@ -14,15 +17,19 @@ import { fetchFaqs } from "@/lib/api/content";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPage({
   title: "Questions",
-  description: "Answers about booking studio time at ONA Records in Accra — engineers, payment, changes and paperwork.",
-};
+  description:
+    "Answers about booking studio time at ONA Records in Accra — engineers, payment, changes and paperwork.",
+  path: "/faqs",
+});
 
 export default async function FaqsPage() {
   const faqs = await fetchFaqs();
+  const faqData = faqJsonLd(faqs);
   return (
     <>
+      {faqData ? <JsonLd data={faqData} /> : null}
       <SiteHeader />
       <main id="main-content" className="mx-auto w-full max-w-3xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
         <section className="py-12 sm:py-16">

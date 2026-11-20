@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPage, type LegalSection } from "@/components/public/legal-page";
+import { publicPage } from "@/lib/site";
 
 /**
  * /legal/privacy — what ONA collects, why, who else sees it, and for how long.
@@ -19,10 +20,12 @@ import { LegalPage, type LegalSection } from "@/components/public/legal-page";
  *   - files stored in a bucket in the United States (Railway, region iad)
  */
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPage({
   title: "Privacy policy",
-  description: "What ONA Records collects, why, who else sees it and how long it is kept.",
-};
+  description:
+    "What ONA Records collects, why, who else sees it and how long it is kept.",
+  path: "/legal/privacy",
+});
 
 const UPDATED = "18 November 2026";
 const KYC_RETENTION_DAYS = 90;

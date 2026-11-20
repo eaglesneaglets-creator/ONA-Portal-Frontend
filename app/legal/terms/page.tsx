@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { LegalPage, type LegalSection } from "@/components/public/legal-page";
+import { publicPage } from "@/lib/site";
 
 /**
  * /legal/terms — ONA Records' booking terms, as ONA supplied them
@@ -12,10 +13,12 @@ import { LegalPage, type LegalSection } from "@/components/public/legal-page";
  * console edit, so there is always a record of which version applied when.
  */
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPage({
   title: "Booking terms",
-  description: "ONA Records' booking, deposit, cancellation and studio terms.",
-};
+  description:
+    "ONA Records' booking, deposit, cancellation and studio terms.",
+  path: "/legal/terms",
+});
 
 const UPDATED = "4 November 2026";
 

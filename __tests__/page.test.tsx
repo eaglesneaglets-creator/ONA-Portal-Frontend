@@ -22,7 +22,8 @@ const faqs = vi.hoisted(() => ({ current: null as null | { id: string; question:
 // The header reads the route: on the homepage its links are sections of the page.
 vi.mock("next/navigation", () => ({ usePathname: () => "/", useRouter: () => ({ push: vi.fn() }) }));
 
-vi.mock("@/lib/api/content", () => ({ fetchFaqs: async () => faqs.current }));
+// fetchContact feeds the page's structured data; null = nothing entered yet.
+vi.mock("@/lib/api/content", () => ({ fetchFaqs: async () => faqs.current, fetchContact: async () => null }));
 
 vi.mock("@/lib/api/studio", async (orig) => ({
   ...(await orig<typeof import("@/lib/api/studio")>()),
