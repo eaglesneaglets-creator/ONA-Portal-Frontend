@@ -13,6 +13,7 @@ import {
   ShieldX,
   TriangleAlert,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -30,7 +31,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLoaded } from "@/hooks/use-paged-list";
 import { ApiError, type FieldErrors } from "@/lib/api/errors";
 import { showSaveError } from "@/lib/forms";
+import { api } from "@/lib/api/client";
 import { docsFor, kycApi, type IdType, type MyIdentity, type Verification } from "@/lib/api/kyc";
+import { useAuthStore, type User } from "@/lib/auth/store";
 import { cn } from "@/lib/utils";
 
 /**
@@ -568,6 +571,9 @@ function ReviewStep({
     try {
       onChange(await kycApi.submit());
       toast.success("Sent for review.");
+      // Sending is what booking needs (must_verify_identity): refresh the
+      // account so the booking page stops asking without a reload.
+      api.get<User>("/auth/me/").then(useAuthStore.getState().setUser).catch(() => {});
     } catch (e) {
       const missing = e instanceof ApiError ? (e.fieldErrors.missing ?? []) : [];
       const fields = e instanceof ApiError ? Object.entries(e.fieldErrors).filter(([k]) => k !== "missing") : [];
@@ -624,6 +630,7 @@ function ReviewStep({
 /* ------------------------------------------------------------------ */
 
 function Waiting({ v }: { v: Verification }) {
+  const isCustomer = useAuthStore((s) => s.user?.role === "customer");
   const stages = [
     { label: "Sent", done: true, when: fmtDate(v.submitted_at) },
     { label: "Being reviewed", done: v.status === "in_review", when: "" },
@@ -666,6 +673,17 @@ function Waiting({ v }: { v: Verification }) {
           ))}
         </ol>
       </CardContent>
+      {isCustomer ? (
+        <CardFooter className="flex-wrap gap-3">
+          {/* A sent check is enough to book; ONA approves it before the session. */}
+          <Button asChild className="h-11 w-full px-6 font-bold sm:w-auto">
+            <Link href="/customer/book">
+              Book a session <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
+          <p className="text-[13.5px] text-ink-dim">You can book while we check it.</p>
+        </CardFooter>
+      ) : null}
     </Card>
   );
 }

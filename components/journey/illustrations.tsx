@@ -20,6 +20,27 @@ export function IllusEnvelope() {
   );
 }
 
+/** A Ghana Card-style ID beside a selfie frame, ticked: the identity check. */
+export function IllusIdCard() {
+  return (
+    <svg viewBox="0 0 148 104" className={box} aria-hidden="true">
+      <rect x="10" y="22" width="86" height="56" rx="8" className="fill-surface stroke-border-default" strokeWidth="2" />
+      <rect x="10" y="22" width="86" height="12" rx="6" className="fill-ona-blue" />
+      <rect x="18" y="42" width="22" height="28" rx="4" className="fill-surface-sunk" />
+      <circle cx="29" cy="52" r="5" className="fill-border-default" />
+      <path d="M21 68 q8 -10 16 0" className="fill-border-default" />
+      <rect x="46" y="44" width="40" height="5" rx="2.5" className="fill-ink" />
+      <rect x="46" y="54" width="30" height="4" rx="2" className="fill-border-default" />
+      <rect x="46" y="62" width="34" height="4" rx="2" className="fill-border-default" />
+      <rect x="104" y="30" width="34" height="44" rx="10" className="fill-none stroke-ona-red" strokeWidth="3" strokeDasharray="6 5" />
+      <circle cx="121" cy="47" r="7" className="fill-ink" />
+      <path d="M110 68 q11 -14 22 0" className="fill-ink" />
+      <circle cx="132" cy="28" r="11" className="fill-ok" />
+      <path d="M127 28 l3.5 3.5 l6.5 -7" className="fill-none stroke-white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function IllusPhone() {
   return (
     <svg viewBox="0 0 148 104" className={box} aria-hidden="true">

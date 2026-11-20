@@ -4,12 +4,13 @@
  * the API and shows the API's own field errors when it refuses.
  */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { VerifyIdentity } from "@/components/kyc/verify-identity";
 import { ApiError } from "@/lib/api/errors";
 import type { MyIdentity, Verification } from "@/lib/api/kyc";
+import { type User, useAuthStore } from "@/lib/auth/store";
 
 const get = vi.hoisted(() => vi.fn());
 const post = vi.hoisted(() => vi.fn());
@@ -114,6 +115,21 @@ describe("VerifyIdentity", () => {
     fireEvent.click(await screen.findByRole("button", { name: /send for review/i }));
     expect(await screen.findByText(/we're checking your id/i)).toBeTruthy();
     expect(post).toHaveBeenCalledWith("/kyc/submit/");
+  });
+
+  it("after sending, refreshes the account so booking opens, and offers to book while it is checked", async () => {
+    const customer = { id: "u1", role: "customer", must_verify_identity: true } as User;
+    useAuthStore.setState({ user: customer });
+    get.mockImplementation(async (url: string) =>
+      url === "/auth/me/" ? { ...customer, must_verify_identity: false } : mine(COMPLETE),
+    );
+    post.mockResolvedValue(mine({ ...COMPLETE, status: "submitted", submitted_at: "2026-11-17T12:00:00Z" }));
+    render(<VerifyIdentity />);
+    fireEvent.click(await screen.findByRole("button", { name: /send for review/i }));
+    const book = await screen.findByRole("link", { name: /book a session/i });
+    expect(book.getAttribute("href")).toBe("/customer/book");
+    await waitFor(() => expect(useAuthStore.getState().user?.must_verify_identity).toBe(false));
+    useAuthStore.setState({ user: null });
   });
 
   it("shows a decision: verified, or not verified with the reason and a way to start again", async () => {

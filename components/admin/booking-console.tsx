@@ -35,6 +35,7 @@ import { toast } from "sonner";
 
 import { FormError } from "@/components/auth/fields";
 import { StatusPill } from "@/components/booking/status-pill";
+import { KycStatusBadge } from "@/components/kyc/status-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -594,6 +595,7 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
                   {d.customer.intent_display ? ` · came for ${d.customer.intent_display.toLowerCase()}` : ""}
                 </p>
               ) : null}
+              <CustomerIdentityLine booking={d} onClose={onClose} />
               <div className="mt-2 flex flex-wrap gap-2">
                 {/* max-w-full + truncate: a long address must not push the
                     sheet sideways on a phone. */}
@@ -710,6 +712,44 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
 }
 
 /* ── Professional on a booking (Task 15) ────────────────────────────────── */
+
+/**
+ * The customer's identity check, from the booking: a sent check lets them
+ * book (BOOKING_REQUIRES_IDENTITY_CHECK), so staff approve it before the
+ * session. Links to the review page while there is something to decide.
+ */
+function CustomerIdentityLine({ booking: d, onClose }: { booking: StaffBookingDetail; onClose: () => void }) {
+  const id = d.customer_identity;
+  // Older APIs do not send the field at all; say nothing rather than "no check".
+  if (id === undefined) return null;
+  const upcoming = new Date(d.end_at) > new Date() && d.status !== "cancelled";
+  if (id === null) {
+    return (
+      <p className="mt-2 text-[13.5px] text-ink-dim" data-testid="booking-identity">
+        ID: <b className="text-ink">no check yet</b>
+        {upcoming ? " — ask them to verify from their account before the session." : ""}
+      </p>
+    );
+  }
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px]" data-testid="booking-identity">
+      <span className="text-ink-dim">ID</span>
+      <KycStatusBadge status={id.verified ? "approved" : id.status} />
+      {!id.verified ? (
+        <Link
+          href={`/admin/kyc/${id.verification_id}`}
+          onClick={onClose}
+          className="inline-flex min-h-11 items-center font-bold text-info hover:underline md:min-h-8"
+        >
+          {id.status === "submitted" || id.status === "in_review" ? "Review it" : "See the check"}
+        </Link>
+      ) : null}
+      {!id.verified && upcoming ? (
+        <span className="basis-full text-ink-dim">Approve it before the session.</span>
+      ) : null}
+    </div>
+  );
+}
 
 function ProfessionalSection({ booking: d }: { booking: StaffBookingDetail }) {
   const { updated } = useConsole();

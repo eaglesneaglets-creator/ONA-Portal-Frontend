@@ -9,6 +9,7 @@
 
 import { api, type Page } from "@/lib/api/client";
 import type { Booking } from "@/lib/api/bookings";
+import type { KycStatus } from "@/lib/api/kyc";
 
 export interface CustomerBrief {
   id: string;
@@ -146,6 +147,20 @@ export interface StaffBookingDetail extends StaffBooking {
   history: HistoryEntry[];
   /** The customer's unexpired credit this booking could take. */
   available_credits: DepositCredit[];
+  /**
+   * Where the customer's identity check stands (null: never started). A sent
+   * check is enough to book; staff approve it before the session. Absent on older APIs.
+   */
+  customer_identity?: CustomerIdentity | null;
+}
+
+export interface CustomerIdentity {
+  /** Opens /admin/kyc/{verification_id}. */
+  verification_id: string;
+  status: KycStatus;
+  status_display: string;
+  /** Approved now or on an earlier attempt. */
+  verified: boolean;
 }
 
 export interface StaffCustomer {

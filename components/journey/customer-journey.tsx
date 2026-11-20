@@ -7,7 +7,14 @@ import { toast } from "sonner";
 
 import { useFocusFirstError } from "@/hooks/use-focus-first-error";
 import { Celebrate } from "@/components/journey/celebrate";
-import { IllusCalendar, IllusDeposit, IllusEnvelope, IllusPhone, IllusSession } from "@/components/journey/illustrations";
+import {
+  IllusCalendar,
+  IllusDeposit,
+  IllusEnvelope,
+  IllusIdCard,
+  IllusPhone,
+  IllusSession,
+} from "@/components/journey/illustrations";
 import { SetupGuide, type GuideItem } from "@/components/journey/setup-guide";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +38,7 @@ import { useAuthStore } from "@/lib/auth/store";
  */
 const ILLUSTRATION: Partial<Record<JourneyStep["key"], React.ReactNode>> = {
   verify_email: <IllusEnvelope />,
+  verify_identity: <IllusIdCard />,
   phone: <IllusPhone />,
   first_booking: <IllusCalendar />,
   deposit: <IllusDeposit />,
@@ -124,7 +132,9 @@ export function CustomerJourney({ onLoaded }: { onLoaded?: (j: Journey | null) =
               <span aria-hidden="true" className="ona-pop grid size-12 place-items-center rounded-full bg-ok-bg text-ok">
                 <PartyPopper className="size-6" />
               </span>
-              <p className="flex-1 text-[15px] text-ink">Six for six. ONA keeps your receipts and bookings here.</p>
+              <p className="flex-1 text-[15px] text-ink">
+                {journey.total} for {journey.total}. ONA keeps your receipts and bookings here.
+              </p>
               <Button asChild className="h-11 font-bold">
                 <Link href="/customer/book">Book your next session</Link>
               </Button>
