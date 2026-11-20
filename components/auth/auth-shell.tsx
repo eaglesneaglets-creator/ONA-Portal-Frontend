@@ -3,9 +3,10 @@
  *
  * Ports docs/design/pages/auth.html, which was reviewed and signed off.
  * The gradient panel carries the trust argument because that is the
- * objection at sign-up: this platform asks people to hand over money before
- * any work exists, so "your money is held, not handed over" belongs opposite
- * the form, not buried in a FAQ.
+ * objection at sign-up: this platform asks people to pay before the session
+ * happens, so "your money is held, not forwarded" belongs opposite the form,
+ * not buried in a FAQ. It says only what ONA does today (studio booking);
+ * the marketplace promises come back when the marketplace ships.
  *
  * The panel is hidden below 900px. On a phone it would push the form below
  * the fold, and someone who has opened a sign-in link wants the form.
@@ -17,18 +18,18 @@ import Image from "next/image";
 const TRUST_POINTS = [
   {
     icon: "shield",
-    title: "Your money is held, not handed over",
-    body: "ONA keeps payment until the work is done and you approve it.",
+    title: "Your money is held, not forwarded",
+    body: "Every payment goes to ONA first and stays there until your session.",
   },
   {
     icon: "lock",
-    title: "Nobody gets your details",
-    body: "Names and numbers stay private until a project is approved.",
+    title: "The price you see is the price",
+    body: "Your total is shown before you confirm and does not change afterwards.",
   },
   {
     icon: "check",
-    title: "Every professional is checked",
-    body: "ONA reviews the work and the person before they appear.",
+    title: "A free slot is really free",
+    body: "Two bookings can never hold the same room or engineer at once.",
   },
 ] as const;
 
@@ -57,7 +58,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         </Link>
 
         <h2 className="mb-7 max-w-[17ch] text-[clamp(24px,2.6vw,32px)] font-black leading-[1.15] tracking-tight">
-          Book a studio. Hire a professional. Get paid safely.
+          Book the room. Keep your money safe.
         </h2>
 
         <ul className="mb-auto space-y-1">

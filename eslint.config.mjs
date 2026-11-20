@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Tooling, not app code: Graft's CommonJS hook scripts and its local cache.
+    ".claude/**",
+    "graft/**",
   ]),
 ]);
 

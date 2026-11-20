@@ -58,6 +58,11 @@ export class ApiError extends Error {
     return out;
   }
 
+  /** The first message for each field: what a form shows under its inputs. */
+  get firstFieldErrors(): Record<string, string> {
+    return Object.fromEntries(Object.entries(this.fieldErrors).map(([k, v]) => [k, v[0]]));
+  }
+
   /**
    * The message to show above a form, when the failure is not about one
    * field. Falls back to something honest rather than leaking a stack.
@@ -77,11 +82,6 @@ export class ApiError extends Error {
   /** The session is gone; the user has to sign in again. */
   get isAuthError(): boolean {
     return this.status === 401;
-  }
-
-  /** Signed in, but not allowed to do this. */
-  get isPermissionError(): boolean {
-    return this.status === 403;
   }
 
   /**

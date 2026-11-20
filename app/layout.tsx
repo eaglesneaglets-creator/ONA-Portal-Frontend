@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { Lato } from "next/font/google";
+import { connection } from "next/server";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth/guard";
+import { cn } from "@/lib/utils";
+
 
 /**
  * Lato is brand-mandated: "Use Lato Sans Font for all our communications"
@@ -27,20 +32,28 @@ export const metadata: Metadata = {
     template: "%s — ONA Records",
   },
   description:
-    "Book a studio. Hire a vetted creative professional. Every payment is held by ONA until you approve the work.",
+    "Book a recording room and engineer at ONA Records in Accra. Clear prices, Mobile Money, and payment held by ONA until your session.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Every page renders per request so Next can stamp this request's CSP
+  // nonce on its scripts (proxy.ts). A static page has no request, so no
+  // nonce, so its scripts would be blocked. API data is still cached by
+  // fetch's own revalidate.
+  await connection();
   return (
-    <html lang="en" className={`${lato.variable} h-full antialiased`}>
+    <html lang="en" data-scroll-behavior="smooth" className={cn("h-full", "antialiased", lato.variable, "font-sans")}>
       <body className="min-h-full flex flex-col">
         {/* Restores the session once, on boot. Public pages need this too —
             the homepage shows "Sign in" or the user's name depending on it. */}
-        <AuthProvider>{children}</AuthProvider>
+        <TooltipProvider delayDuration={200}>
+          <AuthProvider>{children}</AuthProvider>
+        </TooltipProvider>
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

@@ -31,7 +31,7 @@ function LoginForm() {
 
   return (
     <>
-      <ModeSwitch active="login" />
+      <ModeSwitch active="login" query={params.toString()} />
 
       <h1 className="mb-[5px] text-[26px] font-black tracking-tight text-ink">Welcome back</h1>
       <p className="mb-6 text-[13.5px] text-ink-dim">
@@ -62,11 +62,9 @@ function LoginForm() {
           errors={fieldErrors.password}
           labelAction={
             <Link
-              href="/reset-password"
-              // Not built yet, so prefetching it 404s on every visit to the
-              // login page. Remove when the route ships.
-              prefetch={false}
-              className="text-[10.5px] font-bold text-ona-red hover:underline"
+              href="/forgot-password"
+              // ona-tap-44: a 44px hit area on touch screens without moving the label row (QA F11).
+              className="ona-tap-44 text-[10.5px] font-bold text-ona-red hover:underline"
             >
               Forgot password?
             </Link>
