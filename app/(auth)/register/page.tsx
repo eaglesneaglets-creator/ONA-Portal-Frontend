@@ -37,7 +37,7 @@ function RegisterForm() {
   const router = useRouter();
   const params = useSearchParams();
   const register = useAuthStore((s) => s.register);
-  const { pending, formError, fieldErrors, submit } = useAuthSubmit();
+  const { pending, formError, fieldErrors, submit, formRef } = useAuthSubmit();
   const [role, setRole] = useState<SelfServiceRole>("customer");
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -76,7 +76,7 @@ function RegisterForm() {
           the page names itself. */}
       <h1 className="sr-only">Create your account</h1>
 
-      <form onSubmit={onSubmit} noValidate>
+      <form ref={formRef} onSubmit={onSubmit} noValidate>
         <FormError message={formError} />
 
         <fieldset className="mb-4">

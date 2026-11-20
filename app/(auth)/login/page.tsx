@@ -14,7 +14,7 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const login = useAuthStore((s) => s.login);
-  const { pending, formError, fieldErrors, submit } = useAuthSubmit();
+  const { pending, formError, fieldErrors, submit, formRef } = useAuthSubmit();
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,7 +38,7 @@ function LoginForm() {
         Sign in to your bookings, projects and messages.
       </p>
 
-      <form onSubmit={onSubmit} noValidate>
+      <form ref={formRef} onSubmit={onSubmit} noValidate>
         <FormError message={formError} />
 
         <Field

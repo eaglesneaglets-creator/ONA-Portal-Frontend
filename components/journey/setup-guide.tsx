@@ -142,7 +142,7 @@ function Step({ item, open, onToggle }: { item: GuideItem; open: boolean; onTogg
         onClick={onToggle}
         aria-expanded={open}
         aria-controls={panelId}
-        className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ona-blue"
+        className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left outline-hidden focus-visible:ring-2 focus-visible:ring-ona-blue"
       >
         <StatusRing done={item.done} tone={item.tone} urgent={item.urgent && !item.done} />
         <span className={cn("flex-1 text-[15px] font-bold", item.done && item.tone !== "warn" ? "text-ink-mute" : "text-ink")}>

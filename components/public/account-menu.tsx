@@ -46,7 +46,7 @@ function linksFor(role: Role) {
  * Who is looking at the public site. Public pages have no auth guard, so the
  * session is restored here (initialise() is safe to call more than once).
  */
-export function usePublicSession() {
+function usePublicSession() {
   const status = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
   const initialise = useAuthStore((s) => s.initialise);

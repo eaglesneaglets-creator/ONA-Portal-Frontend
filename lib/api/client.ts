@@ -236,6 +236,14 @@ async function parse<T>(response: Response, responseType: "json" | "blob" = "jso
   return JSON.parse(text) as T;
 }
 
+/** One page of a Django REST Framework list. */
+export interface Page<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 export const api = {
   baseUrl: BASE_URL,
 

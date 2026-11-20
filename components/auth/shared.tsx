@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useFocusFirstError } from "@/hooks/use-focus-first-error";
 import { ApiError, type FieldErrors } from "@/lib/api/errors";
 import { navigateWithTransition } from "@/lib/ui/view-transition";
 
@@ -109,6 +110,7 @@ export function useAuthSubmit() {
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const { formRef, focusFirstError } = useFocusFirstError();
 
   async function submit(action: () => Promise<void>) {
     setPending(true);
@@ -128,8 +130,9 @@ export function useAuthSubmit() {
         setFormError("Something went wrong. Please try again.");
       }
       setPending(false);
+      focusFirstError();
     }
   }
 
-  return { pending, formError, fieldErrors, submit };
+  return { pending, formError, fieldErrors, submit, formRef };
 }

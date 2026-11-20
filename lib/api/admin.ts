@@ -7,15 +7,8 @@
  * string beside it — the browser never does money arithmetic.
  */
 
-import { api } from "@/lib/api/client";
+import { api, type Page } from "@/lib/api/client";
 import type { Booking } from "@/lib/api/bookings";
-
-interface Page<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
 
 export interface CustomerBrief {
   id: string;

@@ -4,6 +4,7 @@ import { Plus, UserRoundCog } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { useFields, useSaveState } from "@/hooks/use-save-state";
 import { FormError } from "@/components/auth/fields";
 import { Pager, SearchBox } from "@/components/dashboard/list-controls";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -14,7 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/dashboard/data-table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePagedList } from "@/hooks/use-paged-list";
@@ -26,7 +28,6 @@ import {
   type ProfessionalInput,
   type RateType,
 } from "@/lib/api/admin";
-import { ApiError } from "@/lib/api/errors";
 import { parseGhsToPesewas, pesewasToInput } from "@/lib/money";
 
 /**
@@ -90,40 +91,38 @@ export default function AdminProfessionalsPage() {
               ))}
             </ul>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-              <Table>
-                <TableHeader className="bg-surface-alt">
-                  <TableRow>
-                    <TableHead className="pl-4">Professional</TableHead>
-                    <TableHead>Skills</TableHead>
-                    <TableHead>Rate</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead className="pr-4">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.results.map((p) => (
-                    <TableRow key={p.id} data-testid="admin-pro-row" className="cursor-pointer" onClick={() => setEditing(p)}>
-                      <TableCell className="pl-4">
-                        <p className="font-bold text-ink">{p.stage_name || p.name}</p>
-                        {p.stage_name ? <p className="text-[13px] text-ink-mute">{p.name}</p> : null}
-                      </TableCell>
-                      <TableCell className="max-w-72">
-                        <Skills skills={p.skills} />
-                      </TableCell>
-                      <TableCell className="text-ink">{p.rate_display}</TableCell>
-                      <TableCell className="text-[13px] text-ink-dim">
-                        {p.phone || "—"}
-                        {p.email ? <span className="block truncate">{p.email}</span> : null}
-                      </TableCell>
-                      <TableCell className="pr-4">
-                        {p.is_active ? <Badge className="bg-ok-bg text-ok">Active</Badge> : <Badge variant="outline">Inactive</Badge>}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <DataTable
+              caption="Professionals"
+              head={
+                <>
+                  <TableHead className="pl-4">Professional</TableHead>
+                  <TableHead>Skills</TableHead>
+                  <TableHead>Rate</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead className="pr-4">Status</TableHead>
+                </>
+              }
+            >
+              {data.results.map((p) => (
+                <TableRow key={p.id} data-testid="admin-pro-row" className="cursor-pointer" onClick={() => setEditing(p)}>
+                  <TableCell className="pl-4">
+                    <p className="font-bold text-ink">{p.stage_name || p.name}</p>
+                    {p.stage_name ? <p className="text-[13px] text-ink-mute">{p.name}</p> : null}
+                  </TableCell>
+                  <TableCell className="max-w-72">
+                    <Skills skills={p.skills} />
+                  </TableCell>
+                  <TableCell className="text-ink">{p.rate_display}</TableCell>
+                  <TableCell className="text-[13px] text-ink-dim">
+                    {p.phone || "—"}
+                    {p.email ? <span className="block truncate">{p.email}</span> : null}
+                  </TableCell>
+                  <TableCell className="pr-4">
+                    {p.is_active ? <Badge className="bg-ok-bg text-ok">Active</Badge> : <Badge variant="outline">Inactive</Badge>}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </DataTable>
           )}
           <Pager page={page} pageSize={PAGE_SIZE} count={data.count} onPage={setPage} />
         </>
@@ -192,7 +191,7 @@ function ProfessionalForm({
   onCancel: () => void;
   onSaved: (p: Professional, created: boolean) => void;
 }) {
-  const [f, setF] = useState({
+  const [f, set] = useFields({
     name: existing?.name ?? "",
     stage_name: existing?.stage_name ?? "",
     skills: existing?.skills.join(", ") ?? "",
@@ -203,20 +202,18 @@ function ProfessionalForm({
     notes: existing?.notes ?? "",
     is_active: existing?.is_active ?? true,
   });
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
-  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF({ ...f, [k]: v });
+  const { busy, setBusy, errors, setErrors, formError: error, setFormError: setError, formRef, reject, fail } =
+    useSaveState();
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setFieldErrors({});
+    setErrors({});
     let rate: number | null = null;
     if (f.rate_type !== "negotiable") {
       rate = parseGhsToPesewas(f.rate);
       if (rate === null || rate === 0) {
-        setFieldErrors({ rate_pesewas: ["Enter the rate in cedis, or choose Negotiable."] });
+        reject({ rate_pesewas: "Enter the rate in cedis, or choose Negotiable." });
         return;
       }
     }
@@ -238,17 +235,13 @@ function ProfessionalForm({
         : await adminApi.createProfessional(input);
       onSaved(saved, !existing);
     } catch (err) {
-      if (err instanceof ApiError) {
-        setFieldErrors(err.fieldErrors);
-        setError(Object.keys(err.fieldErrors).length ? null : err.formError);
-      } else setError("Something went wrong. Please try again.");
-      setBusy(false);
+      fail(err);
     }
   }
 
-  const err = (k: string) => fieldErrors[k]?.[0];
+  const err = (k: string) => errors[k];
   return (
-    <form onSubmit={(e) => void save(e)} noValidate className="grid gap-3">
+    <form ref={formRef} onSubmit={(e) => void save(e)} noValidate className="grid gap-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <TextField id="pro-name" label="Name" value={f.name} onChange={(v) => set("name", v)} error={err("name")} />
         <TextField id="pro-stage" label="Stage name (shown to customers)" placeholder="Empty = “ONA session professional”" value={f.stage_name} onChange={(v) => set("stage_name", v)} error={err("stage_name")} />

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { useFocusFirstError } from "@/hooks/use-focus-first-error";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ErrorState, RowsSkeleton } from "@/components/dashboard/states";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -16,7 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { type BusinessSettings, type TaxLine, businessApi, holdText, percentText } from "@/lib/api/business";
-import { ApiError, type FieldErrors } from "@/lib/api/errors";
+import type { FieldErrors } from "@/lib/api/errors";
+import { showSaveError } from "@/lib/forms";
 import { previewGhs as formatGhs } from "@/lib/api/bookings";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +51,8 @@ export default function BusinessSettingsPage() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
+  // Several forms here (one per section), so each failure names its form.
+  const { focusFirstError } = useFocusFirstError();
 
   useEffect(() => {
     let live = true;
@@ -71,7 +75,7 @@ export default function BusinessSettingsPage() {
   const dirty = (keys: Key[]) =>
     !!form && !!saved && keys.some((k) => JSON.stringify(form[k]) !== JSON.stringify(saved[k]));
 
-  async function save(section: (typeof SECTIONS)[number]) {
+  async function save(section: (typeof SECTIONS)[number], formEl?: HTMLFormElement) {
     if (!form) return;
     const body = Object.fromEntries(section.keys.map((k) => [k, form[k]])) as Partial<BusinessSettings>;
     setBusy(section.id);
@@ -81,8 +85,7 @@ export default function BusinessSettingsPage() {
       setForm((f) => (f ? { ...f, ...Object.fromEntries(section.keys.map((k) => [k, next[k]])) } : next));
       toast.success(`${section.title} saved. It applies within a minute.`);
     } catch (err) {
-      if (err instanceof ApiError && Object.keys(err.fieldErrors).length) setErrors(err.fieldErrors);
-      else toast.error(err instanceof Error ? err.message : "Could not save. Please try again.");
+      showSaveError(err, setErrors, () => focusFirstError(formEl), "Could not save. Please try again.");
     } finally {
       setBusy(null);
     }
@@ -130,7 +133,7 @@ export default function BusinessSettingsPage() {
           <div className="grid min-w-0 gap-6">
             {SECTIONS.map((s) => (
               <Card key={s.id} id={s.id} className="scroll-mt-24">
-                <form onSubmit={(e) => { e.preventDefault(); void save(s); }} noValidate>
+                <form onSubmit={(e) => { e.preventDefault(); void save(s, e.currentTarget); }} noValidate>
                   <CardHeader>
                     <CardTitle className="text-[18px] font-black">{s.title}</CardTitle>
                     <CardDescription>{s.description}</CardDescription>

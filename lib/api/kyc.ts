@@ -47,7 +47,7 @@ export interface MyIdentity {
   verification: Verification | null;
 }
 
-export interface DetailsInput {
+interface DetailsInput {
   full_name?: string;
   date_of_birth?: string;
   id_type?: IdType;
@@ -137,12 +137,6 @@ export const STATUS_LABEL: Record<KycStatus, string> = {
   changes_requested: "Changes requested",
   approved: "Verified",
   rejected: "Not verified",
-};
-
-export const DOC_LABEL: Record<DocumentKind, string> = {
-  id_front: "Front of your ID",
-  id_back: "Back of your ID",
-  selfie: "A photo of you",
 };
 
 /** Which photos this ID type needs: a passport has one photo page. */

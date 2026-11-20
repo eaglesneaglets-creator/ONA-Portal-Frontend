@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
+
 import { Sparkles } from "lucide-react";
 
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState } from "@/components/dashboard/states";
+
+export const metadata: Metadata = { title: "Professional workspace" };
 
 /**
  * The professional workspace — deferred to v0.2 (ADR-015). Professionals are

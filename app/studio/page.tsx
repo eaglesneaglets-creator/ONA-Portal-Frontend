@@ -60,7 +60,7 @@ export default async function StudioCataloguePage() {
           </p>
         </div>
       </section>
-      <main className="mx-auto w-full max-w-6xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
+      <main id="main-content" className="mx-auto w-full max-w-6xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
         {unavailable ? <div className="pt-8"><Unavailable /></div> : null}
 
         {byCategory(services).map(([category, items]) => (

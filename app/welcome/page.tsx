@@ -134,7 +134,7 @@ function Welcome() {
       </aside>
 
       {/* Step side */}
-      <main className="flex flex-col px-5 py-6 sm:px-10 sm:py-8 lg:py-12">
+      <main id="main-content" className="flex flex-col px-5 py-6 sm:px-10 sm:py-8 lg:py-12">
         <div className="flex items-center justify-between gap-4">
           <ol className="flex flex-1 gap-2" aria-label="Welcome steps">
             {steps.map((label, i) => (
@@ -166,7 +166,7 @@ function Welcome() {
                       data-testid={`intent-${key}`}
                       onClick={() => setIntent(key)}
                       className={cn(
-                        "group flex min-h-[88px] items-center gap-4 rounded-2xl border-2 bg-surface p-4 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-ona-blue",
+                        "group flex min-h-[88px] items-center gap-4 rounded-2xl border-2 bg-surface p-4 text-left transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-ona-blue",
                         on ? "border-ona-red shadow-[0_8px_24px_-12px_rgba(201,0,7,0.45)]" : "border-border-default hover:-translate-y-0.5 hover:border-ink-mute/50",
                       )}
                     >

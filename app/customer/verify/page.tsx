@@ -1,5 +1,9 @@
+import type { Metadata } from "next";
+
 import { PageHeader } from "@/components/dashboard/page-header";
 import { VerifyIdentity } from "@/components/kyc/verify-identity";
+
+export const metadata: Metadata = { title: "Verify your identity" };
 
 /** /customer/verify — the customer's identity check (through the shared KYC service). */
 export default function VerifyPage() {

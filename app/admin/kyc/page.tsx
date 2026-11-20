@@ -9,7 +9,8 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
 import { KycStatusBadge } from "@/components/kyc/status-badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, HiddenHead } from "@/components/dashboard/data-table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLoaded } from "@/hooks/use-paged-list";
@@ -103,46 +104,42 @@ function Flags({ r }: { r: ReviewRow }) {
 
 function ReviewTable({ rows }: { rows: ReviewRow[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-      <Table>
-        <TableHeader className="bg-surface-alt">
-          <TableRow>
-            <TableHead className="pl-4">Person</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Sent</TableHead>
-            <TableHead>Decided</TableHead>
-            <TableHead className="w-28 pr-4">
-              <span className="sr-only">Open</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((r) => (
-            <TableRow key={r.id} data-testid="kyc-row">
-              <TableCell className="pl-4">
-                <Who r={r} />
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap items-center gap-2">
-                  <KycStatusBadge status={r.status} />
-                  <Flags r={r} />
-                </div>
-              </TableCell>
-              <TableCell className="text-ink-dim tabular-nums">{fmtWhen(r.submitted_at)}</TableCell>
-              <TableCell className="text-ink-dim tabular-nums">{fmtWhen(r.decided_at)}</TableCell>
-              <TableCell className="pr-4 text-right">
-                <Button asChild size="sm" variant={r.status === "submitted" || r.status === "in_review" ? "default" : "outline"}>
-                  <Link href={`/admin/kyc/${r.id}`}>
-                    {r.status === "submitted" || r.status === "in_review" ? "Review" : "Open"}
-                    <ChevronRight aria-hidden="true" />
-                  </Link>
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      caption="Identity checks"
+      head={
+        <>
+          <TableHead className="pl-4">Person</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Sent</TableHead>
+          <TableHead>Decided</TableHead>
+          <HiddenHead label="Open" className="w-28 pr-4" />
+        </>
+      }
+    >
+      {rows.map((r) => (
+        <TableRow key={r.id} data-testid="kyc-row">
+          <TableCell className="pl-4">
+            <Who r={r} />
+          </TableCell>
+          <TableCell>
+            <div className="flex flex-wrap items-center gap-2">
+              <KycStatusBadge status={r.status} />
+              <Flags r={r} />
+            </div>
+          </TableCell>
+          <TableCell className="text-ink-dim tabular-nums">{fmtWhen(r.submitted_at)}</TableCell>
+          <TableCell className="text-ink-dim tabular-nums">{fmtWhen(r.decided_at)}</TableCell>
+          <TableCell className="pr-4 text-right">
+            <Button asChild size="sm" variant={r.status === "submitted" || r.status === "in_review" ? "default" : "outline"}>
+              <Link href={`/admin/kyc/${r.id}`}>
+                {r.status === "submitted" || r.status === "in_review" ? "Review" : "Open"}
+                <ChevronRight aria-hidden="true" />
+              </Link>
+            </Button>
+          </TableCell>
+        </TableRow>
+      ))}
+    </DataTable>
   );
 }
 

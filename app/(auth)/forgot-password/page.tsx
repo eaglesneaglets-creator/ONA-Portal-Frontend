@@ -15,7 +15,7 @@ import { api } from "@/lib/api/client";
  * says "if", for the same reason.
  */
 export default function ForgotPasswordPage() {
-  const { pending, formError, fieldErrors, submit } = useAuthSubmit();
+  const { pending, formError, fieldErrors, submit, formRef } = useAuthSubmit();
   const [sentTo, setSentTo] = useState<string | null>(null);
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
       <p className="mb-6 text-[13.5px] text-ink-dim">
         Enter the email you use with ONA and we will send you a link to choose a new one.
       </p>
-      <form onSubmit={onSubmit} noValidate>
+      <form ref={formRef} onSubmit={onSubmit} noValidate>
         <FormError message={formError} />
         <Field
           label="Email address"

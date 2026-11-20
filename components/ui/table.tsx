@@ -64,9 +64,13 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   )
 }
 
+// scope="col" by default: these are column headers, and saying so lets a
+// screen reader announce the right header with each cell. Pass scope="row"
+// for a row header.
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
+      scope="col"
       data-slot="table-head"
       className={cn(
         "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",

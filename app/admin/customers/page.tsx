@@ -8,7 +8,8 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
 import { StageChip } from "@/components/journey/new-customers";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, HiddenHead } from "@/components/dashboard/data-table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePagedList } from "@/hooks/use-paged-list";
 import { adminApi, PAGE_SIZE, type StaffCustomer } from "@/lib/api/admin";
@@ -72,60 +73,56 @@ function Who({ c }: { c: StaffCustomer }) {
 
 function CustomerTable({ rows }: { rows: StaffCustomer[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-      <Table>
-        <TableHeader className="bg-surface-alt">
-          <TableRow>
-            <TableHead className="pl-4">Customer</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Journey</TableHead>
-            <TableHead className="text-right">Bookings</TableHead>
-            <TableHead>Last session</TableHead>
-            <TableHead className="text-right">Paid</TableHead>
-            <TableHead>Joined</TableHead>
-            <TableHead className="w-12 pr-4">
-              <span className="sr-only">Actions</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((c) => (
-            <TableRow key={c.id} data-testid="admin-customer-row">
-              <TableCell className="pl-4">
-                <Who c={c} />
-              </TableCell>
-              <TableCell>
-                <a href={`mailto:${c.email}`} className="block text-[13.5px] text-info hover:underline">
-                  {c.email}
-                </a>
-                {c.phone ? (
-                  <a href={`tel:${c.phone}`} className="block text-[13px] text-ink-dim hover:underline">
-                    {c.phone}
-                  </a>
-                ) : null}
-              </TableCell>
-              <TableCell>
-                <StageChip stage={c.stage} label={c.stage_display} />
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                <p className="text-ink">{c.booking_count}</p>
-                {c.upcoming_count ? <p className="text-[12.5px] text-ink-mute">{c.upcoming_count} upcoming</p> : null}
-              </TableCell>
-              <TableCell className="text-ink-dim">{c.last_session_at ? fmtShortDay(c.last_session_at) : "—"}</TableCell>
-              <TableCell className="text-right font-bold tabular-nums text-ink">{c.paid_display}</TableCell>
-              <TableCell className="text-ink-dim">{fmtShortDay(c.date_joined)}</TableCell>
-              <TableCell className="pr-4 text-right">
-                <Button asChild variant="ghost" size="icon" className="size-8" aria-label={`Bookings for ${c.name}`}>
-                  <Link href={bookingsHref(c)}>
-                    <CalendarDays aria-hidden="true" />
-                  </Link>
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      caption="Customers"
+      head={
+        <>
+          <TableHead className="pl-4">Customer</TableHead>
+          <TableHead>Contact</TableHead>
+          <TableHead>Journey</TableHead>
+          <TableHead className="text-right">Bookings</TableHead>
+          <TableHead>Last session</TableHead>
+          <TableHead className="text-right">Paid</TableHead>
+          <TableHead>Joined</TableHead>
+          <HiddenHead label="Actions" />
+        </>
+      }
+    >
+      {rows.map((c) => (
+        <TableRow key={c.id} data-testid="admin-customer-row">
+          <TableCell className="pl-4">
+            <Who c={c} />
+          </TableCell>
+          <TableCell>
+            <a href={`mailto:${c.email}`} className="block text-[13.5px] text-info hover:underline">
+              {c.email}
+            </a>
+            {c.phone ? (
+              <a href={`tel:${c.phone}`} className="block text-[13px] text-ink-dim hover:underline">
+                {c.phone}
+              </a>
+            ) : null}
+          </TableCell>
+          <TableCell>
+            <StageChip stage={c.stage} label={c.stage_display} />
+          </TableCell>
+          <TableCell className="text-right tabular-nums">
+            <p className="text-ink">{c.booking_count}</p>
+            {c.upcoming_count ? <p className="text-[12.5px] text-ink-mute">{c.upcoming_count} upcoming</p> : null}
+          </TableCell>
+          <TableCell className="text-ink-dim">{c.last_session_at ? fmtShortDay(c.last_session_at) : "—"}</TableCell>
+          <TableCell className="text-right font-bold tabular-nums text-ink">{c.paid_display}</TableCell>
+          <TableCell className="text-ink-dim">{fmtShortDay(c.date_joined)}</TableCell>
+          <TableCell className="pr-4 text-right">
+            <Button asChild variant="ghost" size="icon" className="size-8" aria-label={`Bookings for ${c.name}`}>
+              <Link href={bookingsHref(c)}>
+                <CalendarDays aria-hidden="true" />
+              </Link>
+            </Button>
+          </TableCell>
+        </TableRow>
+      ))}
+    </DataTable>
   );
 }
 

@@ -123,7 +123,7 @@ export function SpotlightTour({ stops, open, onDone }: { stops: TourStop[]; open
         aria-modal="true"
         aria-labelledby="tour-title"
         aria-describedby="tour-body"
-        className="fixed rounded-xl bg-ona-gradient p-4 text-white shadow-2xl outline-none"
+        className="fixed rounded-xl bg-ona-gradient p-4 text-white shadow-2xl outline-hidden"
         style={{ top, left, width: cardW }}
       >
         <div className="mb-1 flex items-center justify-between gap-3">

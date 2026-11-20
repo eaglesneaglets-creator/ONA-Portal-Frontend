@@ -14,6 +14,9 @@
  * pesewas on the client, or the two sides drift on rounding.
  */
 
+// Type only: erased at build, so the server never loads the browser client.
+import type { Page } from "@/lib/api/client";
+
 export interface Room {
   id: string;
   name: string;
@@ -57,13 +60,6 @@ export interface Package {
   room: string | null;
   room_name: string | null;
   includes: string[];
-}
-
-interface Page<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
 }
 
 export interface Catalogue {

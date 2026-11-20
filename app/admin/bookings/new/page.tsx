@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { useActiveProfessionals } from "@/hooks/use-active-professionals";
+import { useSaveState } from "@/hooks/use-save-state";
 import { CustomerPicker } from "@/components/admin/customer-picker";
 import { FormError } from "@/components/auth/fields";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -18,11 +20,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { adminApi, type Professional, type StaffCustomer } from "@/lib/api/admin";
+import { adminApi, type StaffCustomer } from "@/lib/api/admin";
 import { fetchCatalogueFromBrowser, previewGhs, studioDate } from "@/lib/api/bookings";
 import { ApiError } from "@/lib/api/errors";
-import type { Engineer, Room, Service } from "@/lib/api/studio";
+import { type FieldMessages, optionalFee, splitFailure } from "@/lib/forms";
 import { parseGhsToPesewas } from "@/lib/money";
+import type { Engineer, Room, Service } from "@/lib/api/studio";
 import { MAX_QUANTITY, isPerItem, quotePesewas, unitNoun } from "@/lib/pricing";
 
 
@@ -39,26 +42,24 @@ import { MAX_QUANTITY, isPerItem, quotePesewas, unitNoun } from "@/lib/pricing";
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const LENGTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
-type Errors = Record<string, string>;
-
-function collect(err: unknown): { form: string | null; fields: Errors } {
-  if (!(err instanceof ApiError)) return { form: "Something went wrong. Please try again.", fields: {} };
-  const fields: Errors = err.firstFieldErrors;
+function collect(err: unknown): { form: string | null; fields: FieldMessages } {
+  const failure = splitFailure(err);
   // DRF nests the new customer's errors one level down.
-  const nested = (err.detail as Record<string, unknown> | null)?.new_customer;
+  const nested = err instanceof ApiError ? (err.detail as Record<string, unknown> | null)?.new_customer : null;
   if (nested && typeof nested === "object" && !Array.isArray(nested)) {
     for (const [k, v] of Object.entries(nested as Record<string, unknown>)) {
-      if (Array.isArray(v) && v.length) fields[`new_${k}`] = String(v[0]);
+      if (Array.isArray(v) && v.length) failure.fields[`new_${k}`] = String(v[0]);
     }
   }
-  const anyField = Object.keys(fields).length > 0;
-  return { form: anyField ? null : err.formError, fields };
+  // A field to point at says more than the generic form-level message.
+  if (Object.keys(failure.fields).length) failure.form = null;
+  return failure;
 }
 
 export default function NewBookingPage() {
   const router = useRouter();
   const [catalogue, setCatalogue] = useState<{ rooms: Room[]; engineers: Engineer[]; services: Service[] } | null>(null);
-  const [pros, setPros] = useState<Professional[]>([]);
+  const pros = useActiveProfessionals();
   const [loadFailed, setLoadFailed] = useState(false);
 
   // Customer
@@ -82,9 +83,7 @@ export default function NewBookingPage() {
   const [fee, setFee] = useState("");
 
   const [outsideOk, setOutsideOk] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Errors>({});
+  const { busy, setBusy, errors, formError, setFormError, formRef, reject, show } = useSaveState();
 
   useEffect(() => {
     fetchCatalogueFromBrowser()
@@ -95,29 +94,17 @@ export default function NewBookingPage() {
         if (c.services[0]) setService(c.services[0].id);
       })
       .catch(() => setLoadFailed(true));
-    adminApi
-      .professionals({ is_active: true, page_size: 100 })
-      .then((p) => setPros(p.results))
-      .catch(() => setPros([]));
   }, []);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setFormError(null);
-    setErrors({});
 
-    const local: Errors = {};
+    const local: FieldMessages = {};
     if (mode === "existing" && !customer) local.customer = "Find and choose the customer.";
-    let feePesewas = 0;
-    if (pro !== "none" && fee.trim()) {
-      const parsed = parseGhsToPesewas(fee);
-      if (parsed === null) local.professional_fee_pesewas = "Enter the fee in cedis, e.g. 150 or 150.50.";
-      else feePesewas = parsed;
-    }
-    if (Object.keys(local).length) {
-      setErrors(local);
-      return;
-    }
+    const proFee: ReturnType<typeof optionalFee> = pro === "none" ? { pesewas: null } : optionalFee(fee, "150");
+    if (proFee.error) local.professional_fee_pesewas = proFee.error;
+    if (reject(local)) return;
 
     setBusy(true);
     try {
@@ -143,7 +130,7 @@ export default function NewBookingPage() {
         notes: notes.trim(),
         status,
         professional: pro === "none" ? null : pro,
-        professional_fee_pesewas: feePesewas,
+        professional_fee_pesewas: proFee.pesewas ?? 0,
         allow_outside_hours: outsideOk,
       });
       toast.success(
@@ -152,10 +139,7 @@ export default function NewBookingPage() {
       );
       router.push(`/admin/bookings?when=all&q=${encodeURIComponent(created.reference)}`);
     } catch (err) {
-      const { form, fields } = collect(err);
-      setFormError(form);
-      setErrors(fields);
-      setBusy(false);
+      show(collect(err));
     }
   }
 
@@ -184,7 +168,7 @@ export default function NewBookingPage() {
         </p>
       ) : null}
 
-      <form onSubmit={(e) => void submit(e)} noValidate className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
+      <form ref={formRef} onSubmit={(e) => void submit(e)} noValidate className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
         <div className="grid gap-6">
           {/* Customer */}
           <Card>

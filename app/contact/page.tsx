@@ -52,7 +52,7 @@ export default async function ContactPage() {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
+      <main id="main-content" className="mx-auto w-full max-w-3xl px-4 pb-[clamp(72px,10vw,128px)] sm:px-6">
         <section className="py-12 sm:py-16">
           <p className="mb-2 text-[12.5px] font-bold uppercase tracking-[0.14em] text-ona-red">Contact</p>
           <h1 className="mb-3 text-[clamp(30px,5vw,44px)] font-black leading-tight tracking-tight text-ink">

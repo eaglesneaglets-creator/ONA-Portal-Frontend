@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { useSaveState } from "@/hooks/use-save-state";
 import { ContactEditor } from "@/components/admin/contact-editor";
 import { FormError } from "@/components/auth/fields";
 import { EditorFooter } from "@/components/dashboard/editor-footer";
@@ -17,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { adminApi, type AdminFaq } from "@/lib/api/admin";
-import { ApiError } from "@/lib/api/errors";
 
 /**
  * /admin/content — ONA's contact details and the public FAQ (Task 16). Answers are policy: they show
@@ -121,9 +121,7 @@ function FaqForm({ existing, onCancel, onDone }: { existing: AdminFaq | null; on
   const [answer, setAnswer] = useState(existing?.answer ?? "");
   const [published, setPublished] = useState(existing?.is_published ?? true);
   const [sortOrder, setSortOrder] = useState(String(existing?.sort_order ?? 100));
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { busy, setBusy, errors, formError, setFormError, formRef, fail } = useSaveState();
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -135,12 +133,7 @@ function FaqForm({ existing, onCancel, onDone }: { existing: AdminFaq | null; on
       else await adminApi.createFaq(body);
       onDone(published ? "Saved. Visitors see it within a minute or so." : "Saved as a draft.");
     } catch (err) {
-      if (err instanceof ApiError) {
-        const fe = err.firstFieldErrors;
-        setErrors(fe);
-        setFormError(Object.keys(fe).length ? null : err.formError);
-      } else setFormError("Something went wrong. Please try again.");
-      setBusy(false);
+      fail(err);
     }
   }
 
@@ -150,14 +143,13 @@ function FaqForm({ existing, onCancel, onDone }: { existing: AdminFaq | null; on
     try {
       await adminApi.removeFaq(existing.id);
       onDone("Question removed.");
-    } catch {
-      setFormError("Could not remove it.");
-      setBusy(false);
+    } catch (err) {
+      fail(err, "Could not remove it.");
     }
   }
 
   return (
-    <form onSubmit={(e) => void save(e)} noValidate className="grid gap-3">
+    <form ref={formRef} onSubmit={(e) => void save(e)} noValidate className="grid gap-3">
       <div className="grid gap-1.5">
         <Label htmlFor="faq-q">Question</Label>
         <Input id="faq-q" value={question} maxLength={200} onChange={(e) => setQuestion(e.target.value)} aria-invalid={Boolean(errors.question)} className="h-11 md:h-9" />

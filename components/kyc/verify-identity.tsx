@@ -16,6 +16,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { useFocusFirstError } from "@/hooks/use-focus-first-error";
 import { EmptyState, ErrorState } from "@/components/dashboard/states";
 import { PhotoUpload } from "@/components/kyc/photo-upload";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -28,6 +29,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoaded } from "@/hooks/use-paged-list";
 import { ApiError, type FieldErrors } from "@/lib/api/errors";
+import { showSaveError } from "@/lib/forms";
 import { docsFor, kycApi, type IdType, type MyIdentity, type Verification } from "@/lib/api/kyc";
 import { cn } from "@/lib/utils";
 
@@ -293,6 +295,7 @@ function DetailsStep({ v, onChange, onNext }: { v: Verification; onChange: (m: M
   const [idNumber, setIdNumber] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
+  const { formRef, focusFirstError } = useFocusFirstError();
   const saved = Boolean(v.id_number_last4);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -311,6 +314,7 @@ function DetailsStep({ v, onChange, onNext }: { v: Verification; onChange: (m: M
     if (!idNumber.trim() && !saved) local.id_number = ["Enter the number on your ID."];
     if (Object.keys(local).length) {
       setErrors(local);
+      focusFirstError();
       return;
     }
     setErrors({});
@@ -324,8 +328,7 @@ function DetailsStep({ v, onChange, onNext }: { v: Verification; onChange: (m: M
       setIdNumber("");
       onNext();
     } catch (err) {
-      if (err instanceof ApiError && Object.keys(err.fieldErrors).length) setErrors(err.fieldErrors);
-      else toast.error(err instanceof Error ? err.message : "Could not save. Please try again.");
+      showSaveError(err, setErrors, focusFirstError, "Could not save. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -344,7 +347,7 @@ function DetailsStep({ v, onChange, onNext }: { v: Verification; onChange: (m: M
 
   return (
     <Card>
-      <form onSubmit={(e) => void save(e)} noValidate>
+      <form ref={formRef} onSubmit={(e) => void save(e)} noValidate>
         <CardHeader>
           <CardTitle className="text-[18px] font-black">Your details</CardTitle>
           <CardDescription>Exactly as they appear on your ID, so the reviewer can match them.</CardDescription>

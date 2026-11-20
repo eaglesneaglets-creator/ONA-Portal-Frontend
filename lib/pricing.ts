@@ -15,7 +15,7 @@ import type { Room, Service } from "@/lib/api/studio";
 export const DAY_HOURS = 8;
 export const MAX_QUANTITY = 20;
 /** Mirrors BOOKING_DEPOSIT_PERCENT; the booking's own deposit comes from the API. */
-export const DEPOSIT_PERCENT = 50;
+const DEPOSIT_PERCENT = 50;
 
 export const isPerItem = (s: Pick<Service, "price_unit">) => s.price_unit === "song" || s.price_unit === "track";
 export const isDay = (s: Pick<Service, "price_unit">) => s.price_unit === "day";

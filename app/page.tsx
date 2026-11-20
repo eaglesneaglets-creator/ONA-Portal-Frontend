@@ -80,7 +80,7 @@ export default async function Home() {
   return (
     <>
       <SiteHeader />
-      <main>
+      <main id="main-content">
         {/* 2 · Hero — a studio photograph in the brand's colours, the pitch on
             its dark side, and the four promises along its foot. */}
         <section className="bg-ona-hero relative isolate overflow-hidden text-white">

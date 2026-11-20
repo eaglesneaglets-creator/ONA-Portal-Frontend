@@ -87,7 +87,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           rather than being clipped with its submit button unreachable. */}
       {/* relative + isolate so the gradient wash can sit behind the form
           without escaping this column on desktop. */}
-      <main className="relative isolate flex items-center justify-center overflow-y-auto bg-surface px-5 py-4 sm:px-6 sm:py-8 lg:py-11">
+      <main id="main-content" className="relative isolate flex items-center justify-center overflow-y-auto bg-surface px-5 py-4 sm:px-6 sm:py-8 lg:py-11">
         {/* Below lg the gradient panel is hidden, so the screen was plain
             white with no brand presence at all. This is a soft wash of the
             same gradient bleeding down from the top — enough to feel like

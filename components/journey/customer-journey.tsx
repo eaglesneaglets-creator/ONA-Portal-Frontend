@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { useFocusFirstError } from "@/hooks/use-focus-first-error";
 import { Celebrate } from "@/components/journey/celebrate";
 import { IllusCalendar, IllusDeposit, IllusEnvelope, IllusPhone, IllusSession } from "@/components/journey/illustrations";
 import { SetupGuide, type GuideItem } from "@/components/journey/setup-guide";
@@ -140,6 +141,7 @@ function StepAction({ step: s, onChanged }: { step: JourneyStep; onChanged: () =
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const { formRef, focusFirstError } = useFocusFirstError();
 
   if (s.action === "resend_verification") {
     return (
@@ -168,12 +170,14 @@ function StepAction({ step: s, onChanged }: { step: JourneyStep; onChanged: () =
   if (s.action === "phone") {
     return (
       <form
+        ref={formRef}
         className="flex flex-wrap items-end gap-2"
         onSubmit={async (e) => {
           e.preventDefault();
           const value = phone.trim();
           if (!/^\+?[\d\s()-]{9,16}$/.test(value)) {
             setError("Enter a Ghana number, e.g. 024 123 4567.");
+            focusFirstError();
             return;
           }
           setBusy(true);
@@ -185,6 +189,7 @@ function StepAction({ step: s, onChanged }: { step: JourneyStep; onChanged: () =
           } catch (err) {
             setError(err instanceof ApiError ? (err.fieldErrors.phone?.[0] ?? err.formError) : "That did not save.");
             setBusy(false);
+            focusFirstError();
           }
         }}
       >

@@ -7,7 +7,7 @@
  * customer clicks around, and creating a booking needs the access token.
  */
 
-import { api } from "@/lib/api/client";
+import { api, type Page } from "@/lib/api/client";
 import type { Engineer, Room, Service } from "@/lib/api/studio";
 
 /** "past" = already started; not one of the four SRS states, never bookable. */
@@ -91,11 +91,6 @@ export interface BookingInput {
   /** Songs or tracks, for services priced that way. */
   quantity?: number;
   notes?: string;
-}
-
-interface Page<T> {
-  count: number;
-  results: T[];
 }
 
 const STUDIO_TZ = "Africa/Accra";

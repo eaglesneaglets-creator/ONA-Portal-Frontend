@@ -9,7 +9,8 @@ import { Pager } from "@/components/dashboard/list-controls";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/dashboard/data-table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLoaded } from "@/hooks/use-paged-list";
 import { MY_PAYMENTS_PAGE, myPaymentsApi, type MyPayment, type PaymentStatus } from "@/lib/api/account";
@@ -109,39 +110,37 @@ function Amount({ p }: { p: MyPayment }) {
 
 function PaymentTable({ rows }: { rows: MyPayment[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Booking</TableHead>
-            <TableHead>How</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right"><span className="sr-only">Receipt</span></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((p) => (
-            <TableRow key={p.id} data-testid="payment-row">
-              <TableCell className="whitespace-nowrap tabular-nums">{fmtShortDay(p.created_at)}</TableCell>
-              <TableCell>
-                <Link href="/customer/bookings" className="font-semibold text-ink underline-offset-4 hover:underline">
-                  {p.booking.reference}
-                </Link>
-                <span className="block text-[12.5px] text-ink-mute">
-                  {p.booking.room} · {fmtShortDay(p.booking.start_at)}
-                </span>
-              </TableCell>
-              <TableCell className="text-ink-dim">{p.how}</TableCell>
-              <TableCell className="text-right"><Amount p={p} /></TableCell>
-              <TableCell><StatusPill p={p} /></TableCell>
-              <TableCell className="text-right"><ReceiptButton p={p} /></TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      caption="Your payments"
+      head={
+        <>
+          <TableHead>Date</TableHead>
+          <TableHead>Booking</TableHead>
+          <TableHead>How</TableHead>
+          <TableHead className="text-right">Amount</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right"><span className="sr-only">Receipt</span></TableHead>
+        </>
+      }
+    >
+      {rows.map((p) => (
+        <TableRow key={p.id} data-testid="payment-row">
+          <TableCell className="whitespace-nowrap tabular-nums">{fmtShortDay(p.created_at)}</TableCell>
+          <TableCell>
+            <Link href="/customer/bookings" className="font-semibold text-ink underline-offset-4 hover:underline">
+              {p.booking.reference}
+            </Link>
+            <span className="block text-[12.5px] text-ink-mute">
+              {p.booking.room} · {fmtShortDay(p.booking.start_at)}
+            </span>
+          </TableCell>
+          <TableCell className="text-ink-dim">{p.how}</TableCell>
+          <TableCell className="text-right"><Amount p={p} /></TableCell>
+          <TableCell><StatusPill p={p} /></TableCell>
+          <TableCell className="text-right"><ReceiptButton p={p} /></TableCell>
+        </TableRow>
+      ))}
+    </DataTable>
   );
 }
 
