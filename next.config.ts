@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 /**
@@ -36,4 +37,42 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * Sentry (error reporting). Whether it reports at all is decided at runtime
+ * by NEXT_PUBLIC_SENTRY_DSN (lib/monitoring/sentry.ts); this only shapes the
+ * build.
+ *
+ *  - tunnelRoute: the browser posts events to /monitoring on this site, and
+ *    app/sentry-tunnel/route.ts forwards them. Same-origin, so the CSP's
+ *    connect-src 'self' covers it and ad-blockers do not eat crash reports.
+ *    A fixed path, not `true` (random per build), so proxy.ts's matcher can
+ *    skip it.
+ *  - Source maps are uploaded only when SENTRY_AUTH_TOKEN is set (a Railway
+ *    variable on production). Without it, CI, Playwright and local builds
+ *    skip the upload and the extra memory it costs, and do not fail.
+ *    After an upload the browser maps are deleted, so readable source is
+ *    never served to visitors.
+ *  - Tracing, replay and debug code are stripped from the bundle: errors
+ *    only, about half the SDK's weight.
+ *  - Release name: Railway's RAILWAY_GIT_COMMIT_SHA, read by the SDK.
+ */
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.SENTRY_AUTH_TOKEN,
+  telemetry: false,
+  tunnelRoute: "/monitoring",
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+    deleteSourcemapsAfterUpload: true,
+  },
+  widenClientFileUpload: true,
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeTracing: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+    excludeReplayWorker: true,
+  },
+});

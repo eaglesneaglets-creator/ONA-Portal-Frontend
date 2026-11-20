@@ -16,7 +16,15 @@
  * In practice this almost never fires. When it does, something is badly
  * wrong, and the only job is to say so in a way that does not frighten
  * someone whose money we are holding.
+ *
+ * The one import is the error reporter, and it is the exception on purpose:
+ * Sentry is already loaded by instrumentation-client.ts before React starts,
+ * so importing it here adds no new way to fail, and without it a crash this
+ * bad would leave no record at all.
  */
+import * as Sentry from "@sentry/nextjs";
+import { useEffect } from "react";
+
 export default function GlobalError({
   error,
   reset,
@@ -24,6 +32,11 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    // With a digest, the server already reported it (instrumentation.ts).
+    if (!error.digest) Sentry.captureException(error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body

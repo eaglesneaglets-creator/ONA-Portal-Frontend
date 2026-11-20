@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -22,8 +23,10 @@ export default function ErrorBoundary({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Sentry is wired on the backend but not here yet. Until it is, the
-    // console is the only record — better than swallowing it silently.
+    // A boundary swallows the error, so the browser's global handler never
+    // sees it: report it here. An error with a digest came from the server,
+    // and instrumentation.ts (onRequestError) has already reported it there.
+    if (!error.digest) Sentry.captureException(error);
     console.error("Unhandled UI error:", error);
   }, [error]);
 
