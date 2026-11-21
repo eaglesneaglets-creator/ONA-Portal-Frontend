@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Tooling, not app code: Graft's CommonJS hook scripts and its local cache.
     ".claude/**",
     "graft/**",
+    // Railway IaC (railway config plan/apply), evaluated by the Railway CLI.
+    ".railway/**",
   ]),
 ]);
 
