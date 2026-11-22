@@ -155,7 +155,7 @@ export function SiteHeader() {
             <SheetContent side="right" className="w-[86%] max-w-xs gap-0 p-0">
               <SheetHeader className="border-b border-border-soft p-5">
                 <SheetTitle className="text-[17px] font-black">Menu</SheetTitle>
-                <SheetDescription>ONA Records, Accra</SheetDescription>
+                <SheetDescription>ONA Records, Tema</SheetDescription>
               </SheetHeader>
               <nav aria-label="Mobile" className="flex flex-col p-3">
                 {LINKS.map((l) => (

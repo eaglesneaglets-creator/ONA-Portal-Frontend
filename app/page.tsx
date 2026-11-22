@@ -15,10 +15,13 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { LandingFaq } from "@/components/landing/faq";
+import { LandingGallery } from "@/components/landing/gallery";
+import { LandingReviews } from "@/components/landing/reviews";
 import { SiteFooter } from "@/components/public/site-footer";
 import { BOOK_HREF, SiteHeader } from "@/components/public/site-header";
 import { Button } from "@/components/ui/button";
-import { fetchContact, fetchFaqs } from "@/lib/api/content";
+import { fetchContact, fetchFaqs, fetchSite } from "@/lib/api/content";
+import { MEDIA_UNOPTIMIZED, mediaSrc } from "@/lib/media";
 import { fetchCatalogue, type Room } from "@/lib/api/studio";
 import { fetchRules, type PublicRules } from "@/lib/api/business";
 import { publicPage } from "@/lib/site";
@@ -31,13 +34,19 @@ import { businessJsonLd } from "@/lib/structured-data";
  * Keeps the ONA identity exactly: the blue→red gradient over the hero
  * photograph, the logo, Lato, the token palette. The page runs: a hero that
  * states the offer and carries the four promises, a bento of guarantees,
- * the booking steps, live rooms and prices, and real-policy answers.
+ * the booking steps, photos of the studio, live rooms and prices, reviews
+ * and real-policy answers.
  *
- * No social proof: ONA has no testimonials, logos or statistics yet, and
- * PRODUCT.md forbids inventing them. Rooms and prices come from the API
- * (ISR, 60s) and the page fails soft without it.
+ * Social proof is real or absent: the reviews are ones people left on
+ * Google, chosen and quoted as written by ONA staff in the console, beside
+ * a link to the full set on Google (PRODUCT.md forbids inventing any).
+ * The hero's words and photo, the gallery and the reviews are edited in the
+ * console (/admin/website); rooms and prices come from the API. The page
+ * fails soft without the API: built-in hero text and photo, no gallery or
+ * reviews section.
  *
- * hero-studio.jpg is a stock photograph, not ONA's own room: "Silver and black
+ * hero-studio.jpg (the built-in hero until staff upload ONA's own photo) is
+ * a stock photograph, not ONA's own room: "Silver and black
  * studio microphone condenser" by Jonathan Velasquez, CC0 (public domain),
  * from Wikimedia Commons. It shows equipment and no people, so it sets a
  * mood without passing another studio off as ONA's. Replace it with ONA's
@@ -49,11 +58,18 @@ import { businessJsonLd } from "@/lib/structured-data";
 export const revalidate = 60;
 
 export const metadata: Metadata = publicPage({
-  title: { absolute: "ONA Records — Book studio time in Accra" },
+  title: { absolute: "ONA Records — Book studio time in Tema" },
   description:
-    "Book a recording room and engineer at ONA Records in Accra. Clear hourly prices, Mobile Money, and a slot that is genuinely yours.",
+    "Book a recording room and engineer at ONA Records in Tema. Clear hourly prices, Mobile Money, and a slot that is genuinely yours.",
   path: "/",
 });
+
+/** The hero as built in, used for any part staff have not set in the console. */
+const HERO_DEFAULT = {
+  eyebrow: "Recording studio · Tema",
+  title: "Record.\nKeep your money safe.",
+  body: "Pick a room and an engineer, see the price before you commit, and pay ONA — who holds it until your session.",
+};
 
 const SECTION = "py-[clamp(72px,10vw,128px)]";
 const WRAP = "mx-auto w-full max-w-6xl px-4 sm:px-6";
@@ -75,33 +91,50 @@ const steps = (r: PublicRules) => [
 const roomHref = (r: Room) => `/register?next=${encodeURIComponent(`/customer/book?room=${r.id}`)}`;
 
 export default async function Home() {
-  const [{ rooms, services, unavailable }, faqs, rules, contact] = await Promise.all([
+  const [{ rooms, services, unavailable }, faqs, rules, contact, site] = await Promise.all([
     fetchCatalogue(),
     fetchFaqs(),
     fetchRules(),
     fetchContact(),
+    fetchSite(),
   ]);
   const STEPS = steps(rules);
+  const hero = site?.hero;
+  const heroTitle = (hero?.title || HERO_DEFAULT.title).split("\n");
+  const heroImage = hero?.image ?? null;
   const featured = rooms.slice(0, 3);
   // ONA prices by service: a room shows where prices start, not a rate of its own.
   const cheapest = [...services].sort((a, b) => a.base_price_pesewas - b.base_price_pesewas)[0];
 
   return (
     <>
-      <JsonLd data={businessJsonLd(contact)} />
+      <JsonLd data={businessJsonLd(contact, heroImage ? mediaSrc(heroImage.src) : undefined)} />
       <SiteHeader />
       <main id="main-content">
         {/* 2 · Hero — a studio photograph in the brand's colours, the pitch on
             its dark side, and the four promises along its foot. */}
         <section className="bg-ona-hero relative isolate overflow-hidden text-white">
-          <Image
-            src="/hero-studio.jpg"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="-z-30 object-cover object-[78%_center] sm:object-[70%_center]"
-          />
+          {heroImage ? (
+            <Image
+              src={mediaSrc(heroImage.src)}
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              unoptimized={MEDIA_UNOPTIMIZED}
+              style={{ objectPosition: `${hero?.focus ?? 70}% center` }}
+              className="-z-30 object-cover"
+            />
+          ) : (
+            <Image
+              src="/hero-studio.jpg"
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="-z-30 object-cover object-[78%_center] sm:object-[70%_center]"
+            />
+          )}
           {/* Hue from the brand gradient, light from the photograph. */}
           <div aria-hidden="true" className="bg-ona-gradient absolute inset-0 -z-20 opacity-80 mix-blend-color" />
           {/* Darkness where the words are; the subject stays lit. */}
@@ -111,16 +144,17 @@ export default async function Home() {
             <div className="max-w-[620px]">
               <p className="ona-rise mb-6 inline-flex items-center gap-2 rounded-pill bg-white/10 px-3 py-1.5 text-[12.5px] font-bold tracking-wide text-white ring-1 ring-white/25 backdrop-blur-sm">
                 <span aria-hidden="true" className="size-1.5 rounded-pill bg-ona-red ring-2 ring-white/40" />
-                Recording studio · Accra
+                {hero?.eyebrow || HERO_DEFAULT.eyebrow}
               </p>
               <h1 className="ona-rise mb-6 text-[clamp(40px,6.4vw,72px)] font-black leading-[1.0] tracking-[-0.025em] [animation-delay:70ms]">
-                Book the room.
-                <br />
-                Keep your money safe.
+                {heroTitle.map((line, i) => (
+                  <span key={i} className="block">
+                    {line}
+                  </span>
+                ))}
               </h1>
               <p className="ona-rise mb-9 max-w-[44ch] text-[17px] leading-relaxed text-white/90 [animation-delay:140ms] sm:text-[19px]">
-                Pick a room and an engineer, see the price before you commit, and pay ONA — who
-                holds it until your session.
+                {hero?.body || HERO_DEFAULT.body}
               </p>
               <div className="ona-rise flex flex-wrap gap-3 [animation-delay:210ms]">
                 <Button asChild className="h-13 bg-white px-7 text-[15.5px] font-bold text-ona-red shadow-pop hover:bg-white/90">
@@ -207,6 +241,9 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        {/* 4b · Inside ONA — staff-published photos; hidden until there are any */}
+        <LandingGallery items={site?.gallery ?? []} className={`bg-surface ${SECTION}`} />
 
         {/* 5 · How booking works */}
         <section id="how" aria-labelledby="how-h" className={`scroll-mt-20 bg-surface ${SECTION}`}>
@@ -295,6 +332,9 @@ export default async function Home() {
             )}
           </div>
         </section>
+
+        {/* 6b · Reviews — real Google reviews ONA chose, and the link to all of them */}
+        <LandingReviews reviews={site?.reviews ?? []} google={site?.google ?? null} className={`bg-surface-alt ${SECTION}`} />
 
         {/* 7 · Questions — staff-edited; the section waits for real answers */}
         {faqs && faqs.length ? (

@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     template: TITLE_TEMPLATE,
   },
   description:
-    "Book a recording room and engineer at ONA Records in Accra. Clear prices, Mobile Money, and payment held by ONA until your session.",
+    "Book a recording room and engineer at ONA Records in Tema. Clear prices, Mobile Money, and payment held by ONA until your session.",
   // Defaults for link previews; public pages set their own words (publicPage).
   openGraph: { type: "website", siteName: SITE_NAME, locale: "en_GH" },
   twitter: { card: "summary_large_image" },

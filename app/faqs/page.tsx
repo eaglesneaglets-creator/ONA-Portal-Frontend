@@ -20,7 +20,7 @@ export const revalidate = 60;
 export const metadata: Metadata = publicPage({
   title: "Questions",
   description:
-    "Answers about booking studio time at ONA Records in Accra — engineers, payment, changes and paperwork.",
+    "Answers about booking studio time at ONA Records in Tema — engineers, payment, changes and paperwork.",
   path: "/faqs",
 });
 

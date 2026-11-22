@@ -51,18 +51,34 @@ describe("robots.txt and sitemap.xml", () => {
 describe("structured data", () => {
   it("leaves out contact details ONA has not entered, rather than guessing", async () => {
     const { businessJsonLd } = await load({ NEXT_PUBLIC_SITE_URL: "https://ona.example" });
-    const empty = businessJsonLd({ phone: "", whatsapp: "", email: "", address: "", directions_url: "" });
+    const none = { instagram_url: "", facebook_url: "", linkedin_url: "", tiktok_url: "", youtube_url: "" };
+    const empty = businessJsonLd({ phone: "", whatsapp: "", email: "", address: "", directions_url: "", ...none });
     expect(empty).not.toHaveProperty("telephone");
     expect(empty).not.toHaveProperty("email");
     expect(empty).not.toHaveProperty("hasMap");
-    expect(empty.address).toEqual({ "@type": "PostalAddress", addressLocality: "Accra", addressCountry: "GH" });
+    expect(empty).not.toHaveProperty("sameAs");
+    // Tema, as on ONA's Google Business Profile; Accra stays an area served.
+    expect(empty.address).toEqual({
+      "@type": "PostalAddress", addressLocality: "Tema", addressRegion: "Greater Accra", addressCountry: "GH",
+    });
+    expect(empty.areaServed).toEqual([{ "@type": "City", name: "Tema" }, { "@type": "City", name: "Accra" }]);
 
     const contact: ContactDetails = {
       phone: "030 222 0000", whatsapp: "", email: "hello@ona.example", address: "1 Studio Road", directions_url: "",
+      ...none, linkedin_url: "https://www.linkedin.com/company/ona-records/", instagram_url: "https://www.instagram.com/ona/",
     };
     const full = businessJsonLd(contact);
     expect(full).toMatchObject({ telephone: "030 222 0000", email: "hello@ona.example", url: "https://ona.example" });
+    expect(full.sameAs).toEqual(["https://www.instagram.com/ona/", "https://www.linkedin.com/company/ona-records/"]);
     expect(businessJsonLd(null)).not.toHaveProperty("telephone");
+  });
+
+  it("uses the hero photo staff chose as the business image", async () => {
+    const { businessJsonLd } = await load({ NEXT_PUBLIC_SITE_URL: "https://ona.example" });
+    expect(businessJsonLd(null).image).toBe("https://ona.example/hero-studio.jpg");
+    expect(businessJsonLd(null, "https://api.ona.example/api/v1/content/media/x/").image).toBe(
+      "https://api.ona.example/api/v1/content/media/x/",
+    );
   });
 
   it("prices services in cedis from pesewas, and says nothing when there are none", async () => {

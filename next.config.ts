@@ -30,8 +30,25 @@ const securityHeaders = [
     : []),
 ];
 
+// Website images from the admin's media library are served by the API at
+// /api/v1/content/media/<id>/ (lib/media.ts). The optimiser may fetch exactly
+// that path on the API's public origin and nothing else; the API never
+// redirects there, so redirects are refused too.
+const API = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1");
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  images: {
+    remotePatterns: [
+      {
+        protocol: API.protocol === "https:" ? "https" : "http",
+        hostname: API.hostname,
+        port: API.port,
+        pathname: "/api/v1/content/media/**",
+      },
+    ],
+    maximumRedirects: 0,
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

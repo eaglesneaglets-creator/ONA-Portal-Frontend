@@ -239,6 +239,61 @@ export interface AdminFaq {
   updated_at: string;
 }
 
+/* ── The public website (/admin/website) ─────────────────────────────────── */
+
+/** An image as a page draws it: see lib/media.ts for turning src into a URL. */
+export interface MediaRef {
+  id: string;
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+}
+
+export interface AdminMedia {
+  id: string;
+  src: string;
+  width: number;
+  height: number;
+  bytes: number;
+  alt_text: string;
+  /** Where the site shows it, in words; empty when it can be deleted. */
+  used_by: string[];
+  created_at: string;
+}
+
+export interface AdminSite {
+  hero_eyebrow: string;
+  hero_title: string;
+  hero_body: string;
+  hero_image: string | null;
+  hero_image_detail: MediaRef | null;
+  hero_focus: number;
+  google_rating: string | null;
+  google_review_count: number | null;
+  google_reviews_url: string;
+  updated_at: string;
+}
+
+export interface AdminGalleryItem {
+  id: string;
+  media: string;
+  media_detail: MediaRef;
+  caption: string;
+  is_published: boolean;
+  sort_order: number;
+}
+
+export interface AdminTestimonial {
+  id: string;
+  quote: string;
+  author: string;
+  rating: number | null;
+  source: "google" | "facebook" | "direct";
+  is_published: boolean;
+  sort_order: number;
+}
+
 export type RateType = "hourly" | "daily" | "per_song" | "per_project" | "per_event" | "negotiable";
 
 export const RATE_TYPES: { value: RateType; label: string }[] = [
@@ -396,6 +451,31 @@ export const adminApi = {
   updateCatalogue: <T>(kind: CatalogueKind, id: string, input: Partial<T>) =>
     api.patch<T>(`/admin/${kind}/${id}/`, input, { retries: 0 }),
   removeCatalogue: (kind: CatalogueKind, id: string) => api.delete<void>(`/admin/${kind}/${id}/`, { retries: 0 }),
+
+  site: () => api.get<AdminSite>("/admin/site/"),
+  updateSite: (input: Partial<Omit<AdminSite, "hero_image_detail" | "updated_at">>) =>
+    api.patch<AdminSite>("/admin/site/", input, { retries: 0 }),
+  media: (page = 1) => api.get<Page<AdminMedia>>(`/admin/media/${qs({ page, page_size: 48 })}`),
+  uploadMedia: (file: File, altText: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("alt_text", altText);
+    return api.post<AdminMedia>("/admin/media/", form, { retries: 0 });
+  },
+  updateMedia: (id: string, altText: string) => api.patch<AdminMedia>(`/admin/media/${id}/`, { alt_text: altText }, { retries: 0 }),
+  removeMedia: (id: string) => api.delete<void>(`/admin/media/${id}/`, { retries: 0 }),
+  gallery: () => api.get<AdminGalleryItem[]>("/admin/gallery/"),
+  createGalleryItem: (input: { media: string; caption?: string; is_published?: boolean; sort_order?: number }) =>
+    api.post<AdminGalleryItem>("/admin/gallery/", input, { retries: 0 }),
+  updateGalleryItem: (id: string, input: Partial<Pick<AdminGalleryItem, "caption" | "is_published" | "sort_order">>) =>
+    api.patch<AdminGalleryItem>(`/admin/gallery/${id}/`, input, { retries: 0 }),
+  removeGalleryItem: (id: string) => api.delete<void>(`/admin/gallery/${id}/`, { retries: 0 }),
+  testimonials: () => api.get<AdminTestimonial[]>("/admin/testimonials/"),
+  createTestimonial: (input: Omit<AdminTestimonial, "id">) =>
+    api.post<AdminTestimonial>("/admin/testimonials/", input, { retries: 0 }),
+  updateTestimonial: (id: string, input: Partial<Omit<AdminTestimonial, "id">>) =>
+    api.patch<AdminTestimonial>(`/admin/testimonials/${id}/`, input, { retries: 0 }),
+  removeTestimonial: (id: string) => api.delete<void>(`/admin/testimonials/${id}/`, { retries: 0 }),
 
   faqs: () => api.get<Page<AdminFaq>>("/admin/faqs/?page_size=100&ordering=sort_order"),
   createFaq: (input: Partial<AdminFaq>) => api.post<AdminFaq>("/admin/faqs/", input, { retries: 0 }),

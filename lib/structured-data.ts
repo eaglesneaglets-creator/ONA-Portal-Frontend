@@ -6,7 +6,7 @@
  *
  * Check a page with https://search.google.com/test/rich-results.
  */
-import type { ContactDetails, Faq } from "@/lib/api/content";
+import { socialProfiles, type ContactDetails, type Faq } from "@/lib/api/content";
 import type { Service } from "@/lib/api/studio";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
@@ -26,28 +26,41 @@ function compact<T extends Json>(o: T): T {
   ) as T;
 }
 
-/** ONA as a local business: what Google shows for "recording studio Accra". */
-export function businessJsonLd(contact: ContactDetails | null): Json {
+/**
+ * ONA as a local business: what Google shows for "recording studio Tema".
+ *
+ * Tema, as on ONA's Google Business Profile: a business whose site and
+ * listing name different towns ranks worse locally. Accra stays an area
+ * served, so searches for either still match. `sameAs` names ONA's own
+ * profiles, so Google can tie them to this business. No rating or review
+ * markup: Google does not show stars a business publishes about itself.
+ */
+export function businessJsonLd(contact: ContactDetails | null, heroImage?: string): Json {
   return compact({
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "@id": BUSINESS_ID,
     name: SITE_NAME,
     legalName: "ONA Records Creative Services",
-    description: "Recording rooms and engineers to book by the hour in Accra, paid by Mobile Money.",
+    description: "Recording rooms and engineers to book by the hour in Tema, paid by Mobile Money.",
     url: SITE_URL,
     logo: `${SITE_URL}/ona-icon.png`,
-    image: `${SITE_URL}/hero-studio.jpg`,
+    image: heroImage ?? `${SITE_URL}/hero-studio.jpg`,
     telephone: contact?.phone ?? "",
     email: contact?.email ?? "",
     address: compact({
       "@type": "PostalAddress",
       streetAddress: contact?.address ?? "",
-      addressLocality: "Accra",
+      addressLocality: "Tema",
+      addressRegion: "Greater Accra",
       addressCountry: "GH",
     }),
     hasMap: contact?.directions_url ?? "",
-    areaServed: { "@type": "City", name: "Accra" },
+    areaServed: [
+      { "@type": "City", name: "Tema" },
+      { "@type": "City", name: "Accra" },
+    ],
+    sameAs: socialProfiles(contact).map((p) => p.url),
     currenciesAccepted: "GHS",
     paymentAccepted: "Mobile Money",
   });

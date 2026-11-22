@@ -8,7 +8,6 @@ import {
   Inbox,
   LayoutDashboard,
   MessageSquare,
-  Settings,
   ShieldCheck,
   Star,
 } from "lucide-react";
@@ -41,7 +40,7 @@ const GROUPS: NavGroup[] = [
     label: "Account",
     items: [
       { href: "/customer/verify", label: "Verify identity", icon: ShieldCheck },
-      { href: "/customer/settings", label: "Settings", icon: Settings },
+      // Settings is in the account menu at the foot of the sidebar.
     ],
   },
 ];

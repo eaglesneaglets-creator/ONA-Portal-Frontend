@@ -8,9 +8,9 @@ import {
   CheckSquare,
   CreditCard,
   FolderKanban,
+  Globe,
   LayoutDashboard,
   MessageCircleQuestion,
-  Settings,
   SlidersHorizontal,
   ShieldCheck,
   Store,
@@ -57,15 +57,14 @@ const GROUPS: NavGroup[] = [
   {
     label: "Content",
     items: [
+      { href: "/admin/website", label: "Website", icon: Globe },
       { href: "/admin/catalogue", label: "Studio & prices", icon: Store },
       { href: "/admin/content", label: "Questions & contact", icon: MessageCircleQuestion },
       { href: "/admin/business", label: "Business settings", icon: SlidersHorizontal },
     ],
   },
-  {
-    label: "You",
-    items: [{ href: "/admin/settings", label: "Your account", icon: Settings }],
-  },
+  // "Your account" lives in the account menu at the foot of the sidebar,
+  // not here: one place for it, and room in the sidebar for what comes next.
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {

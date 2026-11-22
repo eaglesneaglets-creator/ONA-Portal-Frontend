@@ -21,7 +21,7 @@ export const revalidate = 60;
 export const metadata: Metadata = publicPage({
   title: "Contact",
   description:
-    "Call, WhatsApp, email or visit ONA Records in Accra.",
+    "Call, WhatsApp, email or visit ONA Records in Tema.",
   path: "/contact",
 });
 

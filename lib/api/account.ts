@@ -73,6 +73,12 @@ export interface Contact {
   email: string;
   address: string;
   directions_url: string;
+  /** ONA's own profiles: footer links, and schema.org sameAs for Google. */
+  instagram_url: string;
+  facebook_url: string;
+  linkedin_url: string;
+  tiktok_url: string;
+  youtube_url: string;
 }
 
 export const contactApi = {

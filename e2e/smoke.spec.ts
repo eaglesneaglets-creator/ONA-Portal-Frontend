@@ -11,7 +11,8 @@ import { expect, test } from "@playwright/test";
 test("homepage renders with its two ways in", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/ONA/i);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(/book the room/i);
+  // No backend here, so the hero shows its built-in headline (staff can change it in the console).
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Record.Keep your money safe.");
   await expect(page.getByRole("link", { name: "See rooms & prices" })).toHaveAttribute("href", "/studio");
   // On the homepage a header link is a section of the page: it scrolls there
   // and stays on the page. (The phone menu has its own check in the header.)

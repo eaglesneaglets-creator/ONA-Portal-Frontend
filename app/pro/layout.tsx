@@ -6,7 +6,6 @@ import {
   Inbox,
   LayoutDashboard,
   MessageSquare,
-  Settings,
   UserRound,
 } from "lucide-react";
 
@@ -29,7 +28,8 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/pro/profile", label: "My profile", icon: UserRound, pending: true },
       { href: "/pro/status", label: "Approval status", icon: BadgeCheck, pending: true },
-      { href: "/pro/settings", label: "Settings", icon: Settings, pending: true },
+      // Settings belongs in the account menu at the foot of the sidebar, as
+      // on the other dashboards, once a professional settings page exists.
     ],
   },
 ];

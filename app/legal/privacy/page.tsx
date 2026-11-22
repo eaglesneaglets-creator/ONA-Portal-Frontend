@@ -34,7 +34,7 @@ const SECTIONS: LegalSection[] = [
   {
     title: "1. Who we are",
     points: [
-      <>ONA Records Creative Services runs a recording studio in Accra and this booking site. We decide how the information on this page is used, which makes us responsible for it under Ghana&apos;s Data Protection Act, 2012 (Act 843).</>,
+      <>ONA Records Creative Services runs a recording studio in Tema and this booking site. We decide how the information on this page is used, which makes us responsible for it under Ghana&apos;s Data Protection Act, 2012 (Act 843).</>,
       <>To ask anything about your information, use the details on our <Link href="/contact" className="font-semibold text-ink underline underline-offset-4">contact page</Link>.</>,
     ],
   },

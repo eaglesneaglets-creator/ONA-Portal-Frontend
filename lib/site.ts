@@ -17,7 +17,7 @@ export const SITE_URL = (
 export const SITE_NAME = "ONA Records";
 
 /** Alt text of the share card (app/opengraph-image.tsx). */
-export const OG_IMAGE_ALT = "ONA Records: book studio time in Accra";
+export const OG_IMAGE_ALT = "ONA Records: book studio time in Tema";
 
 /** Only production is indexed; staging and previews must never appear in search. */
 export const IS_PRODUCTION = process.env.NEXT_PUBLIC_ENVIRONMENT === "production";
