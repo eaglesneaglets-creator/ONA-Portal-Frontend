@@ -74,7 +74,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         </ul>
 
         <p className="pt-7 text-[10.5px] opacity-70">
-          ONA Records Creative Services · Accra, Ghana
+          ONA Records Creative Services · Tema, Ghana
         </p>
       </aside>
 

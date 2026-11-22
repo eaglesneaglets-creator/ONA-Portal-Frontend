@@ -38,7 +38,7 @@ export default async function Image() {
           <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: 2 }}>ONA RECORDS</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ fontSize: 76, fontWeight: 800, lineHeight: 1.05 }}>Book studio time in Accra</div>
+          <div style={{ fontSize: 76, fontWeight: 800, lineHeight: 1.05 }}>Book studio time in Tema</div>
           <div style={{ fontSize: 34, opacity: 0.9 }}>Recording rooms and engineers. Clear prices. Mobile Money.</div>
         </div>
       </div>

@@ -13,12 +13,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { type Contact, contactApi } from "@/lib/api/account";
 import { showSaveError } from "@/lib/forms";
 
-const EMPTY: Contact = { phone: "", whatsapp: "", email: "", address: "", directions_url: "" };
+const EMPTY: Contact = {
+  phone: "", whatsapp: "", email: "", address: "", directions_url: "",
+  instagram_url: "", facebook_url: "", linkedin_url: "", tiktok_url: "", youtube_url: "",
+};
+
+const SOCIAL: { key: keyof Contact; label: string; placeholder: string }[] = [
+  { key: "instagram_url", label: "Instagram", placeholder: "https://www.instagram.com/…" },
+  { key: "facebook_url", label: "Facebook", placeholder: "https://www.facebook.com/…" },
+  { key: "tiktok_url", label: "TikTok", placeholder: "https://www.tiktok.com/@…" },
+  { key: "youtube_url", label: "YouTube", placeholder: "https://www.youtube.com/@…" },
+  { key: "linkedin_url", label: "LinkedIn", placeholder: "https://www.linkedin.com/company/…" },
+];
 
 /** Just the editable fields (the API also sends updated_at). */
-const fields = (c: Contact): Contact => ({
-  phone: c.phone, whatsapp: c.whatsapp, email: c.email, address: c.address, directions_url: c.directions_url,
-});
+const fields = (c: Contact): Contact =>
+  Object.fromEntries((Object.keys(EMPTY) as (keyof Contact)[]).map((k) => [k, c[k] ?? ""])) as unknown as Contact;
 
 /**
  * ONA's contact details, as the public /contact page and the privacy policy
@@ -70,7 +80,8 @@ export function ContactEditor() {
         <CardHeader>
           <CardTitle className="text-[18px] font-black">Contact details</CardTitle>
           <CardDescription>
-            Shown on the Contact page and used by the privacy policy. Leave a field blank to hide it.
+            Shown on the Contact page and used by the privacy policy; the social profiles appear in the
+            site&apos;s footer. Leave a field blank to hide it.
           </CardDescription>
           <CardAction>
             <Button asChild variant="outline" className="h-11 md:h-9">
@@ -99,11 +110,25 @@ export function ContactEditor() {
               </div>
               <TextField id="c-email" label="Email" type="email" inputMode="email" placeholder="hello@…"
                 value={form.email} onChange={(v) => edit("email", v)} error={err("email")} />
-              <TextField id="c-address" label="Studio address" placeholder="Street, area, Accra"
+              <TextField id="c-address" label="Studio address" placeholder="Street, Community 8, Tema"
                 value={form.address} onChange={(v) => edit("address", v)} error={err("address")} />
               <TextField id="c-directions" label="Google Maps link (optional)" type="url" inputMode="url"
                 placeholder="https://maps.app.goo.gl/…" value={form.directions_url}
                 onChange={(v) => edit("directions_url", v)} error={err("directions_url")} />
+              <fieldset className="grid gap-4 border-t border-border-soft pt-4">
+                <legend className="mb-1 text-[15px] font-black text-ink">Social profiles</legend>
+                <p className="-mt-2 text-[13.5px] text-ink-dim">
+                  ONA&apos;s own pages. They appear under &ldquo;Follow ONA&rdquo; in the footer and tell Google these
+                  profiles are the same business. Paste the full link from the profile page.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {SOCIAL.map((s) => (
+                    <TextField key={s.key} id={`c-${s.key}`} label={s.label} type="url" inputMode="url"
+                      placeholder={s.placeholder} value={form[s.key]}
+                      onChange={(v) => edit(s.key, v)} error={err(s.key)} />
+                  ))}
+                </div>
+              </fieldset>
             </>
           )}
         </CardContent>

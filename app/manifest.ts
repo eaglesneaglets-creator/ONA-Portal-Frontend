@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "ONA Records",
     short_name: "ONA Records",
-    description: "Book a recording room and engineer at ONA Records in Accra.",
+    description: "Book a recording room and engineer at ONA Records in Tema.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

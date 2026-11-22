@@ -458,6 +458,40 @@
   .ona-pop, .ona-meter-lit, .ona-rise { animation: none; }
 }
 
+/* Reviews marquee (components/landing/marquee.tsx): one row that scrolls
+   itself, the shadcn/Magic UI "Marquee" pattern. Two identical tracks slide
+   left together; the second (aria-hidden) fills the gap, so the loop is
+   seamless. It pauses on hover, on keyboard focus and with its Pause button
+   (WCAG 2.2.2); the edges fade. With reduced motion it stands still and
+   becomes a row you swipe or scroll, without the duplicate. */
+@keyframes ona-marquee {
+  to { transform: translateX(calc(-100% - var(--marquee-gap))); }
+}
+.ona-marquee {
+  --marquee-gap: 1rem;
+  display: flex;
+  gap: var(--marquee-gap);
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+}
+.ona-marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--marquee-gap);
+  animation: ona-marquee var(--marquee-duration, 60s) linear infinite;
+}
+.ona-marquee:hover .ona-marquee-track,
+.ona-marquee:focus-within .ona-marquee-track,
+.ona-marquee[data-paused] .ona-marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ona-marquee { overflow-x: auto; mask-image: none; scroll-snap-type: x mandatory; }
+  .ona-marquee-track { animation: none; }
+  .ona-marquee-track > * { scroll-snap-align: start; }
+  .ona-marquee-track[aria-hidden="true"] { display: none; }
+}
+
 /* ── Public pages: scrolling, the hero, reveals ────────────────────────── */
 /* In-page links glide to their section (each section's own scroll-mt keeps
    it clear of the sticky bar). <html data-scroll-behavior="smooth"> tells

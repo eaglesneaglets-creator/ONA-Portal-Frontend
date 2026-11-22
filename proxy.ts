@@ -63,7 +63,11 @@ export function proxy(request: NextRequest) {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'report-sample'${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' blob: data:",
+    // The API origin serves the media library's images (lib/media.ts). Pages
+    // normally get them resized through /_next/image ('self'); this covers
+    // the cases that load them directly: a local API, which the optimiser
+    // refuses, and any image rendered unoptimised.
+    `img-src 'self' blob: data: ${API_ORIGIN}`.trim(),
     "font-src 'self'",
     `connect-src 'self' ${API_ORIGIN}${dev ? " ws:" : ""}`.trim(),
     "object-src 'none'",

@@ -51,7 +51,7 @@ function icsFor(b: Booking): string {
     `DTEND:${stamp(b.end_at)}`,
     `SUMMARY:${esc(`${b.service.name} at ONA Records`)}`,
     `DESCRIPTION:${esc(`${b.room.name} with ${b.engineer.name}. Reference ${b.reference}.`)}`,
-    "LOCATION:ONA Records\\, Accra",
+    "LOCATION:ONA Records\\, Tema",
     "END:VEVENT",
     "END:VCALENDAR",
   ].join("\r\n");
