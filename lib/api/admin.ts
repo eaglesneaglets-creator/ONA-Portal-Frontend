@@ -260,6 +260,13 @@ export interface AdminMedia {
   /** Where the site shows it, in words; empty when it can be deleted. */
   used_by: string[];
   created_at: string;
+  /** Under 1600 px on its long side: soft on a laptop or a sharp phone screen. */
+  is_small: boolean;
+  /** AI upscaling of this photo: "" never asked, pending, done (a new copy exists) or failed. */
+  enhance_status: "" | "pending" | "done" | "failed";
+  enhance_error: string;
+  /** Set on an enhanced copy: the photo it was made from. */
+  enhanced_from: string | null;
 }
 
 export interface AdminSite {
@@ -464,6 +471,8 @@ export const adminApi = {
   },
   updateMedia: (id: string, altText: string) => api.patch<AdminMedia>(`/admin/media/${id}/`, { alt_text: altText }, { retries: 0 }),
   removeMedia: (id: string) => api.delete<void>(`/admin/media/${id}/`, { retries: 0 }),
+  /** Queue an AI upscale (202, photo marked pending); the worker swaps the site onto the new copy. */
+  enhanceMedia: (id: string) => api.post<AdminMedia>(`/admin/media/${id}/enhance/`, undefined, { retries: 0 }),
   gallery: () => api.get<AdminGalleryItem[]>("/admin/gallery/"),
   createGalleryItem: (input: { media: string; caption?: string; is_published?: boolean; sort_order?: number }) =>
     api.post<AdminGalleryItem>("/admin/gallery/", input, { retries: 0 }),

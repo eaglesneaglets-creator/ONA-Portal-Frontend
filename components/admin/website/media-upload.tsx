@@ -41,7 +41,11 @@ export function MediaUpload({ onUploaded, compact = false }: { onUploaded: (m: A
     setError(null);
     try {
       const m = await adminApi.uploadMedia(file, alt.trim());
-      toast.success("Image uploaded.");
+      if (m.is_small) {
+        toast.warning(`Uploaded, but at ${m.width}×${m.height} it may look soft. Use a larger original, or Enhance it in the Media library.`);
+      } else {
+        toast.success("Image uploaded.");
+      }
       setFile(null);
       setAlt("");
       if (fileRef.current) fileRef.current.value = "";
