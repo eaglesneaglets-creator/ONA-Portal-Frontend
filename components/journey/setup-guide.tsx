@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LevelMeter } from "@/components/journey/level-meter";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 /**
@@ -61,20 +62,24 @@ export function SetupGuide({
 }) {
   const first = openKey ?? items.find((i) => !i.done)?.key ?? null;
   const [open, setOpen] = useState<string | null>(first);
-  const [collapsed, setCollapsed] = useState(false);
+  // A phone opens on the day's work, not a checklist: the guide starts
+  // folded to its header and progress there, until someone opens it.
+  const isMobile = useIsMobile();
+  const [collapsedPref, setCollapsed] = useState<boolean | null>(null);
+  const collapsed = collapsedPref ?? isMobile;
   const count = items.filter((i) => i.done).length;
   const listId = useId();
   const groups = [...new Set(items.map((i) => i.group ?? ""))];
 
   return (
-    <Card className="mb-6 gap-0 overflow-hidden py-0" data-testid={testId} data-tour={testId}>
-      <div className="bg-ona-wash relative border-b border-border-soft px-5 py-5 sm:px-6">
+    <Card className="mb-6 gap-0 overflow-hidden py-0 max-md:mb-4" data-testid={testId} data-tour={testId}>
+      <div className={cn("bg-ona-wash relative px-5 py-5 max-md:px-4 max-md:py-4 sm:px-6", !collapsed && "border-b border-border-soft")}>
         <div className="flex items-start gap-4">
           <div className="min-w-0 flex-1">
             <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-ona-red">{eyebrow}</p>
             <h2 className="mt-0.5 text-[clamp(20px,2.4vw,24px)] font-black leading-tight tracking-tight text-ink text-balance">{title}</h2>
-            <p className="mt-1 max-w-[62ch] text-[14.5px] text-ink-dim">{subtitle}</p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
+            <p className={cn("mt-1 max-w-[62ch] text-[14.5px] text-ink-dim", collapsed && "max-md:hidden")}>{subtitle}</p>
+            <div className="mt-4 flex flex-wrap items-center gap-3 max-md:mt-3">
               <span className="rounded-full border border-border-default bg-surface px-3 py-1 text-[13px] font-bold tabular-nums text-ink" data-testid={testId ? `${testId}-count` : undefined}>
                 {count} / {items.length} completed
               </span>

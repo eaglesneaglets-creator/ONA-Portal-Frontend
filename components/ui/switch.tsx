@@ -12,7 +12,9 @@ function Switch({
     <SwitchPrimitive.Root
       data-slot="switch"
       className={cn(
-        "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-transparent shadow-xs transition-all outline-hidden",
+        // The pseudo-element stretches the tap area to 44px tall without
+        // changing how the switch looks (ADR-013 touch targets).
+        "peer relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-transparent shadow-xs transition-all outline-hidden after:absolute after:-inset-y-2.5 after:inset-x-0 after:content-['']",
         "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
         "data-[state=checked]:bg-ona-blue data-[state=unchecked]:bg-border-default",
         className

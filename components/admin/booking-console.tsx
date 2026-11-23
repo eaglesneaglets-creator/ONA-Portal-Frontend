@@ -165,6 +165,31 @@ function FirstVisit() {
   );
 }
 
+/** The phone row's quieter first-visit mark: a dot with a label for screen readers. */
+function FirstVisitDot() {
+  return (
+    <span className="flex-none rounded-full bg-ona-gradient px-1.5 py-px text-[10.5px] font-black uppercase tracking-wider text-white">
+      New
+      <span className="sr-only"> — first visit</span>
+    </span>
+  );
+}
+
+/** Rows grouped under their day, in the order given; today and tomorrow named. */
+function byDay(rows: StaffBooking[]): { day: string; items: StaffBooking[] }[] {
+  const today = fmtShortDay(new Date().toISOString());
+  const tomorrow = fmtShortDay(new Date(Date.now() + 86_400_000).toISOString());
+  const groups: { day: string; items: StaffBooking[] }[] = [];
+  for (const b of rows) {
+    const d = fmtShortDay(b.start_at);
+    const day = d === today ? `Today · ${d}` : d === tomorrow ? `Tomorrow · ${d}` : d;
+    const last = groups[groups.length - 1];
+    if (last && last.day === day) last.items.push(b);
+    else groups.push({ day, items: [b] });
+  }
+  return groups;
+}
+
 export function BookingList({
   rows,
   showCustomer = true,
@@ -178,36 +203,50 @@ export function BookingList({
   const { view } = useConsole();
 
   if (isMobile) {
+    // Phones: one ~72px row per booking, grouped under its day, instead of a
+    // 180px card each. The whole row opens the sheet, which holds every
+    // action — so no "…" menu competing for the same tap.
     return (
-      <ul className="space-y-3">
-        {rows.map((b) => (
-          <li key={b.id} data-testid="admin-booking-row" className="rounded-xl border border-border-default bg-surface p-4">
-            <div className="flex items-start justify-between gap-2">
-              <button type="button" onClick={() => view(b.id)} className="min-w-0 text-left">
-                <p className="flex flex-wrap items-center gap-2 font-bold text-ink">
-                  {showCustomer ? b.customer.name : b.room.name}
-                  {b.is_first_booking ? <FirstVisit /> : null}
-                </p>
-                <p className="text-[14px] text-ink">
-                  {fmtShortDay(b.start_at)} · {fmtTime(b.start_at)}–{fmtTime(b.end_at)}
-                </p>
-                <p className="text-[13px] text-ink-mute">
-                  {showCustomer ? `${b.room.name} · ` : ""}
-                  <span className="whitespace-nowrap font-mono">{b.reference}</span>
-                </p>
-              </button>
-              <RowActions booking={b} />
-            </div>
-            <div className="mt-3 flex items-center justify-between border-t border-border-soft pt-3">
-              <StatusPill status={b.status} />
-              <span className="text-right">
-                <b className="block tabular-nums text-ink">{b.total_display}</b>
-                <PaidNote booking={b} />
-              </span>
-            </div>
-          </li>
+      <div className="flex flex-col gap-2">
+        {byDay(rows).map(({ day, items }) => (
+          <section key={day} aria-label={day} className="flex flex-col gap-2">
+            <h2 className="px-1 text-[13px] font-bold tracking-[0.06em] text-ink-dim uppercase">{day}</h2>
+            <ul className="overflow-hidden rounded-2xl border border-border-default bg-surface">
+              {items.map((b) => (
+                <li key={b.id} data-testid="admin-booking-row" className="border-b border-border-soft last:border-b-0">
+                  <button
+                    type="button"
+                    onClick={() => view(b.id)}
+                    aria-label={`${showCustomer ? b.customer.name : b.room.name}, ${fmtShortDay(b.start_at)} ${fmtTime(b.start_at)}, ${b.reference}`}
+                    className="flex min-h-[72px] w-full items-center gap-3 px-3.5 py-2.5 text-left outline-none focus-visible:bg-surface-sunk"
+                  >
+                    <span className="flex w-12 flex-none flex-col tabular-nums">
+                      <b className="text-[16px] font-black text-ink">{fmtTime(b.start_at)}</b>
+                      <span className="text-[13px] text-ink-dim">{hours(b)} h</span>
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <b className="truncate text-[16px] font-bold text-ink">
+                          {showCustomer ? b.customer.name : b.room.name}
+                        </b>
+                        {b.is_first_booking ? <FirstVisitDot /> : null}
+                      </span>
+                      <span className="truncate text-[14px] text-ink-dim">
+                        {showCustomer ? `${b.room.name} · ` : ""}
+                        <span className="font-mono text-[13px]">{b.reference}</span>
+                      </span>
+                    </span>
+                    <span className="flex flex-none flex-col items-end gap-1">
+                      <StatusPill status={b.status} />
+                      <span className="text-[13px] font-bold tabular-nums text-ink">{b.total_display}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
         ))}
-      </ul>
+      </div>
     );
   }
 
@@ -526,11 +565,41 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
   }, [id, version]);
 
   const d = detail && detail.id === id ? detail : null;
+  const isMobile = useIsMobile();
+
+  // The lifecycle buttons, plus the invoice (on desktop it is also in the
+  // row's "…" menu; a phone row has none). Top of the sheet on desktop; on a
+  // phone, a bar pinned to the bottom, where the thumb is.
+  const actions = d ? (
+    <>
+      {d.allowed_actions.map((a) => {
+        const { label, icon: Icon } = ACTIONS[a];
+        return (
+          <Button
+            key={a}
+            variant={a === "cancel" ? "outline" : "default"}
+            className={`h-12 max-md:flex-1 md:h-9 ${a === "cancel" ? "text-err" : ""}`}
+            onClick={() => act(d, a)}
+          >
+            <Icon aria-hidden="true" />
+            {label}
+          </Button>
+        );
+      })}
+      <Button variant="outline" className="h-12 max-md:flex-1 md:h-9" onClick={() => void download(d)}>
+        <FileText aria-hidden="true" />
+        Invoice
+      </Button>
+    </>
+  ) : null;
 
   return (
     <Sheet open={id !== null} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full gap-0 overflow-y-auto p-0 data-[side=right]:sm:max-w-lg">
-        <SheetHeader className="border-b border-border-soft p-5">
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className="w-full gap-0 overflow-y-auto p-0 data-[side=right]:sm:max-w-lg data-[side=bottom]:max-h-[92dvh] data-[side=bottom]:rounded-t-[22px]"
+      >
+        <SheetHeader className="border-b border-border-soft p-5 pr-14">
           <SheetTitle className="flex flex-wrap items-center gap-2 text-[19px] font-black">
             {d ? (
               <>
@@ -542,7 +611,7 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
               "Booking"
             )}
           </SheetTitle>
-          <SheetDescription>{d ? `${d.room.name} · ${fmtDay(d.start_at)}` : "Loading the booking…"}</SheetDescription>
+          <SheetDescription>{d ? `${d.customer.name} · ${d.room.name} · ${fmtDay(d.start_at)}` : "Loading the booking…"}</SheetDescription>
         </SheetHeader>
 
         {failed ? (
@@ -555,24 +624,7 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
           </div>
         ) : (
           <div className="space-y-6 p-5">
-            {d.allowed_actions.length ? (
-              <div className="flex flex-wrap gap-2">
-                {d.allowed_actions.map((a) => {
-                  const { label, icon: Icon } = ACTIONS[a];
-                  return (
-                    <Button
-                      key={a}
-                      variant={a === "cancel" ? "outline" : "default"}
-                      className={`h-11 md:h-9 ${a === "cancel" ? "text-err" : ""}`}
-                      onClick={() => act(d, a)}
-                    >
-                      <Icon aria-hidden="true" />
-                      {label}
-                    </Button>
-                  );
-                })}
-              </div>
-            ) : null}
+            <div className="hidden flex-wrap gap-2 md:flex">{actions}</div>
 
             <Section title="Session">
               <Row label="When">
@@ -706,6 +758,11 @@ function BookingSheet({ id, version, onClose }: { id: string | null; version: nu
             </Section>
           </div>
         )}
+        {d && !failed ? (
+          <div className="sticky bottom-0 mt-auto flex flex-wrap gap-2 border-t border-border-soft bg-surface px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(23,21,31,0.06)] md:hidden">
+            {actions}
+          </div>
+        ) : null}
       </SheetContent>
     </Sheet>
   );

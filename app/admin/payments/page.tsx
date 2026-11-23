@@ -42,7 +42,12 @@ export default function AdminPaymentsPage() {
       <div className="mx-auto w-full max-w-7xl">
         <PageHeader title="Payments" description="Every payment, what ONA holds, and the commission on each." />
 
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="mb-4 flex items-center gap-2">
+          <SearchBox
+            label="Search payments by booking reference, customer or provider reference"
+            placeholder="Name or ref"
+            onSearch={onSearch}
+          />
           <Select
             value={status}
             onValueChange={(s) => {
@@ -50,7 +55,7 @@ export default function AdminPaymentsPage() {
               setPage(1);
             }}
           >
-            <SelectTrigger aria-label="Status" className="h-11 w-full bg-surface sm:w-44 md:h-9">
+            <SelectTrigger aria-label="Status" className="h-11 w-[40%] flex-none bg-surface sm:w-44 md:h-9">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -60,7 +65,6 @@ export default function AdminPaymentsPage() {
               <SelectItem value="failed">Failed</SelectItem>
             </SelectContent>
           </Select>
-          <SearchBox label="Search payments" placeholder="Booking reference, customer or provider ref" onSearch={onSearch} />
         </div>
 
         {data === null ? (
@@ -167,27 +171,35 @@ function PaymentTable({ rows }: { rows: StaffTransaction[] }) {
 }
 
 function PaymentCards({ rows }: { rows: StaffTransaction[] }) {
+  // Phones: one list, a ~100px row per payment. Name left, amount right on
+  // its own line so "GHS 200.00" never breaks; the money detail underneath.
   return (
-    <ul className="space-y-3">
+    <ul className="overflow-hidden rounded-2xl border border-border-default bg-surface">
       {rows.map((t) => (
-        <li key={t.id} data-testid="admin-payment-row" className="rounded-xl border border-border-default bg-surface p-4">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="font-bold text-ink">{t.customer.name}</p>
-              <p className="text-[13px] text-ink-mute">
-                {fmtShortDay(t.created_at)} · {t.is_manual ? `${t.method_display} · recorded by staff` : t.provider_display}
+        <li key={t.id} data-testid="admin-payment-row" className="border-b border-border-soft px-3.5 pt-3 pb-1 last:border-b-0">
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[16px] font-bold text-ink">{t.customer.name}</p>
+              <p className="truncate text-[13.5px] text-ink-dim">
+                {fmtShortDay(t.created_at)} · {t.is_manual ? `${t.method_display}, by staff` : t.provider_display}
               </p>
             </div>
-            <b className="tabular-nums text-ink">{t.amount_display}</b>
+            <div className="flex flex-none flex-col items-end gap-1">
+              <b className="text-[16px] whitespace-nowrap tabular-nums text-ink">{t.amount_display}</b>
+              <StatusChip t={t} />
+            </div>
           </div>
-          <div className="mt-3 flex items-center justify-between border-t border-border-soft pt-3">
-            <StatusChip t={t} />
+          <div className="flex items-center justify-between gap-3">
             <BookingLink id={t.booking.id} reference={t.booking.reference} />
+            <span className="min-w-0 truncate text-right text-[12.5px] text-ink-mute">
+              Held {t.held_display} · {t.commission_percent}%
+            </span>
           </div>
-          <p className="mt-1 text-[12.5px] text-ink-mute">
-            Commission {t.commission_percent}% · held now {t.held_display}
-            {t.fee_pesewas ? ` · + ${t.fee_display} Paystack fee (charged ${t.charged_display})` : ""}
-          </p>
+          {t.fee_pesewas ? (
+            <p className="-mt-1 pb-2 text-[12.5px] text-ink-mute">
+              + {t.fee_display} Paystack fee (charged {t.charged_display})
+            </p>
+          ) : null}
         </li>
       ))}
     </ul>

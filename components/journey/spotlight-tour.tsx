@@ -23,6 +23,16 @@ export interface TourStop {
 
 const PAD = 8;
 
+/**
+ * The first visible element carrying this tour target. A destination can be
+ * marked twice — the sidebar link and the phone's tab — and only one of them
+ * is on screen at a time.
+ */
+function findTarget(target: string): HTMLElement | undefined {
+  return [...document.querySelectorAll<HTMLElement>(`[data-tour="${target}"]`)]
+    .find((el) => el.getClientRects().length > 0);
+}
+
 export function SpotlightTour({ stops, open, onDone }: { stops: TourStop[]; open: boolean; onDone: () => void }) {
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -33,8 +43,7 @@ export function SpotlightTour({ stops, open, onDone }: { stops: TourStop[]; open
   // phone, and lighting a 0×0 box there would point at nothing.
   const live = stops.filter((s) => {
     if (typeof document === "undefined") return false;
-    const el = document.querySelector(`[data-tour="${s.target}"]`);
-    return !!el && el.getClientRects().length > 0;
+    return !!findTarget(s.target);
   });
   const stop = live[i];
 
@@ -52,13 +61,13 @@ export function SpotlightTour({ stops, open, onDone }: { stops: TourStop[]; open
     // A target taller than half the screen (the launch checklist) is lit from
     // its top only, so the coach card has room below it.
     const measure = () => {
-      const el = document.querySelector<HTMLElement>(`[data-tour="${target}"]`);
+      const el = findTarget(target);
       if (!el) return;
       const r = el.getBoundingClientRect();
       const cap = window.innerHeight * 0.5;
       setRect(r.height > cap ? new DOMRect(r.x, r.y, r.width, cap) : r);
     };
-    const el = document.querySelector<HTMLElement>(`[data-tour="${target}"]`);
+    const el = findTarget(target);
     const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
     if (el && el.offsetHeight > window.innerHeight * 0.5) {
       // Its top, clear of the sticky page header.

@@ -77,13 +77,14 @@ export function ContactEditor() {
   return (
     <Card>
       <form ref={formRef} onSubmit={save} noValidate>
-        <CardHeader>
+        <CardHeader className="max-sm:grid-cols-1!">
           <CardTitle className="text-[18px] font-black">Contact details</CardTitle>
           <CardDescription>
             Shown on the Contact page and used by the privacy policy; the social profiles appear in the
             site&apos;s footer. Leave a field blank to hide it.
           </CardDescription>
-          <CardAction>
+          {/* Under the text on a phone, so the description keeps the full width. */}
+          <CardAction className="max-sm:col-start-1 max-sm:row-span-1 max-sm:row-start-3 max-sm:mt-2 max-sm:justify-self-start">
             <Button asChild variant="outline" className="h-11 md:h-9">
               <Link href="/contact" target="_blank">
                 <ExternalLink aria-hidden="true" />

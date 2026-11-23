@@ -55,13 +55,17 @@ export default function AdminKycPage() {
         }}
         className="mb-4"
       >
-        <TabsList className="h-auto flex-wrap">
-          {FILTERS.map((f) => (
-            <TabsTrigger key={f.value} value={f.value} className="min-h-9">
-              {f.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        {/* One swipeable row on a phone (four tabs do not fit at 360px and
+            used to wrap onto the list); wraps from md up. */}
+        <div className="-mx-4 overflow-x-auto px-4 max-md:scroll-fade-x md:mx-0 md:px-0">
+          <TabsList className="h-auto md:flex-wrap">
+            {FILTERS.map((f) => (
+              <TabsTrigger key={f.value} value={f.value} className="min-h-11 flex-none px-3 md:min-h-9">
+                {f.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
       </Tabs>
 
       {data === null ? (

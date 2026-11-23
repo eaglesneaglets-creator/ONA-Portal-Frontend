@@ -28,7 +28,7 @@ export function SearchBox({
   }, [value, onSearch]);
 
   return (
-    <div className="relative w-full sm:max-w-xs">
+    <div className="relative w-full min-w-0 sm:max-w-xs">
       <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-mute" />
       <Input
         type="search"

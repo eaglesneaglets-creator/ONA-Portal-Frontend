@@ -560,3 +560,11 @@
     }
   }
 }
+
+/* A sideways-scrolling strip (tabs, section chips) on a phone: the right edge
+   fades so it is clear there is more to swipe to. */
+@utility scroll-fade-x {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  scrollbar-width: none;
+}

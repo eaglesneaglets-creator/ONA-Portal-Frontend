@@ -155,8 +155,9 @@ export default function NewBookingPage() {
       <PageHeader
         title="New booking"
         description="Book a session for a customer who called or walked in. Times are Accra time."
+        back={{ href: "/admin/bookings", label: "Bookings" }}
         actions={
-          <Button asChild variant="outline" className="h-11 md:h-9">
+          <Button asChild variant="outline" className="h-11 max-md:hidden md:h-9">
             <Link href="/admin/bookings">Back to bookings</Link>
           </Button>
         }
@@ -168,8 +169,8 @@ export default function NewBookingPage() {
         </p>
       ) : null}
 
-      <form ref={formRef} onSubmit={(e) => void submit(e)} noValidate className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
-        <div className="grid gap-6">
+      <form ref={formRef} onSubmit={(e) => void submit(e)} noValidate className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div className="grid min-w-0 grid-cols-1 gap-6">
           {/* Customer */}
           <Card>
             <CardHeader>
@@ -219,7 +220,7 @@ export default function NewBookingPage() {
             <CardHeader>
               <CardTitle className="text-[17px] font-black">Session</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
+            <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <PickField id="room" label="Room" value={room} onChange={setRoom}
                 options={(catalogue?.rooms ?? []).map((r) => ({ value: r.id, label: r.hourly_rate_pesewas ? `${r.name} · hire ${r.hourly_rate_display}/hr` : r.name }))} />
               <PickField id="engineer" label="Engineer" value={engineer} onChange={setEngineer}
@@ -268,7 +269,7 @@ export default function NewBookingPage() {
             <CardHeader>
               <CardTitle className="text-[17px] font-black">Professional (optional)</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
+            <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <PickField id="pro" label="Session professional" value={pro} onChange={setPro}
                 options={[{ value: "none", label: "No professional" },
                   ...pros.map((p) => ({ value: p.id, label: `${p.stage_name ? `${p.stage_name} (${p.name})` : p.name} · ${p.rate_display}` }))]} />
@@ -302,13 +303,28 @@ export default function NewBookingPage() {
               <PickField id="status" label="Start as" value={status} onChange={(v) => setStatus(v as "pending" | "confirmed")}
                 options={[{ value: "confirmed", label: "Confirmed — agreed with the customer" }, { value: "pending", label: "Pending — still to confirm" }]} />
               <FormError message={formError} />
-              <Button type="submit" disabled={busy || !catalogue} className="h-12 w-full text-[15px] font-bold">
+              <Button type="submit" disabled={busy || !catalogue} className="h-12 w-full text-[15px] font-bold max-md:hidden">
                 <CalendarPlus aria-hidden="true" />
                 {busy ? "Booking…" : "Book session"}
               </Button>
             </CardContent>
           </Card>
         </aside>
+
+        {/* Phones: the total and the submit stay pinned to the bottom, so
+            the price is in view while any field changes, and booking is one
+            tap from anywhere in the form. A spacer keeps the summary clear. */}
+        <div aria-hidden="true" className="h-20 md:hidden" />
+        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-border-default bg-surface px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(23,21,31,0.06)] md:hidden">
+          <div className="min-w-0 flex-1">
+            <p className="text-[12.5px] text-ink-dim">Estimated total</p>
+            <p className="truncate text-[19px] font-black tabular-nums text-ink">{estimate ? previewGhs(estimate) : "—"}</p>
+          </div>
+          <Button type="submit" disabled={busy || !catalogue} className="h-12 flex-none px-5 text-[16px] font-bold">
+            <CalendarPlus aria-hidden="true" />
+            {busy ? "Booking…" : "Book session"}
+          </Button>
+        </div>
       </form>
     </div>
   );

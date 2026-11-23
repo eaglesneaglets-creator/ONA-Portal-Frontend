@@ -39,7 +39,8 @@ export function StatCard({
             aria-hidden="true"
             className={cn(
               "grid size-8 place-items-center rounded-md",
-              brand ? "bg-white/15 text-white" : "bg-surface-alt text-ona-blue",
+              // A half-width phone tile needs the room for its label.
+              brand ? "bg-white/15 text-white" : "bg-surface-alt text-ona-blue max-sm:hidden",
             )}
           >
             <Icon className="size-4" />
@@ -78,7 +79,7 @@ function Value({ value }: { value: React.ReactNode }) {
  *  left alone in its row spans it too, so there is never an orphan half. */
 export function StatGrid({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <ul aria-label={label} className="mb-6 grid grid-cols-2 gap-3 max-sm:[&>li:last-child:nth-child(even)]:col-span-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+    <ul aria-label={label} className="mb-6 grid grid-cols-2 gap-3 max-md:mb-4 max-sm:[&>li:last-child:nth-child(even)]:col-span-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
       {children}
     </ul>
   );

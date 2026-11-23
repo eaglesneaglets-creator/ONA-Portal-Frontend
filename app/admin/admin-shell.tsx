@@ -9,6 +9,7 @@ import {
   CreditCard,
   FolderKanban,
   Globe,
+  House,
   LayoutDashboard,
   MessageCircleQuestion,
   SlidersHorizontal,
@@ -21,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { PortalShell, type NavGroup } from "@/components/portal/portal-shell";
+import { PortalShell, type NavGroup, type TabItem } from "@/components/portal/portal-shell";
 import { Button } from "@/components/ui/button";
 import { RequireAuth } from "@/lib/auth/guard";
 
@@ -61,10 +62,20 @@ const GROUPS: NavGroup[] = [
       { href: "/admin/catalogue", label: "Studio & prices", icon: Store },
       { href: "/admin/content", label: "Questions & contact", icon: MessageCircleQuestion },
       { href: "/admin/business", label: "Business settings", icon: SlidersHorizontal },
+      // Reached from the account menu; hidden so the header can still name it.
+      { href: "/admin/settings", label: "Your account", hidden: true },
     ],
   },
   // "Your account" lives in the account menu at the foot of the sidebar,
   // not here: one place for it, and room in the sidebar for what comes next.
+];
+
+// A phone's bottom bar: the day's work. Everything else is under "More".
+const TABS: TabItem[] = [
+  { href: "/admin", label: "Today", icon: House },
+  { href: "/admin/bookings", label: "Bookings", icon: CalendarDays },
+  { href: "/admin/payments", label: "Payments", icon: CreditCard },
+  { href: "/admin/customers", label: "Customers", icon: Users },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -73,6 +84,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <PortalShell
         role="admin"
         groups={GROUPS}
+        tabs={TABS}
+        taskPaths={["/admin/bookings/new"]}
         actions={
           <Button asChild size="sm" className="h-11 md:h-8">
             <Link href="/admin/bookings/new">
