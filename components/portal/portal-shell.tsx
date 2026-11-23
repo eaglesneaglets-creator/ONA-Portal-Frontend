@@ -13,12 +13,15 @@
 
 "use client";
 
-import { ChevronsUpDown, LogOut, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
+import { ChevronsUpDown, LayoutGrid, LogOut, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
+import { cn } from "cn";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,11 +70,24 @@ export interface NavItem {
    * Delete this flag from an item when its page ships.
    */
   pending?: boolean;
+  /**
+   * Not listed in the sidebar or the phone's More menu (it is reached another
+   * way, e.g. the account menu), but still names the page in the header —
+   * otherwise "/customer/settings" would fall back to its parent, "Overview".
+   */
+  hidden?: boolean;
 }
 
 export interface NavGroup {
   label: string;
   items: NavItem[];
+}
+
+/** A destination in the phone's bottom tab bar. Four at most; "More" is added. */
+export interface TabItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
 }
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -92,11 +108,25 @@ function isActive(pathname: string, href: string, all: NavItem[]): boolean {
 export function PortalShell({
   role,
   groups,
+  tabs,
+  taskPaths,
   children,
   actions,
 }: {
   role: Role;
   groups: NavGroup[];
+  /**
+   * Phones only: the portal's four busiest destinations as a bottom tab bar,
+   * with everything else under "More". Given tabs, a phone drops the top bar
+   * (the page's own <h1> names it) and the hamburger. Without them, a phone
+   * keeps the top bar and the slide-in sidebar.
+   */
+  tabs?: TabItem[];
+  /**
+   * Task screens (a form) where a phone hides the tab bar: the page pins its
+   * own action bar to the bottom, and leaves by its back link.
+   */
+  taskPaths?: string[];
   children: React.ReactNode;
   /** Right side of the header — e.g. the primary action for this portal. */
   actions?: React.ReactNode;
@@ -104,6 +134,11 @@ export function PortalShell({
   const pathname = usePathname();
   const all = groups.flatMap((g) => g.items);
   const current = all.find((i) => isActive(pathname, i.href, all));
+  const visibleGroups = groups
+    .map((g) => ({ ...g, items: g.items.filter((i) => !i.hidden) }))
+    .filter((g) => g.items.length > 0);
+  const phoneTabs = tabs && tabs.length > 0;
+  const onTask = !!taskPaths?.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   return (
     <SidebarProvider>
@@ -125,11 +160,11 @@ export function PortalShell({
         </SidebarHeader>
 
         <SidebarContent>
-          {groups.map((group) => (
+          {visibleGroups.map((group) => (
             <SidebarGroup key={group.label}>
               {/* A single group whose name repeats the role label is noise;
                   only label groups when there is more than one to tell apart. */}
-              {groups.length > 1 ? <SidebarGroupLabel>{group.label}</SidebarGroupLabel> : null}
+              {visibleGroups.length > 1 ? <SidebarGroupLabel>{group.label}</SidebarGroupLabel> : null}
               <SidebarGroupContent>
                 <SidebarMenu>
                   {group.items.map((item) => (
@@ -161,7 +196,12 @@ export function PortalShell({
       {/* min-w-0: a wide table must scroll inside its own container, not
           stretch the whole content column past the viewport. */}
       <SidebarInset className="min-w-0 bg-surface-alt">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border-default bg-surface/90 px-3 backdrop-blur sm:px-4">
+        <header className={cn(
+          "sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border-default bg-surface/90 px-3 backdrop-blur sm:px-4",
+          // With a tab bar, a phone needs no top bar: the page's <h1> says
+          // where you are, and the 56px go back to the content.
+          phoneTabs && "max-md:hidden",
+        )}>
           <SidebarTrigger aria-label="Open navigation" className="size-11 md:size-8" />
           <Separator orientation="vertical" className="mx-1 data-vertical:h-5 data-vertical:self-center" />
           {/* Where-am-I label, not a heading: each page owns its single <h1>. */}
@@ -170,10 +210,177 @@ export function PortalShell({
           </p>
           {actions}
         </header>
-        {/* SidebarInset is the page's <main>; this is just its padding (QA F10). */}
-        <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+        {/* SidebarInset is the page's <main>; this is just its padding (QA F10).
+            Over a tab bar, the bottom padding keeps the last row clear of it. */}
+        <div className={cn(
+          "flex-1 px-4 py-6 sm:px-6 lg:px-8",
+          phoneTabs && "max-md:pt-5",
+          phoneTabs && !onTask && "max-md:pb-[calc(6rem+env(safe-area-inset-bottom))]",
+        )}>
+          {children}
+        </div>
       </SidebarInset>
+      {phoneTabs && !onTask ? <TabBar role={role} tabs={tabs} groups={visibleGroups} current={current} /> : null}
     </SidebarProvider>
+  );
+}
+
+/**
+ * The phone's bottom navigation: four tabs and "More". Thumb-reach, one tap
+ * to anywhere, and the app-like frame people expect on Android and iPhone.
+ * Hidden from md up, where the sidebar takes over.
+ */
+function TabBar({
+  role,
+  tabs,
+  groups,
+  current,
+}: {
+  role: Role;
+  tabs: TabItem[];
+  groups: NavGroup[];
+  current: NavItem | undefined;
+}) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const close = () => setMoreOpen(false);
+  const tabHrefs = new Set(tabs.map((t) => t.href));
+  const onTab = !!current && tabHrefs.has(current.href);
+
+  // What "More" holds: every built destination that is not already a tab.
+  // "Soon" items are left out on a phone — they are a roadmap, not a place.
+  const more = groups
+    .map((g) => ({ ...g, items: g.items.filter((i) => !tabHrefs.has(i.href) && !i.pending) }))
+    .filter((g) => g.items.length > 0);
+
+  return (
+    <nav
+      aria-label="Main"
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border-default bg-surface/95 px-1 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden"
+    >
+      {tabs.map((tab) => (
+        <TabLink
+          key={tab.href}
+          href={tab.href}
+          label={tab.label}
+          icon={tab.icon}
+          active={current?.href === tab.href}
+        />
+      ))}
+      <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
+        <DrawerTrigger asChild>
+          <button type="button" className={tabClass(!onTab)} aria-current={!onTab ? "page" : undefined}>
+            <span className={pillClass(!onTab)}><LayoutGrid aria-hidden="true" className="size-[22px]" /></span>
+            More
+          </button>
+        </DrawerTrigger>
+        <DrawerContent aria-describedby={undefined}>
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>More</DrawerTitle>
+          </DrawerHeader>
+          <div className="flex flex-col gap-4 overflow-y-auto px-4 pt-3">
+            {more.map((group) => (
+              <section key={group.label} className="flex flex-col gap-2">
+                <h2 className="px-1 text-[13px] font-bold tracking-[0.06em] text-ink-dim uppercase">{group.label}</h2>
+                {/* A grouped list, not a tile grid: any count fits without a
+                    tile left alone on a row, and long labels never wrap. */}
+                <ul className="overflow-hidden rounded-2xl bg-surface-alt">
+                  {group.items.map((item) => (
+                    <li key={item.href} className="border-b border-border-soft last:border-b-0">
+                      <MoreRow item={item} active={current?.href === item.href} onNavigate={close} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+            <AccountRow role={role} onNavigate={close} />
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </nav>
+  );
+}
+
+const tabClass = (active: boolean) => cn(
+  "flex min-h-14 flex-1 flex-col items-center justify-center gap-[3px] text-[12px] font-bold",
+  "outline-none focus-visible:ring-2 focus-visible:ring-ona-blue focus-visible:ring-inset rounded-lg",
+  active ? "text-ona-blue" : "text-ink-mute",
+);
+const pillClass = (active: boolean) => cn(
+  "grid h-[30px] w-14 place-items-center rounded-full transition-colors",
+  active && "bg-info-bg",
+);
+
+function TabLink({ href, label, icon: Icon, active }: TabItem & { active: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={tabClass(active)}
+      aria-current={active ? "page" : undefined}
+      data-tour={`nav-${href.split("/").filter(Boolean).join("-")}`}
+    >
+      <span className={pillClass(active)}><Icon aria-hidden="true" className="size-[22px]" /></span>
+      {label}
+    </Link>
+  );
+}
+
+function MoreRow({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate: () => void }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex min-h-[52px] items-center gap-3 px-4 text-[16px] font-bold outline-none focus-visible:bg-surface-sunk",
+        active ? "bg-info-bg text-ona-blue" : "text-ink",
+      )}
+    >
+      {Icon ? <Icon aria-hidden="true" className="size-5 flex-none text-ona-blue" /> : null}
+      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      {item.count ? (
+        <span className="grid h-[22px] min-w-[22px] place-items-center rounded-full bg-ona-red px-1.5 text-[12px] font-black text-white">
+          {item.count}
+          <span className="sr-only"> pending</span>
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+function AccountRow({ role, onNavigate }: { role: Role; onNavigate: () => void }) {
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const name = user?.display_name ?? "…";
+  const settingsHref = role === "admin" ? "/admin/settings" : role === "customer" ? "/customer/settings" : null;
+  return (
+    <div className="flex items-center gap-3 border-t border-border-soft pt-3">
+      <Avatar className="size-10">
+        <AvatarFallback className="bg-ona-blue text-[15px] font-black text-white">{initials(name)}</AvatarFallback>
+      </Avatar>
+      <span className="grid min-w-0 flex-1 leading-tight">
+        <span className="truncate text-[16px] font-bold text-ink">{name}</span>
+        <span className="truncate text-[14px] text-ink-dim">{user?.email ?? ROLE_LABEL[role]}</span>
+      </span>
+      {settingsHref ? (
+        <Link
+          href={settingsHref}
+          onClick={onNavigate}
+          aria-label={role === "admin" ? "Your account" : "Settings"}
+          className="grid size-11 place-items-center rounded-full bg-surface-sunk text-ink"
+        >
+          <Settings aria-hidden="true" className="size-5" />
+        </Link>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => void logout()}
+        aria-label="Sign out"
+        className="grid size-11 place-items-center rounded-full bg-surface-sunk text-ink"
+      >
+        <LogOut aria-hidden="true" className="size-5" />
+      </button>
+    </div>
   );
 }
 

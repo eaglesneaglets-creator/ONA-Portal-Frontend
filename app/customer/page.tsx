@@ -88,128 +88,135 @@ export default function CustomerHome() {
         </p>
       ) : null}
 
-      <StatGrid label="Summary">
-        <StatCard
-          brand
-          icon={CalendarCheck2}
-          label="Upcoming sessions"
-          value={stat(summary?.upcoming_count)}
-          hint={next ? `Next on ${fmtShortDay(next.start_at)}` : "Nothing booked yet"}
-        />
-        <StatCard
-          icon={Hourglass}
-          label="Awaiting deposit"
-          value={stat(summary?.pending_count)}
-          hint={summary?.pending_count ? "Pay the deposit to keep the slot" : "Nothing waiting on you"}
-        />
-        <StatCard
-          icon={Clock3}
-          label="Hours booked ahead"
-          value={stat(summary?.upcoming_hours)}
-          hint="Across upcoming sessions"
-        />
-      </StatGrid>
+      {/* On a phone the next session leads and the numbers follow it: the
+          grid below dissolves (contents) so its two cards can be ordered
+          around the stats. Desktop keeps stats → cards. */}
+      <div className="flex flex-col">
+        <div className="max-md:order-2">
+          <StatGrid label="Summary">
+            <StatCard
+              brand
+              icon={CalendarCheck2}
+              label="Upcoming sessions"
+              value={stat(summary?.upcoming_count)}
+              hint={next ? `Next on ${fmtShortDay(next.start_at)}` : "Nothing booked yet"}
+            />
+            <StatCard
+              icon={Hourglass}
+              label="Awaiting deposit"
+              value={stat(summary?.pending_count)}
+              hint={summary?.pending_count ? "Pay the deposit to keep the slot" : "Nothing waiting on you"}
+            />
+            <StatCard
+              icon={Clock3}
+              label="Hours booked ahead"
+              value={stat(summary?.upcoming_hours)}
+              hint="Across upcoming sessions"
+            />
+          </StatGrid>
+        </div>
 
-      <div className="grid gap-4 lg:grid-cols-5">
-        <section aria-labelledby="next-h" className="lg:col-span-3">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle id="next-h" className="text-[17px] font-black">
-                Next session
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {summary === undefined ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-6 w-48" />
-                  <Skeleton className="h-4 w-64" />
-                </div>
-              ) : next ? (
-                <>
-                  <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="mb-2 flex flex-wrap items-center gap-2">
-                        <b className="text-[19px] text-ink">{next.service.name}</b>
-                        <StatusPill status={next.status} />
-                      </p>
-                      <p className="flex items-center gap-2 text-[15px] text-ink">
-                        <CalendarClock aria-hidden="true" className="size-4 text-ona-blue" />
-                        {fmtDay(next.start_at)}, {fmtTime(next.start_at)}–{fmtTime(next.end_at)}
-                      </p>
-                      <p className="mt-1 text-[14px] text-ink-mute">
-                        {next.room.name} with {next.engineer.name} ·{" "}
-                        <span className="whitespace-nowrap font-mono">{next.reference}</span>
-                      </p>
-                      {next.professional ? (
-                        <p className="mt-1 text-[14px] font-bold text-ona-blue">With {next.professional.display_name}</p>
-                      ) : null}
-                    </div>
-                    <Button asChild variant="outline" className="h-11">
-                      <Link href="/customer/bookings">Manage bookings</Link>
-                    </Button>
+        <div className="grid gap-4 max-md:contents lg:grid-cols-5">
+          <section aria-labelledby="next-h" className="max-md:order-1 max-md:mb-4 lg:col-span-3">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle id="next-h" className="text-[17px] font-black">
+                  Next session
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {summary === undefined ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-64" />
                   </div>
-                  <SessionTracker booking={next} />
-                </>
-              ) : (
-                <EmptyState
-                  icon={CalendarPlus}
-                  title="No session booked"
-                  body="Rooms come with an engineer. Pick a time and ONA confirms it with you."
-                  action={
-                    <Button asChild className="h-11">
-                      <Link href="/customer/book">Book a session</Link>
-                    </Button>
-                  }
-                />
-              )}
-            </CardContent>
-          </Card>
-        </section>
-
-        <section aria-labelledby="later-h" className="lg:col-span-2">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle id="later-h" className="text-[17px] font-black">
-                Coming up
-              </CardTitle>
-              <CardAction>
-                <Button asChild variant="ghost" size="sm" className="h-11 md:h-8">
-                  <Link href="/customer/bookings">
-                    View all <ArrowRight aria-hidden="true" />
-                  </Link>
-                </Button>
-              </CardAction>
-            </CardHeader>
-            <CardContent>
-              {upcoming === undefined ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ) : upcoming === null ? (
-                <p className="text-[14px] text-ink-mute">Could not load your sessions just now.</p>
-              ) : later && later.length > 0 ? (
-                <ul className="divide-y divide-border-soft">
-                  {later.map((b) => (
-                    <li key={b.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                ) : next ? (
+                  <>
+                    <div className="flex flex-wrap items-end justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="truncate text-[14.5px] font-bold text-ink">{b.room.name}</p>
-                        <p className="text-[13px] text-ink-mute">
-                          {fmtShortDay(b.start_at)} · {fmtTime(b.start_at)}
+                        <p className="mb-2 flex flex-wrap items-center gap-2">
+                          <b className="text-[19px] text-ink">{next.service.name}</b>
+                          <StatusPill status={next.status} />
                         </p>
+                        <p className="flex items-center gap-2 text-[15px] text-ink">
+                          <CalendarClock aria-hidden="true" className="size-4 text-ona-blue" />
+                          {fmtDay(next.start_at)}, {fmtTime(next.start_at)}–{fmtTime(next.end_at)}
+                        </p>
+                        <p className="mt-1 text-[14px] text-ink-mute">
+                          {next.room.name} with {next.engineer.name} ·{" "}
+                          <span className="whitespace-nowrap font-mono">{next.reference}</span>
+                        </p>
+                        {next.professional ? (
+                          <p className="mt-1 text-[14px] font-bold text-ona-blue">With {next.professional.display_name}</p>
+                        ) : null}
                       </div>
-                      <StatusPill status={b.status} />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-[14px] text-ink-mute">
-                  {next ? "Nothing else booked after your next session." : "Your upcoming sessions will show here."}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </section>
+                      <Button asChild variant="outline" className="h-11">
+                        <Link href="/customer/bookings">Manage bookings</Link>
+                      </Button>
+                    </div>
+                    <SessionTracker booking={next} />
+                  </>
+                ) : (
+                  <EmptyState
+                    icon={CalendarPlus}
+                    title="No session booked"
+                    body="Rooms come with an engineer. Pick a time and ONA confirms it with you."
+                    action={
+                      <Button asChild className="h-11">
+                        <Link href="/customer/book">Book a session</Link>
+                      </Button>
+                    }
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </section>
+
+          <section aria-labelledby="later-h" className="max-md:order-3 lg:col-span-2">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle id="later-h" className="text-[17px] font-black">
+                  Coming up
+                </CardTitle>
+                <CardAction>
+                  <Button asChild variant="ghost" size="sm" className="h-11 md:h-8">
+                    <Link href="/customer/bookings">
+                      View all <ArrowRight aria-hidden="true" />
+                    </Link>
+                  </Button>
+                </CardAction>
+              </CardHeader>
+              <CardContent>
+                {upcoming === undefined ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : upcoming === null ? (
+                  <p className="text-[14px] text-ink-mute">Could not load your sessions just now.</p>
+                ) : later && later.length > 0 ? (
+                  <ul className="divide-y divide-border-soft">
+                    {later.map((b) => (
+                      <li key={b.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                        <div className="min-w-0">
+                          <p className="truncate text-[14.5px] font-bold text-ink">{b.room.name}</p>
+                          <p className="text-[13px] text-ink-mute">
+                            {fmtShortDay(b.start_at)} · {fmtTime(b.start_at)}
+                          </p>
+                        </div>
+                        <StatusPill status={b.status} />
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[14px] text-ink-mute">
+                    {next ? "Nothing else booked after your next session." : "Your upcoming sessions will show here."}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+        </div>
       </div>
     </div>
   );

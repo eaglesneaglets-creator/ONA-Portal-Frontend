@@ -591,7 +591,7 @@ function Stepper({ step, onJump }: { step: number; onJump: (i: number) => void }
               aria-current={state === "current" ? "step" : undefined}
               aria-label={`Step ${i + 1}: ${label}${state === "done" ? " (done)" : ""}`}
               onClick={() => onJump(i)}
-              className="flex min-h-[var(--tap-min)] items-center gap-2 rounded-lg pr-2 text-left disabled:cursor-default"
+              className="flex min-h-[var(--tap-min)] min-w-[var(--tap-min)] items-center gap-2 rounded-lg pr-2 text-left disabled:cursor-default"
             >
               <span
                 className={cn(

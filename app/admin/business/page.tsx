@@ -114,8 +114,10 @@ export default function BusinessSettingsPage() {
       ) : saved === undefined || !form ? (
         <RowsSkeleton rows={5} />
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[200px_minmax(0,1fr)]">
-          <nav aria-label="Settings sections" className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:overflow-visible lg:px-0">
+        <div className="grid gap-8 max-lg:gap-4 lg:grid-cols-[200px_minmax(0,1fr)]">
+          {/* Phones: a sticky, swipeable strip of sections (the edge fade says there
+              are more); desktop: a sticky column. */}
+          <nav aria-label="Settings sections" className="sticky top-0 z-20 -mx-4 overflow-x-auto bg-surface-alt/95 md:top-14 px-4 py-2 backdrop-blur max-lg:scroll-fade-x lg:static lg:mx-0 lg:overflow-visible lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
             <ul className="flex gap-2 lg:sticky lg:top-6 lg:flex-col lg:gap-1">
               {SECTIONS.map((s) => (
                 <li key={s.id} className="flex-none">
@@ -132,7 +134,7 @@ export default function BusinessSettingsPage() {
 
           <div className="grid min-w-0 gap-6">
             {SECTIONS.map((s) => (
-              <Card key={s.id} id={s.id} className="scroll-mt-24">
+              <Card key={s.id} id={s.id} className="scroll-mt-24 max-lg:scroll-mt-20">
                 <form onSubmit={(e) => { e.preventDefault(); void save(s, e.currentTarget); }} noValidate>
                   <CardHeader>
                     <CardTitle className="text-[18px] font-black">{s.title}</CardTitle>
@@ -141,7 +143,16 @@ export default function BusinessSettingsPage() {
                   <CardContent className="grid gap-5 pt-2">
                     <SectionFields id={s.id} form={form} set={set} errors={errors} />
                   </CardContent>
-                  <CardFooter className="mt-2 justify-end gap-3 border-t border-border-soft pt-4">
+                  {/* With unsaved changes, a phone pins Save above the tab bar
+                      while this section is on screen (sticky stays inside
+                      its card), so it is never a long scroll away. */}
+                  <CardFooter className={cn(
+                    "mt-2 justify-end gap-3 border-t border-border-soft pt-4",
+                    dirty(s.keys) && "max-md:sticky max-md:bottom-[calc(4.75rem+env(safe-area-inset-bottom))] max-md:z-10 max-md:bg-surface max-md:pb-4 max-md:shadow-[0_-4px_16px_rgba(23,21,31,0.06)]",
+                  )}>
+                    {dirty(s.keys) ? (
+                      <span className="mr-auto text-[13.5px] font-bold text-ona-red md:hidden">Unsaved changes</span>
+                    ) : null}
                     {dirty(s.keys) ? (
                       <Button type="button" variant="ghost" className="h-11 md:h-9" disabled={busy !== null} onClick={() => undo(s)}>
                         Undo
@@ -233,7 +244,7 @@ function HourSelect({ id, label, value, from, to, onChange, error }: {
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
-        <SelectTrigger id={id} className="h-11 w-36 md:h-9" aria-invalid={Boolean(error)}>
+        <SelectTrigger id={id} className="h-11 w-44 md:h-9 md:w-36" aria-invalid={Boolean(error)}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

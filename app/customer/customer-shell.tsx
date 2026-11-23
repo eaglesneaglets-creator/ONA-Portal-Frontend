@@ -6,15 +6,17 @@ import {
   CreditCard,
   FolderKanban,
   Inbox,
+  House,
   LayoutDashboard,
   MessageSquare,
+  Plus,
   ShieldCheck,
   Star,
 } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { PortalShell, type NavGroup } from "@/components/portal/portal-shell";
+import { PortalShell, type NavGroup, type TabItem } from "@/components/portal/portal-shell";
 import { RequireAuth } from "@/lib/auth/guard";
 
 // Mirrors the sidebar in docs/design/pages/dashboard-customer.html.
@@ -40,9 +42,19 @@ const GROUPS: NavGroup[] = [
     label: "Account",
     items: [
       { href: "/customer/verify", label: "Verify identity", icon: ShieldCheck },
-      // Settings is in the account menu at the foot of the sidebar.
+      // Settings is in the account menu at the foot of the sidebar (and the
+      // phone's More sheet); listed hidden so the header can still name it.
+      { href: "/customer/settings", label: "Settings", hidden: true },
     ],
   },
+];
+
+// A phone's bottom bar: the four things a customer comes back for.
+const TABS: TabItem[] = [
+  { href: "/customer", label: "Home", icon: House },
+  { href: "/customer/book", label: "Book", icon: Plus },
+  { href: "/customer/bookings", label: "Bookings", icon: CalendarDays },
+  { href: "/customer/payments", label: "Payments", icon: CreditCard },
 ];
 
 export default function CustomerShell({ children }: { children: React.ReactNode }) {
@@ -51,6 +63,7 @@ export default function CustomerShell({ children }: { children: React.ReactNode 
       <PortalShell
         role="customer"
         groups={GROUPS}
+        tabs={TABS}
         actions={
           <Button asChild size="sm" className="h-11 md:h-8">
             <Link href="/customer/book">

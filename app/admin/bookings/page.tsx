@@ -1,12 +1,13 @@
 "use client";
 
-import { CalendarSearch, X } from "lucide-react";
+import { CalendarSearch, Plus, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback } from "react";
 
 import { BookingConsole, BookingList } from "@/components/admin/booking-console";
 import { Pager, SearchBox } from "@/components/dashboard/list-controls";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { PhoneFab } from "@/components/portal/phone-fab";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/dashboard/states";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -96,15 +97,22 @@ function Bookings() {
           <Tabs value={when} onValueChange={(w) => setParams({ when: w })}>
             <TabsList aria-label="Period">
               {WHENS.map((w) => (
-                <TabsTrigger key={w.value} value={w.value} className="min-h-11 px-3 md:min-h-8">
+                <TabsTrigger key={w.value} value={w.value} className="min-h-11 min-w-11 px-3 md:min-h-8">
                   {w.label}
                 </TabsTrigger>
               ))}
             </TabsList>
           </Tabs>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {/* Search first and status beside it on one row, even on a phone. */}
+          <div className="flex items-center gap-2">
+            <SearchBox
+              label="Search bookings by reference, name, email or phone"
+              placeholder="Name, ref or phone"
+              initial={search}
+              onSearch={onSearch}
+            />
             <Select value={status} onValueChange={(s) => setParams({ status: s === "any" ? null : s })}>
-              <SelectTrigger aria-label="Status" className="h-11 w-full bg-surface sm:w-52 md:h-9">
+              <SelectTrigger aria-label="Status" className="h-11 w-[42%] flex-none bg-surface sm:w-52 md:h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -115,12 +123,6 @@ function Bookings() {
                 ))}
               </SelectContent>
             </Select>
-            <SearchBox
-              label="Search bookings"
-              placeholder="Reference, name, email or phone"
-              initial={search}
-              onSearch={onSearch}
-            />
           </div>
         </div>
 
@@ -150,6 +152,7 @@ function Bookings() {
             <Pager page={page} pageSize={PAGE_SIZE} count={data.count} onPage={(p) => setParams({ page: String(p) })} />
           </>
         )}
+        <PhoneFab href="/admin/bookings/new" label="New booking" icon={Plus} />
       </div>
     </BookingConsole>
   );

@@ -59,10 +59,12 @@ const bookingsHref = (c: StaffCustomer) => `/admin/bookings?customer=${c.id}&whe
 function Who({ c }: { c: StaffCustomer }) {
   return (
     <>
-      <p className="flex flex-wrap items-center gap-2 font-bold text-ink">
-        {c.name}
+      {/* The name gives way (ellipsis), never the badge: a long name must
+          not push "New" onto a line of its own. */}
+      <p className="flex min-w-0 items-center gap-2 font-bold text-ink">
+        <span className="truncate">{c.name}</span>
         {c.is_new ? (
-          <span className="rounded-full bg-ona-gradient px-2 py-0.5 text-[11px] font-black uppercase tracking-wider text-white">New</span>
+          <span className="flex-none rounded-full bg-ona-gradient px-2 py-0.5 text-[11px] font-black uppercase tracking-wider text-white">New</span>
         ) : null}
       </p>
       {c.intent_display ? <p className="text-[12.5px] text-ink-dim">Came for: {c.intent_display}</p> : null}
@@ -128,9 +130,9 @@ function CustomerTable({ rows }: { rows: StaffCustomer[] }) {
 
 function CustomerCards({ rows }: { rows: StaffCustomer[] }) {
   return (
-    <ul className="space-y-3">
+    <ul className="overflow-hidden rounded-2xl border border-border-default bg-surface">
       {rows.map((c) => (
-        <li key={c.id} data-testid="admin-customer-row" className="rounded-xl border border-border-default bg-surface p-4">
+        <li key={c.id} data-testid="admin-customer-row" className="border-b border-border-soft px-3.5 py-3 last:border-b-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <Who c={c} />
@@ -141,22 +143,22 @@ function CustomerCards({ rows }: { rows: StaffCustomer[] }) {
             {c.booking_count} {c.booking_count === 1 ? "booking" : "bookings"}
             {c.upcoming_count ? ` · ${c.upcoming_count} upcoming` : ""} · paid {c.paid_display}
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm" className="h-11">
+          <div className="mt-2.5 grid auto-cols-fr grid-flow-col gap-2">
+            <Button asChild variant="outline" size="sm" className="h-11 w-full">
               <a href={`mailto:${c.email}`} aria-label={`Email ${c.name}`}>
                 <Mail aria-hidden="true" />
                 Email
               </a>
             </Button>
             {c.phone ? (
-              <Button asChild variant="outline" size="sm" className="h-11">
+              <Button asChild variant="outline" size="sm" className="h-11 w-full">
                 <a href={`tel:${c.phone}`} aria-label={`Call ${c.name}`}>
                   <Phone aria-hidden="true" />
                   Call
                 </a>
               </Button>
             ) : null}
-            <Button asChild variant="outline" size="sm" className="h-11">
+            <Button asChild variant="outline" size="sm" className="h-11 w-full">
               <Link href={bookingsHref(c)}>
                 <CalendarDays aria-hidden="true" />
                 Bookings

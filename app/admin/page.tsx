@@ -74,7 +74,8 @@ export default function AdminHome() {
           title="Control room"
           description="Today at the studio, and what is waiting on ONA."
           actions={
-            <Button asChild variant="outline" className="h-11 md:h-9">
+            // On a phone, Bookings is a tab one thumb away.
+            <Button asChild variant="outline" className="h-11 max-md:hidden md:h-9">
               <Link href="/admin/bookings">
                 <CalendarDays aria-hidden="true" />
                 All bookings
