@@ -1,13 +1,14 @@
-import Image from "next/image";
-
 import type { SiteContent } from "@/lib/api/content";
-import { MEDIA_UNOPTIMIZED, mediaSrc } from "@/lib/media";
+
+import { GalleryGrid } from "./gallery-grid";
 
 /**
  * "Inside ONA": the photos ONA publishes from the console's gallery. Hidden
  * until there is at least one, so the page never shows an empty frame.
- * Each photo keeps its own shape in a masonry of columns, so nothing is
- * cropped out.
+ *
+ * Every tile has the same 4:3 shape and the column count follows the number of
+ * photos, so two photos fill the row instead of leaving a gap, and a tall phone
+ * photo cannot stretch the section. Tapping a tile shows the whole photo.
  */
 export function LandingGallery({
   items,
@@ -26,24 +27,7 @@ export function LandingGallery({
             The rooms, the gear, the sessions
           </h2>
         </div>
-        <ul className="ona-reveal columns-1 gap-4 sm:columns-2 lg:columns-3">
-          {items.map(({ id, caption, image }) => (
-            <li key={id} className="mb-4 break-inside-avoid">
-              <figure className="overflow-hidden rounded-xl border border-border-default bg-surface">
-                <Image
-                  src={mediaSrc(image.src)}
-                  alt={image.alt || caption}
-                  width={image.width}
-                  height={image.height}
-                  sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw"
-                  unoptimized={MEDIA_UNOPTIMIZED}
-                  className="h-auto w-full"
-                />
-                {caption ? <figcaption className="px-4 py-3 text-[14px] text-ink-dim">{caption}</figcaption> : null}
-              </figure>
-            </li>
-          ))}
-        </ul>
+        <GalleryGrid items={items} />
       </div>
     </section>
   );
